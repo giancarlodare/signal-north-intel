@@ -3,9 +3,12 @@ import os
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").strip().rstrip("/")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
 
-# Name of the row in the `sources` table that represents CanadaBuys.
-# Override with the SOURCE_NAME env var if your sources.name value differs.
-SOURCE_NAME = os.environ.get("SOURCE_NAME", "CanadaBuys")
+# Your `sources` table has one row per CanadaBuys feed rather than a single
+# shared row, so tender notices and award notices are attributed to
+# different source_ids. Override via env vars if these rows are ever
+# recreated with new ids.
+TENDER_SOURCE_ID = os.environ.get("TENDER_SOURCE_ID", "5ff27bde-7c78-4a5a-8efe-a0be8ef84fc8")
+AWARD_SOURCE_ID = os.environ.get("AWARD_SOURCE_ID", "0bce66c4-a58c-48b5-aede-6ae2b85ae890")
 
 # CanadaBuys publishes federal procurement notices only.
 JURISDICTION = "Federal"
