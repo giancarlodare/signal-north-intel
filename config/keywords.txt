@@ -1,0 +1,111 @@
+# Signal North keyword filters
+#
+# How this file works:
+#   - One keyword or phrase per line, matched case-insensitively as a
+#     substring against each notice's title + description.
+#   - Lines starting with "#" are comments and are ignored.
+#   - Blank lines are ignored.
+#   - Everything ABOVE the "# ---DEFENCE---" marker is the general
+#     public safety / security keyword list.
+#   - Everything BELOW the "# ---DEFENCE---" marker is the dual-use
+#     defence keyword list. A notice that matches a keyword down there
+#     gets defence_relevant = true in the database, IN ADDITION to
+#     being kept as a normal relevant record.
+#   - Edit freely and commit the change - the collector reads this file
+#     fresh on every run, no code changes needed.
+
+# --- Policing / law enforcement ---
+police
+policing
+law enforcement
+sheriff
+constable
+rcmp
+peace officer
+
+# --- Corrections ---
+correctional
+corrections
+correctional service
+prison
+penitentiary
+detention centre
+detention center
+inmate
+
+# --- Fire ---
+fire department
+firefighting
+fire fighting
+fire suppression
+fire rescue
+wildfire
+
+# --- Paramedic / EMS ---
+paramedic
+ambulance
+emergency medical
+ems
+
+# --- Border ---
+border services
+cbsa
+border security
+customs enforcement
+port of entry
+
+# --- General public safety / security ---
+public safety
+security services
+security guard
+protective services
+emergency management
+search and rescue
+911 dispatch
+forensic
+coast guard
+marine security
+
+# ---DEFENCE---
+# Dual-use defence terms. Matches here also set defence_relevant = true.
+
+drone
+drones
+unmanned aerial
+uas
+counter-drone
+counter drone
+counter-uas
+counter uas
+
+cybersecurity
+cyber security
+secure communications
+secure communication
+encrypted radio
+tactical radio
+radios
+
+armoured vehicle
+armored vehicle
+armoured vehicles
+armored vehicles
+specialty vehicle
+specialty vehicles
+tactical vehicle
+
+surveillance
+video surveillance
+persistent surveillance
+
+protective equipment
+body armour
+body armor
+ballistic protection
+personal protective equipment
+ppe
+
+simulation
+simulator
+training simulator
+training system
