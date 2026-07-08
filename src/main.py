@@ -15,7 +15,6 @@ from . import config, supabase_client
 from .canadabuys import fetch_csv_rows, find_column
 from .filters import Keywords, evaluate, load_keywords
 from .hashing import content_hash
-from .vendors import extract_contract_terms
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger(__name__)
@@ -23,6 +22,17 @@ log = logging.getLogger(__name__)
 
 def _clean(value: str | None) -> str:
     return (value or "").strip()
+
+
+def _parse_value(value: str | None):
+    """Parse a contract value like '$1,234,567.00' into a float, or None."""
+    value = _clean(value).replace("$", "").replace(",", "")
+    if not value:
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
 
 
 def _parse_date(value: str | None):
@@ -106,20 +116,28 @@ def process_award_notices(source_id: str, keywords: Keywords) -> dict:
     title_col = find_column(fields, "title")
     desc_col = find_description_column(fields)
     ref_col = find_column(fields, "reference", "number") or find_column(fields, "solicitation", "number")
-    contract_date_col = find_column(fields, "contract", "date") or find_column(fields, "award", "date")
+    award_date_col = (
+        find_column(fields, "award", "date")
+        or find_column(fields, "contract", "date")
+        or find_column(fields, "publication", "date")
+    )
     unspsc_col = find_column(fields, "unspsc", "code") or find_column(fields, "unspsc")
     vendor_col = find_column(fields, "vendor", "name") or find_column(fields, "supplier", "name")
-    comments_col = find_column(fields, "comments")
+    value_col = (
+        find_column(fields, "contract", "value")
+        or find_column(fields, "total", "value")
+        or find_column(fields, "value")
+    )
 
     for row in rows:
         stats["seen"] += 1
         title = _clean(row.get(title_col)) if title_col else ""
         description = _clean(row.get(desc_col)) if desc_col else ""
         reference = _clean(row.get(ref_col)) if ref_col else ""
-        published_on = _parse_date(row.get(contract_date_col)) if contract_date_col else None
+        awarded_on = _parse_date(row.get(award_date_col)) if award_date_col else None
         unspsc_code = _clean(row.get(unspsc_col)) if unspsc_col else ""
         vendor_name = _clean(row.get(vendor_col)) if vendor_col else ""
-        comments = _clean(row.get(comments_col)) if comments_col else ""
+        value_cad = _parse_value(row.get(value_col)) if value_col else None
 
         result = evaluate(title, description, unspsc_code, keywords)
         if not result.kept:
@@ -139,22 +157,24 @@ def process_award_notices(source_id: str, keywords: Keywords) -> dict:
             "url": url,
             "title": title,
             "doc_type": "award_notice",
-            "published_on": published_on,
+            "published_on": awarded_on,
             "content_hash": chash,
             "defence_relevant": result.defence_relevant,
         })
         stats["inserted"] += 1
 
-        terms = extract_contract_terms(f"{description} {comments}")
-        vendor_id = supabase_client.find_or_create_vendor(vendor_name) if vendor_name else None
+        # Register/match the vendor in the vendors table (per the original
+        # spec). contract_awards stores the raw vendor_name rather than a
+        # foreign key, so we don't need the returned id here.
+        if vendor_name:
+            supabase_client.find_or_create_vendor(vendor_name)
 
         supabase_client.insert_contract_award({
             "document_id": document["id"],
-            "vendor_id": vendor_id,
-            "start_on": terms.start_on,
-            "end_on": terms.end_on,
-            "option_years": terms.option_years,
-            "final_end_on": terms.final_end_on,
+            "vendor_name": vendor_name or None,
+            "description": description or None,
+            "value_cad": value_cad,
+            "awarded_on": awarded_on,
         })
 
     return stats
@@ -167,17 +187,33 @@ def run() -> int:
         len(keywords.general), len(keywords.defence),
     )
 
-    tender_stats = process_tender_notices(config.TENDER_SOURCE_ID, keywords)
-    log.info("Tender notices: %s", tender_stats)
-
-    award_stats = process_award_notices(config.AWARD_SOURCE_ID, keywords)
-    log.info("Award notices: %s", award_stats)
-
     now = datetime.now(timezone.utc)
-    supabase_client.update_source_last_collected(config.TENDER_SOURCE_ID, now)
-    supabase_client.update_source_last_collected(config.AWARD_SOURCE_ID, now)
-    log.info("Updated sources.last_collected_at for both source rows")
+    failures = []
 
+    # Tender and award feeds are processed independently so a problem with
+    # one (e.g. a bad URL or a schema mismatch) never discards the other's
+    # progress. Each feed's last_collected_at is only updated if it succeeded.
+    try:
+        tender_stats = process_tender_notices(config.TENDER_SOURCE_ID, keywords)
+        log.info("Tender notices: %s", tender_stats)
+        supabase_client.update_source_last_collected(config.TENDER_SOURCE_ID, now)
+    except Exception:
+        log.exception("Tender notice collection failed")
+        failures.append("tender notices")
+
+    try:
+        award_stats = process_award_notices(config.AWARD_SOURCE_ID, keywords)
+        log.info("Award notices: %s", award_stats)
+        supabase_client.update_source_last_collected(config.AWARD_SOURCE_ID, now)
+    except Exception:
+        log.exception("Award notice collection failed")
+        failures.append("award notices")
+
+    if failures:
+        log.error("Run finished with failures in: %s", ", ".join(failures))
+        return 1
+
+    log.info("Run finished successfully")
     return 0
 
 
