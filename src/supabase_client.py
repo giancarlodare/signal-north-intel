@@ -10,7 +10,6 @@ from typing import Any
 import requests
 
 from . import config
-from .vendors import normalize_vendor_name
 
 log = logging.getLogger(__name__)
 
@@ -52,9 +51,6 @@ def _request(method: str, path: str, **kwargs) -> requests.Response:
     return resp
 
 
-
-
-
 def update_source_last_collected(source_id: str, when: datetime) -> None:
     _request(
         "PATCH",
@@ -87,38 +83,41 @@ def insert_document(payload: dict) -> dict:
     return rows[0]
 
 
-def find_or_create_vendor(raw_name: str) -> str:
-    normalized = normalize_vendor_name(raw_name)
+def find_or_create_vendor(raw_name: str) -> str | None:
+    """Ensure a vendor exists in the vendors table, returning its id.
 
-    resp = _request(
-        "GET",
-        "vendors",
-        headers=_headers(),
-        params={"select": "id", "canonical_name": f"ilike.{normalized}", "limit": 1},
-    )
-    rows = resp.json()
-    if rows:
-        return rows[0]["id"]
+    Idempotent by design: we look up by the SAME name we would store (so a
+    vendor seen twice is found the second time), match against aliases too,
+    and insert with an ON CONFLICT clause so a duplicate can never raise -
+    the vendors.canonical_name unique constraint is respected rather than
+    tripped over.
+    """
+    name = " ".join((raw_name or "").split())
+    if not name:
+        return None
+    # Double-quote the value so vendor names containing commas or parentheses
+    # (e.g. "9230-6000 Quebec Inc. (o/a Wocasa)") don't break PostgREST's
+    # filter parsing. Stray double quotes are dropped to keep the filter valid.
+    quoted = name.replace('"', "")
 
-    # PostgREST "contains" filter on a text[] aliases column.
-    resp = _request(
-        "GET",
-        "vendors",
-        headers=_headers(),
-        params={"select": "id", "aliases": f"cs.{{{normalized}}}", "limit": 1},
-    )
-    rows = resp.json()
-    if rows:
-        return rows[0]["id"]
+    for params in (
+        {"select": "id", "canonical_name": f'ilike."{quoted}"', "limit": 1},
+        {"select": "id", "aliases": f'cs.{{"{quoted}"}}', "limit": 1},
+    ):
+        rows = _request("GET", "vendors", headers=_headers(), params=params).json()
+        if rows:
+            return rows[0]["id"]
 
-    log.info("No existing vendor matched %r - creating a new vendor row.", raw_name)
-    resp = _request(
+    # Insert, ignoring (not erroring on) a duplicate canonical_name that may
+    # have been created concurrently. return=representation gives us the row
+    # back on a fresh insert; on an ignored duplicate the body is empty.
+    rows = _request(
         "POST",
-        "vendors",
-        headers=_headers(prefer="return=representation"),
-        data=_dumps({"canonical_name": raw_name, "aliases": []}),
-    )
-    return resp.json()[0]["id"]
+        "vendors?on_conflict=canonical_name",
+        headers=_headers(prefer="resolution=ignore-duplicates,return=representation"),
+        data=_dumps({"canonical_name": name, "aliases": []}),
+    ).json()
+    return rows[0]["id"] if rows else None
 
 
 def insert_contract_award(payload: dict) -> dict:
