@@ -88,7 +88,6 @@ def process_tender_notices(source_id: str, keywords: Keywords) -> dict:
             "title": title,
             "doc_type": "tender_notice",
             "published_on": published_on,
-            "jurisdiction": config.JURISDICTION,
             "content_hash": chash,
             "defence_relevant": result.defence_relevant,
         })
@@ -141,7 +140,6 @@ def process_award_notices(source_id: str, keywords: Keywords) -> dict:
             "title": title,
             "doc_type": "award_notice",
             "published_on": published_on,
-            "jurisdiction": config.JURISDICTION,
             "content_hash": chash,
             "defence_relevant": result.defence_relevant,
         })
