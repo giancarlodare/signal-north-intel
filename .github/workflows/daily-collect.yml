@@ -1,0 +1,50 @@
+name: Daily CanadaBuys collector
+
+on:
+  # GitHub Actions cron is always UTC, and Eastern time shifts between
+  # UTC-5 (EST) and UTC-4 (EDT) with daylight saving. Rather than track
+  # the DST calendar here, we trigger at both possible UTC times for 6am
+  # Eastern and let the "guard" step below skip the one that isn't
+  # actually 6am Eastern that day.
+  schedule:
+    - cron: "0 10 * * *"  # 6:00am EDT (UTC-4)
+    - cron: "0 11 * * *"  # 6:00am EST (UTC-5)
+  workflow_dispatch: {}
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check whether it's actually 6am Eastern right now
+        id: guard
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          hour=$(TZ="America/Toronto" date +%H)
+          if [ "$hour" = "06" ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping: it's ${hour}:00 in America/Toronto, not 06:00."
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.guard.outputs.should_run == 'true'
+
+      - uses: actions/setup-python@v5
+        if: steps.guard.outputs.should_run == 'true'
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        if: steps.guard.outputs.should_run == 'true'
+        run: pip install -r requirements.txt
+
+      - name: Run collector
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.main
