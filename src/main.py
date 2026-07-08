@@ -15,6 +15,7 @@ from . import config, supabase_client
 from .canadabuys import fetch_csv_rows, find_column
 from .filters import Keywords, evaluate, load_keywords
 from .hashing import content_hash
+from .vendors import extract_contract_terms
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger(__name__)
@@ -163,18 +164,31 @@ def process_award_notices(source_id: str, keywords: Keywords) -> dict:
         })
         stats["inserted"] += 1
 
-        # Register/match the vendor in the vendors table (per the original
-        # spec). contract_awards stores the raw vendor_name rather than a
-        # foreign key, so we don't need the returned id here.
+        # Register/match the vendor in the vendors table and link the award
+        # to it. contract_awards keeps both the raw vendor_name (as reported
+        # on the notice) and vendor_id (the normalized vendors row), so we
+        # capture the returned id here rather than discarding it.
+        vendor_id = None
         if vendor_name:
-            supabase_client.find_or_create_vendor(vendor_name)
+            vendor_id = supabase_client.find_or_create_vendor(vendor_name)
+
+        # Contract length / option years aren't in the CSV columns; they're
+        # stated in the notice free text, so extract what we can from the
+        # description to fill start_on/end_on/option_years/final_end_on.
+        terms = extract_contract_terms(description)
 
         supabase_client.insert_contract_award({
             "document_id": document["id"],
             "vendor_name": vendor_name or None,
+            "vendor_id": vendor_id,
             "description": description or None,
             "value_cad": value_cad,
             "awarded_on": awarded_on,
+            "reference_no": reference or None,
+            "start_on": terms.start_on,
+            "end_on": terms.end_on,
+            "option_years": terms.option_years,
+            "final_end_on": terms.final_end_on,
         })
 
     return stats
