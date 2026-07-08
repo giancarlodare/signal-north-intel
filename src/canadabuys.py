@@ -16,14 +16,22 @@ import requests
 from . import config
 
 log = logging.getLogger(__name__)
-
+# canadabuys.canada.ca returns 403 to the default python-requests User-Agent,
+# even for these public open-data files. A normal browser UA is enough to
+# get through.
+_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    )
+}
 
 class CsvSchemaError(RuntimeError):
     """Raised when a required column can't be located in a downloaded CSV."""
 
 
 def fetch_csv_rows(url: str) -> list[dict]:
-    resp = requests.get(url, timeout=config.REQUEST_TIMEOUT_SECONDS)
+    resp = requests.get(url, headers=_HEADERS, timeout=config.REQUEST_TIMEOUT_SECONDS)
     resp.raise_for_status()
     # CanadaBuys CSVs are UTF-8 with a BOM.
     text = resp.content.decode("utf-8-sig")
