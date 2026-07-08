@@ -1,4 +1,5 @@
 import os
+from datetime import date
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").strip().rstrip("/")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
@@ -10,9 +11,6 @@ SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").stri
 TENDER_SOURCE_ID = os.environ.get("TENDER_SOURCE_ID", "5ff27bde-7c78-4a5a-8efe-a0be8ef84fc8")
 AWARD_SOURCE_ID = os.environ.get("AWARD_SOURCE_ID", "0bce66c4-a58c-48b5-aede-6ae2b85ae890")
 
-# CanadaBuys publishes federal procurement notices only.
-JURISDICTION = "Federal"
-
 KEYWORDS_FILE = os.environ.get(
     "KEYWORDS_FILE",
     os.path.join(os.path.dirname(__file__), "..", "config", "keywords.txt"),
@@ -23,13 +21,21 @@ NEW_TENDER_NOTICES_URL = (
     "https://canadabuys.canada.ca/opendata/pub/"
     "newTenderNotice-nouvelAvisAppelOffres.csv"
 )
-# Current fiscal-year award notices file. PSPC republishes this under a
-# fiscal-year-specific name each April; if the collector logs a 404 for this
-# URL, check https://canadabuys.canada.ca/en/procurement-and-contracting-data
-# for the current filename and update this constant.
-AWARD_NOTICES_URL = (
+# The award notices file is published per Canadian federal fiscal year
+# (April 1 - March 31), e.g. "2026-2027-awardNotice-avisAttribution.csv".
+# We compute the current fiscal year at runtime so this keeps working after
+# each April 1 rollover without a code change. Override with the
+# AWARD_NOTICES_URL env var if PSPC ever changes the naming pattern.
+def _current_fiscal_year(today: date | None = None) -> str:
+    today = today or date.today()
+    start = today.year if today.month >= 4 else today.year - 1
+    return f"{start}-{start + 1}"
+
+
+AWARD_NOTICES_URL = os.environ.get(
+    "AWARD_NOTICES_URL",
     "https://canadabuys.canada.ca/opendata/pub/"
-    "awardNotice-avisAttribution.csv"
+    f"{_current_fiscal_year()}-awardNotice-avisAttribution.csv",
 )
 
 # URL templates for building a human-clickable link back to the notice on
