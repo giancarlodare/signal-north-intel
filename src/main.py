@@ -169,16 +169,16 @@ def run() -> int:
         len(keywords.general), len(keywords.defence),
     )
 
-    source_id = supabase_client.get_source_id()
-
-    tender_stats = process_tender_notices(source_id, keywords)
+    tender_stats = process_tender_notices(config.TENDER_SOURCE_ID, keywords)
     log.info("Tender notices: %s", tender_stats)
 
-    award_stats = process_award_notices(source_id, keywords)
+    award_stats = process_award_notices(config.AWARD_SOURCE_ID, keywords)
     log.info("Award notices: %s", award_stats)
 
-    supabase_client.update_source_last_collected(source_id, datetime.now(timezone.utc))
-    log.info("Updated sources.last_collected_at")
+    now = datetime.now(timezone.utc)
+    supabase_client.update_source_last_collected(config.TENDER_SOURCE_ID, now)
+    supabase_client.update_source_last_collected(config.AWARD_SOURCE_ID, now)
+    log.info("Updated sources.last_collected_at for both source rows")
 
     return 0
 
