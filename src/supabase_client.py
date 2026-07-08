@@ -52,21 +52,7 @@ def _request(method: str, path: str, **kwargs) -> requests.Response:
     return resp
 
 
-def get_source_id(name: str = config.SOURCE_NAME) -> str:
-    resp = _request(
-        "GET",
-        "sources",
-        headers=_headers(),
-        params={"select": "id", "name": f"eq.{name}", "limit": 1},
-    )
-    rows = resp.json()
-    if not rows:
-        raise SupabaseError(
-            f"No row in `sources` with name = {name!r}. Add one (or set the "
-            f"SOURCE_NAME env var to match your existing row) before running "
-            f"the collector."
-        )
-    return rows[0]["id"]
+
 
 
 def update_source_last_collected(source_id: str, when: datetime) -> None:
