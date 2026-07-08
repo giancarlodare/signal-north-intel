@@ -179,6 +179,12 @@ def process_award_notices(source_id: str, keywords: Keywords) -> dict:
         # description to fill start_on/end_on/option_years/final_end_on.
         terms = extract_contract_terms(description)
 
+        # organization_id, category_id, and recompete_opportunity_id are
+        # intentionally left unset here: the raw collector only writes what it
+        # can observe directly on the notice. Organization and category
+        # resolution happens in the extraction step, and
+        # recompete_opportunity_id is populated later by the Recompete Radar
+        # backfill job.
         supabase_client.insert_contract_award({
             "document_id": document["id"],
             "vendor_name": vendor_name or None,
