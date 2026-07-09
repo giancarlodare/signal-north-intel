@@ -110,10 +110,18 @@ def process_tender_notices(source_id: str, keywords: Keywords) -> dict:
 
 def process_award_notices(source_id: str, keywords: Keywords) -> dict:
     stats = {"seen": 0, "kept": 0, "inserted": 0, "skipped_duplicate": 0}
-    rows = fetch_csv_rows(config.AWARD_NOTICES_URL)
-    if not rows:
-        return stats
+    # Usually just the current fiscal year's file; during the post-April-1
+    # grace window this also includes the previous year's file so late-posted
+    # prior-year awards aren't lost. Dedupe by content_hash makes any overlap
+    # between the files (or with earlier runs) harmless.
+    for url in config.award_notice_urls():
+        rows = fetch_csv_rows(url)
+        if rows:
+            _process_award_rows(rows, source_id, keywords, stats)
+    return stats
 
+
+def _process_award_rows(rows: list, source_id: str, keywords: Keywords, stats: dict) -> None:
     fields = list(rows[0].keys())
     title_col = find_column(fields, "title")
     desc_col = find_description_column(fields)
@@ -198,8 +206,6 @@ def process_award_notices(source_id: str, keywords: Keywords) -> dict:
             "option_years": terms.option_years,
             "final_end_on": terms.final_end_on,
         })
-
-    return stats
 
 
 def run() -> int:
