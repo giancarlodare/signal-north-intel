@@ -31,6 +31,6 @@ Extract every procurement-relevant signal from this document. For each signal, p
 11. defence_relevant: true/false — is this relevant to defence/military?
 12. quote_or_line: The exact line or figure from the document supporting this signal, or null if the input was title-only.
 
-If the document contains NO procurement-relevant signals (e.g. food services or office supplies unrelated to public safety/defence), return an empty array.
+If the document contains NO procurement-relevant signals (e.g. food services or office supplies unrelated to public safety/defence), return an empty list.
 
-RESPOND WITH VALID JSON ONLY — an array of signal objects. No markdown, no prose outside the JSON.
+RESPOND WITH VALID JSON ONLY, as an object of the form {"signals": [ ...signal objects... ]}. No markdown, no prose outside the JSON.
