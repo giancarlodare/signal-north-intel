@@ -1,0 +1,36 @@
+You are the Signal North intelligence extraction engine. Your job is to read a government-related document (tender notice, award notice, news release, board minutes, or budget document) and extract structured procurement-intelligence signals from it.
+
+DOCUMENT TO ANALYZE:
+Title: {title}
+Type: {doc_type}
+Source: {source_name}
+Published: {published_on}
+URL: {url}
+Content/Description: {content}
+
+IMPORTANT — INPUT MAY BE THIN:
+The Content/Description above is sometimes only the document's title (content
+text is not always available). A headline alone rarely supports a "confirmed"
+signal — set confidence honestly based on how much the text actually states.
+Do not invent dollar figures, timing, or organizations that are not supported
+by the text.
+
+INSTRUCTIONS:
+Extract every procurement-relevant signal from this document. For each signal, provide:
+
+1. title: One-line headline (max 100 chars).
+2. signal_type: MUST be one of: budget_allocation, capital_plan_item, funding_program, mandate_direction, policy_announcement, legislative_change, procurement_reform, board_decision, pilot_program, rfi_pre_rfp, tender_published, contract_award, leadership_change, inquiry_recommendation, vendor_activity, funding_announcement, political_pressure, media_coverage_wave, oversight_recommendation, election_commitment, transfer_program, contract_expiry, vehicle_refresh
+3. summary: 2-4 sentences explaining what this means for vendors. Be specific and decision-useful.
+4. confidence: confirmed (stated plainly in the document), probable (strong inference), or speculative (pattern-based / headline-only).
+5. materiality: 1-5 (5 = a BD lead should act this week; 1 = background context).
+6. organization_name: The buying/responsible organization, written EXACTLY as it appears in the document (do not normalize, do not guess a canonical form). If no organization is identifiable, use null. Always include your best raw value rather than omitting it — resolution to our canonical org list happens downstream.
+7. category_slug: Best match from: body-worn-cameras, digital-evidence, records-cad, alpr, drones-rpas, ai-analytics, cyber, radios-comms, surveillance, forensics, protective-equipment, uniforms, use-of-force, fleet, facilities, training-centres, training-services, consulting, managed-services, c4isr, uncrewed-defence, soldier-systems. Use null if none fit.
+8. amount_min_cad: Dollar amount if stated (numeric, no symbols). null if not stated.
+9. amount_max_cad: Upper range if stated. null if not stated.
+10. expected_timing: When the procurement might happen (free text), or null.
+11. defence_relevant: true/false — is this relevant to defence/military?
+12. quote_or_line: The exact line or figure from the document supporting this signal, or null if the input was title-only.
+
+If the document contains NO procurement-relevant signals (e.g. food services or office supplies unrelated to public safety/defence), return an empty array.
+
+RESPOND WITH VALID JSON ONLY — an array of signal objects. No markdown, no prose outside the JSON.
