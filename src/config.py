@@ -26,17 +26,60 @@ NEW_TENDER_NOTICES_URL = (
 # We compute the current fiscal year at runtime so this keeps working after
 # each April 1 rollover without a code change. Override with the
 # AWARD_NOTICES_URL env var if PSPC ever changes the naming pattern.
+def _fiscal_year_start(today: date) -> int:
+    """The calendar year in which the fiscal year covering `today` began."""
+    return today.year if today.month >= 4 else today.year - 1
+
+
+def _fiscal_year_string(start_year: int) -> str:
+    return f"{start_year}-{start_year + 1}"
+
+
 def _current_fiscal_year(today: date | None = None) -> str:
+    return _fiscal_year_string(_fiscal_year_start(today or date.today()))
+
+
+def _award_url_for(fiscal_year: str) -> str:
+    return (
+        "https://canadabuys.canada.ca/opendata/pub/"
+        f"{fiscal_year}-awardNotice-avisAttribution.csv"
+    )
+
+
+# For a grace window after the April 1 fiscal-year rollover we ALSO collect
+# the *previous* year's award file. CanadaBuys keeps publishing prior-year
+# award notices for a while after the new year starts; once the current
+# fiscal year flips on April 1 we stop reading that file, so those late
+# entries would be lost forever. Re-reading the previous year's file during
+# the window is harmless because inserts are deduped by content_hash.
+AWARD_BACKFILL_GRACE_DAYS = int(os.environ.get("AWARD_BACKFILL_GRACE_DAYS", "60"))
+
+# Single-URL override kept for backward compatibility / manual pinning.
+_AWARD_NOTICES_URL_OVERRIDE = os.environ.get("AWARD_NOTICES_URL")
+
+
+def award_notice_urls(today: date | None = None) -> list[str]:
+    """Award-notice CSV URLs to collect on this run.
+
+    Always the current fiscal year's file. Within AWARD_BACKFILL_GRACE_DAYS
+    of the April 1 rollover, the previous fiscal year's file is appended too,
+    to catch prior-year awards published after the rollover.
+    """
+    if _AWARD_NOTICES_URL_OVERRIDE:
+        return [_AWARD_NOTICES_URL_OVERRIDE]
     today = today or date.today()
-    start = today.year if today.month >= 4 else today.year - 1
-    return f"{start}-{start + 1}"
+    start = _fiscal_year_start(today)
+    urls = [_award_url_for(_fiscal_year_string(start))]
+    days_since_rollover = (today - date(today.year, 4, 1)).days
+    if 0 <= days_since_rollover < AWARD_BACKFILL_GRACE_DAYS:
+        urls.append(_award_url_for(_fiscal_year_string(start - 1)))
+    return urls
 
 
-AWARD_NOTICES_URL = os.environ.get(
-    "AWARD_NOTICES_URL",
-    "https://canadabuys.canada.ca/opendata/pub/"
-    f"{_current_fiscal_year()}-awardNotice-avisAttribution.csv",
-)
+# The current fiscal year's award file (single URL). Retained for reference;
+# the collector iterates award_notice_urls() so it also picks up the previous
+# year's file during the post-rollover grace window.
+AWARD_NOTICES_URL = _AWARD_NOTICES_URL_OVERRIDE or _award_url_for(_current_fiscal_year())
 
 # URL templates for building a human-clickable link back to the notice on
 # canadabuys.canada.ca, keyed on the notice's reference number. If the
