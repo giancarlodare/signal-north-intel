@@ -130,6 +130,61 @@ def insert_contract_award(payload: dict) -> dict:
     return resp.json()[0]
 
 
+def get_documents_by_status(status: str, limit: int, select: str = "id,title,doc_type,url,published_on,source_id") -> list:
+    resp = _request(
+        "GET",
+        "documents",
+        headers=_headers(),
+        params={"select": select, "status": f"eq.{status}", "limit": limit},
+    )
+    return resp.json()
+
+
+def update_document_status(document_id: str, status: str, error_detail: str | None = None) -> None:
+    payload: dict = {"status": status}
+    if error_detail is not None:
+        payload["error_detail"] = error_detail
+    _request(
+        "PATCH",
+        "documents",
+        headers=_headers(),
+        params={"id": f"eq.{document_id}"},
+        json=payload,
+    )
+
+
+def insert_signal(payload: dict) -> dict:
+    resp = _request(
+        "POST",
+        "signals",
+        headers=_headers(prefer="return=representation"),
+        data=_dumps(payload),
+    )
+    return resp.json()[0]
+
+
+def get_source_name(source_id: str) -> str:
+    resp = _request(
+        "GET",
+        "sources",
+        headers=_headers(),
+        params={"select": "name", "id": f"eq.{source_id}", "limit": 1},
+    )
+    rows = resp.json()
+    return rows[0]["name"] if rows else "Unknown"
+
+
+def fetch_rows(table: str, select: str, limit: int = 10000) -> list:
+    """Fetch rows from a table (used to build in-memory lookup caches)."""
+    resp = _request(
+        "GET",
+        table,
+        headers=_headers(),
+        params={"select": select, "limit": limit},
+    )
+    return resp.json()
+
+
 def _dumps(payload: dict) -> bytes:
     import json
 
