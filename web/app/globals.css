@@ -124,3 +124,9 @@ button:active { transform: translateY(1px); }
   background: var(--bg); color: var(--text); padding: 8px 10px; font: inherit;
   width: 100%;
 }
+
+.checkrow {
+  display: flex; align-items: center; gap: 8px; margin-top: 12px;
+  font-size: 14px; color: var(--text);
+}
+.checkrow input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); }
