@@ -1,20 +1,32 @@
 name: Daily CanadaBuys collector
 
 on:
-  # GitHub Actions cron is always UTC, and Eastern time shifts between
-  # UTC-5 (EST) and UTC-4 (EDT) with daylight saving. Rather than track
-  # the DST calendar here, we trigger at both possible UTC times for 6am
-  # Eastern and let the "guard" step below skip the one that isn't
-  # actually 6am Eastern that day.
+  # PRIMARY TRIGGER is external: cron-job.org calls the workflow_dispatch API
+  # at 6:17am America/Toronto. GitHub's own scheduler is best-effort and has
+  # proven unreliable for this repo (it dropped runs on consecutive mornings
+  # and delivered others hours late), so we do NOT depend on it.
   #
-  # We fire at minute 17 rather than :00 on purpose: GitHub's scheduled
-  # runs are best-effort and the top of the hour is the highest-contention
-  # slot, where runs are most often delayed or silently dropped. The guard
-  # below only checks the hour, so any minute within the 6am ET hour works.
+  # The two cron entries below are a FALLBACK only. GitHub cron is always UTC,
+  # and Eastern shifts between UTC-5 (EST) and UTC-4 (EDT) with DST, so we fire
+  # at both possible UTC times for 6am Eastern and let the guard step skip the
+  # one that isn't actually 6am Eastern that day. Minute :17 (not :00) avoids
+  # the highest-contention top-of-hour slot. A workflow_dispatch run bypasses
+  # the guard entirely (see the guard step), so the external trigger always
+  # does real work regardless of what hour GitHub delivers it.
   schedule:
-    - cron: "17 10 * * *"  # 6:17am EDT (UTC-4)
-    - cron: "17 11 * * *"  # 6:17am EST (UTC-5)
+    - cron: "17 10 * * *"  # 6:17am EDT (UTC-4) — fallback
+    - cron: "17 11 * * *"  # 6:17am EST (UTC-5) — fallback
   workflow_dispatch: {}
+
+# Serialize runs so the collector can never execute concurrently with itself.
+# The app-layer dedup (content_hash check-then-insert) is idempotent for
+# sequential runs but has a check-then-insert race if two runs overlap exactly.
+# With the external primary + GitHub fallback both able to fire, this guarantees
+# the second run queues behind the first (cancel-in-progress: false) and then
+# finds every content_hash already present, so double-runs are provably harmless.
+concurrency:
+  group: daily-collect
+  cancel-in-progress: false
 
 jobs:
   collect:
