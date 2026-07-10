@@ -23,6 +23,14 @@ def test_resolver_matches_canonical_and_alias_case_insensitively():
     assert resolve("Canada Post") is None       # unknown
 
 
+def test_resolver_is_accent_insensitive():
+    orgs = [{"id": "org-sq", "canonical_name": "Sûreté du Québec", "aliases": ["SQ"]}]
+    resolve = build_resolver(orgs, key_fields=("canonical_name",), alias_field="aliases")
+    assert resolve("Sûreté du Québec") == "org-sq"   # exact, accented
+    assert resolve("Surete du Quebec") == "org-sq"   # model dropped the accents
+    assert resolve("SURETE DU QUEBEC") == "org-sq"   # accents dropped + caps
+
+
 def test_resolver_does_not_substring_match():
     # "DND" must not match some unrelated org just because letters overlap.
     resolve = build_resolver(_orgs(), key_fields=("canonical_name",), alias_field="aliases")

@@ -40,10 +40,10 @@ commit;
 
 ## Step 2 — insert missing buyers  ·  `migrations/2026-07-09_seed_missing_orgs.sql`
 
-An existence check found 11 major buyers absent (8 federal + 3 municipal police).
+An existence check found 12 major buyers absent (9 federal + 3 municipal police).
 Insert them first (idempotent via `where not exists`). Does NOT touch the two
 Toronto records, which already exist and stay separate. Municipal rows carry a
-province code.
+province code (2-letter).
 
 ```sql
 begin;
@@ -84,8 +84,13 @@ from (values
         array['Transport Canada', 'TC'],
         'federal_department', 'federal', null,
         'https://tc.canada.ca/en'),
+    ('Fisheries and Oceans Canada',
+        array['DFO', 'Fisheries and Oceans Canada'],
+        'federal_department', 'federal', null,
+        'https://www.dfo-mpo.gc.ca/index-eng.html'),
     ('Service de police de la Ville de Montréal',
-        array['SPVM', 'Service de police de la Ville de Montréal'],
+        array['SPVM', 'Service de police de la Ville de Montréal',
+              'Service de police de la Ville de Montreal'],
         'police_service', 'municipal', 'QC',
         'https://spvm.qc.ca/'),
     ('Edmonton Police Service',
@@ -135,7 +140,7 @@ with seed(match_pattern, new_aliases) as (
         ('%Communications Security Establishment%',
             array['CSE', 'Communications Security Establishment']),
         ('%Sûreté du Québec%',
-            array['SQ', 'Sûreté du Québec'])
+            array['SQ', 'Sûreté du Québec', 'Surete du Quebec'])
 )
 update organizations o
 set aliases = (

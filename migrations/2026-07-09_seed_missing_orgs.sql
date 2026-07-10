@@ -1,9 +1,9 @@
 -- ============================================================================
 -- Insert major Canadian buyers missing from the organizations table.
 --
--- An existence check confirmed these 11 do NOT exist (5 federal + 3 more
--- federal + 3 municipal police). PSPC especially matters — largest federal
--- procurement buyer. Aliases are inline for orgs whose short forms are how
+-- An existence check confirmed these 12 do NOT exist (9 federal + 3 municipal
+-- police). PSPC especially matters — largest federal procurement buyer.
+-- Aliases are inline for orgs whose short forms are how
 -- they're commonly referred; abbreviations that clash with other entities
 -- (e.g. "OPS" = Ontario Public Service, "EPS" = Edmonton Public Schools) are
 -- deliberately omitted so they can't mis-resolve.
@@ -63,9 +63,14 @@ from (values
         array['Transport Canada', 'TC'],
         'federal_department', 'federal', null,
         'https://tc.canada.ca/en'),
+    ('Fisheries and Oceans Canada',
+        array['DFO', 'Fisheries and Oceans Canada'],
+        'federal_department', 'federal', null,
+        'https://www.dfo-mpo.gc.ca/index-eng.html'),
     -- ---- Municipal police (province set) ---------------------------------
     ('Service de police de la Ville de Montréal',
-        array['SPVM', 'Service de police de la Ville de Montréal'],
+        array['SPVM', 'Service de police de la Ville de Montréal',
+              'Service de police de la Ville de Montreal'],
         'police_service', 'municipal', 'QC',
         'https://spvm.qc.ca/'),
     ('Edmonton Police Service',

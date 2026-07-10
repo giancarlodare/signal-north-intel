@@ -24,6 +24,7 @@ into any scheduled workflow — nothing runs autonomously pre-ethics-gate.
 import json
 import logging
 import os
+import unicodedata
 from typing import Callable, Optional
 
 import prompts
@@ -90,7 +91,14 @@ _RESPONSE_SCHEMA = {
 
 
 def _normalize(name: str) -> str:
-    return " ".join((name or "").split()).lower()
+    """Normalize a name for matching: collapse whitespace, strip diacritics,
+    lowercase. Accent-insensitive so the model emitting "Surete du Quebec"
+    resolves to a "Sûreté du Québec" record — French resolution shouldn't depend
+    on the model reproducing accents exactly."""
+    collapsed = " ".join((name or "").split())
+    decomposed = unicodedata.normalize("NFKD", collapsed)
+    ascii_folded = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
+    return ascii_folded.lower()
 
 
 def build_resolver(rows: list, key_fields: tuple, alias_field: Optional[str] = None) -> Callable[[str], Optional[str]]:

@@ -35,7 +35,7 @@ with seed(match_pattern, new_aliases) as (
         -- Sûreté du Québec already exists; add its short form "SQ" here (not in
         -- the insert). Accents preserved so the ILIKE matches the stored name.
         ('%Sûreté du Québec%',
-            array['SQ', 'Sûreté du Québec'])
+            array['SQ', 'Sûreté du Québec', 'Surete du Quebec'])
 )
 update organizations o
 set aliases = (
