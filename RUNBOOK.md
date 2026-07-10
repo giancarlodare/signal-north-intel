@@ -267,8 +267,12 @@ done
 
 1. Apply RLS: `migrations/2026-07-09_signals_rls_review.sql` (⚠️ blast-radius note
    in the file — collector uses service_role and is unaffected).
-2. Create your single login user: Supabase → Authentication → Users → Add user.
-3. Deploy per `web/README.md` (Vercel: import repo → Root Directory `web` → add
+2. Apply the companion grants **immediately after** the RLS migration:
+   `migrations/2026-07-10_review_role_grants.sql`. RLS policies sit on top of
+   base table GRANTs; without these the review app fails at the privilege layer
+   with `permission denied for table signals` before RLS is ever evaluated.
+3. Create your single login user: Supabase → Authentication → Users → Add user.
+4. Deploy per `web/README.md` (Vercel: import repo → Root Directory `web` → add
    the two `NEXT_PUBLIC_SUPABASE_*` env vars → Deploy → open on your phone).
 
 Nothing goes public until you say the ethics gate has cleared.
