@@ -67,6 +67,7 @@ BOARDS = [
         # candidates; override with the *_SOURCE_ID env var if the row differs.
         "name": "Toronto Police Service Board",
         "source_name_candidates": [
+            "Toronto Police Service Board — Agendas & Minutes",  # actual sources.name
             "Toronto Police Service Board",
             "Toronto Police Services Board",
             "TPSB",
@@ -78,6 +79,7 @@ BOARDS = [
     {
         "name": "Peel Police Services Board",
         "source_name_candidates": [
+            "Peel Police Service Board — Meetings",              # actual sources.name
             "Peel Police Services Board",
             "Peel Police Service Board",
             "Peel Regional Police Services Board",
