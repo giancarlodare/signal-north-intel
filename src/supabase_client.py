@@ -185,6 +185,34 @@ def fetch_rows(table: str, select: str, limit: int = 10000) -> list:
     return resp.json()
 
 
+def fetch_rows_where(table: str, select: str, filters: dict, limit: int = 10000) -> list:
+    """Fetch rows with PostgREST filters, e.g. {"status": "eq.captured",
+    "created_at": "gte.2026-06-11"}."""
+    params = {"select": select, "limit": limit, **filters}
+    resp = _request("GET", table, headers=_headers(), params=params)
+    return resp.json()
+
+
+def insert_row(table: str, payload: dict) -> dict:
+    resp = _request(
+        "POST",
+        table,
+        headers=_headers(prefer="return=representation"),
+        data=_dumps(payload),
+    )
+    return resp.json()[0]
+
+
+def update_row(table: str, row_id: str, payload: dict) -> None:
+    _request(
+        "PATCH",
+        table,
+        headers=_headers(),
+        params={"id": f"eq.{row_id}"},
+        data=_dumps(payload),
+    )
+
+
 def _dumps(payload: dict) -> bytes:
     import json
 

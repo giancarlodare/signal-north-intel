@@ -47,6 +47,9 @@ export default async function ReviewPage() {
         <Link className="link" href="/prospects">
           Prospects
         </Link>
+        <Link className="link" href="/discovery">
+          Discovery
+        </Link>
         <form action={signOut}>
           <button className="link" type="submit">
             Sign out
