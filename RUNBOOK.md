@@ -276,3 +276,79 @@ done
    the two `NEXT_PUBLIC_SUPABASE_*` env vars → Deploy → open on your phone).
 
 Nothing goes public until you say the ethics gate has cleared.
+
+---
+
+## Operations — scheduling reliability (standing, not a one-time step)
+
+The daily collector's trigger architecture, alerting, and the one recurring
+maintenance task. Context: GitHub's own cron scheduler proved unreliable for
+this repo — it dropped scheduled runs on consecutive mornings and delivered
+others 6–7 hours late, where the workflow's 6am-ET guard (correctly) skipped
+them. The schedule never actually collected until the external trigger was
+added.
+
+### Trigger architecture
+
+- **Primary:** cron-job.org fires the `workflow_dispatch` API for
+  `daily-collect.yml` at **6:17am America/Toronto** daily (timezone-aware, so
+  DST is handled by the scheduler, not by us). The workflow's guard exempts
+  `workflow_dispatch`, so a late delivery still does real work. Failure
+  notifications (non-2xx response) email from cron-job.org; a successful
+  dispatch returns 204.
+- **Fallback:** the two GitHub cron entries in `daily-collect.yml`
+  (10:17/11:17 UTC ≈ 6:17am EDT/EST) stay in place. Free redundancy on the
+  rare day the external trigger hiccups *and* GitHub happens to deliver
+  on time.
+- **Double-run safety:** inserts are deduped by `content_hash`
+  (check-then-insert), and the workflow's `concurrency` group
+  (`daily-collect`, `cancel-in-progress: false`) serializes runs, so
+  primary + fallback both firing is provably harmless — the second run queues
+  behind the first and skips every already-present hash.
+
+### Dead-man's-switch (healthchecks.io) — how the logic works
+
+The workflow pings healthchecks.io **only after a real collection succeeds**
+(`should_run == 'true' && success()`). healthchecks.io alerts when it does
+NOT receive a ping in time. The timer counts **from the last received ping,
+not from a scheduled time**: with **Period = 1 day** and **Grace = 3 hours**,
+a miss pages mid-morning (roughly: yesterday's ping time + 24h + 3h).
+
+Every failure mode trips it: no run fired at all → no ping → alert; run fired
+but collection errored → `success()` false → no ping → alert; run fired but
+guard-skipped → ping step not reached → alert. The trigger source is
+irrelevant — the ping happens inside the workflow, so the switch is equally
+armed under the external trigger.
+
+The two alert layers catch different failures: **cron-job.org's failure
+email** = "couldn't trigger GitHub" (API down, PAT expired — note a 204 only
+confirms the dispatch was accepted, not that collection succeeded);
+**healthchecks.io** = "triggered but didn't actually collect."
+
+### Healthcheck verification checklist (run after any change to the pipeline)
+
+1. Repo secret `HEALTHCHECK_URL` exists (Settings → Secrets and variables →
+   Actions). If missing, the ping step no-ops and the switch is unarmed —
+   silence then means *nothing is being monitored*, not "all good".
+2. healthchecks.io check: **Period 1 day, Grace 3 hours**.
+3. Email integration attached to the check and the address verified.
+4. Manually dispatch the workflow once → check flips to "up" (ping received).
+
+### PAT rotation — ⏰ due early October 2026 (90-day expiry)
+
+The cron-job.org job authenticates with a fine-grained GitHub PAT
+(`signal-north-collector-dispatch`): **Actions read/write on
+signal-north-intel only** (+ mandatory Metadata read), created ~2026-07-10
+with 90-day expiry. To rotate:
+
+1. GitHub → Settings → Developer settings → Personal access tokens →
+   Fine-grained tokens → generate a new token with the identical scope
+   (Only select repositories → signal-north-intel; Actions: Read and write).
+2. Update the `Authorization: Bearer …` header in the cron-job.org job.
+3. Update the Bitwarden item.
+4. Delete the old token in GitHub. Nothing else references it.
+5. Wait for the next morning's run (or "Run now" in cron-job.org) and confirm
+   a green `workflow_dispatch` run in Actions.
+
+The token lives in **cron-job.org and Bitwarden only** — never in the repo,
+never in any chat or transcript.
