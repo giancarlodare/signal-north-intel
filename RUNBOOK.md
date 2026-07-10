@@ -234,9 +234,14 @@ export ANTHROPIC_API_KEY="your-anthropic-key"
 
 pip install -r requirements.txt
 
-# Processes up to batch_size (default 20) per run. Loop until the queue drains:
+# SMOKE TEST FIRST (recommended): 10 docs, calls Claude + resolves orgs but
+# writes NOTHING. Verifies the API integration, extraction@v1 stamp, and org
+# resolution. Safe to run repeatedly.
+python -m src.signal_extractor --limit 10 --dry-run
+
+# Real run — processes up to --limit per invocation. Loop until the queue drains:
 while true; do
-  out=$(python -m src.signal_extractor 2>&1); echo "$out"
+  out=$(python -m src.signal_extractor --limit 20 2>&1); echo "$out"
   echo "$out" | grep -q "No captured documents" && break
 done
 ```

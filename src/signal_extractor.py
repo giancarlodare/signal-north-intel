@@ -203,7 +203,13 @@ def extract_signals(doc: dict, source_name: str, model: str) -> tuple:
     return data.get("signals", []), stamp
 
 
-def run_extraction(batch_size: int = 20, model: str = DEFAULT_MODEL) -> dict:
+def run_extraction(batch_size: int = 20, model: str = DEFAULT_MODEL, dry_run: bool = False) -> dict:
+    """Process up to batch_size captured documents.
+
+    dry_run=True still calls Claude and resolves orgs (so you can verify the API
+    integration, the extraction@v1 stamp, and resolution), but writes NOTHING:
+    no signals inserted, no document status changed. Use it as a smoke test.
+    """
     stats = {"documents_processed": 0, "signals_created": 0,
              "needs_org_resolution": 0, "errors": 0}
 
@@ -220,7 +226,7 @@ def run_extraction(batch_size: int = 20, model: str = DEFAULT_MODEL) -> dict:
     if not docs:
         log.info("No captured documents to process")
         return stats
-    log.info("Processing %d documents", len(docs))
+    log.info("Processing %d documents%s", len(docs), " (DRY RUN — no writes)" if dry_run else "")
 
     for doc in docs:
         try:
@@ -228,26 +234,49 @@ def run_extraction(batch_size: int = 20, model: str = DEFAULT_MODEL) -> dict:
             raw_signals, stamp = extract_signals(doc, source_name, model)
             for raw in raw_signals:
                 payload = build_signal_payload(raw, doc["id"], stamp, resolve_org, resolve_cat)
-                supabase_client.insert_signal(payload)
+                if dry_run:
+                    log.info(
+                        "[dry-run] would insert: extracted_by=%s type=%s conf=%s mat=%s "
+                        "org_id=%s needs_org_resolution=%s unresolved=%r title=%r",
+                        payload["extracted_by"], payload["signal_type"], payload["confidence"],
+                        payload["materiality"], payload["organization_id"],
+                        payload["needs_org_resolution"], payload["unresolved_org_name"],
+                        payload["title"],
+                    )
+                else:
+                    supabase_client.insert_signal(payload)
                 stats["signals_created"] += 1
                 if payload["needs_org_resolution"]:
                     stats["needs_org_resolution"] += 1
-            supabase_client.update_document_status(doc["id"], "extracted")
+            if not dry_run:
+                supabase_client.update_document_status(doc["id"], "extracted")
             stats["documents_processed"] += 1
         except Exception as e:  # noqa: BLE001 - isolate per-document failures
             log.exception("Error processing document %s", doc.get("id"))
             stats["errors"] += 1
-            try:
-                supabase_client.update_document_status(doc["id"], "failed", str(e)[:500])
-            except Exception:
-                log.exception("Could not mark document %s as failed", doc.get("id"))
+            if not dry_run:
+                try:
+                    supabase_client.update_document_status(doc["id"], "failed", str(e)[:500])
+                except Exception:
+                    log.exception("Could not mark document %s as failed", doc.get("id"))
 
-    log.info("Extraction complete: %s", stats)
+    log.info("Extraction complete%s: %s", " (DRY RUN)" if dry_run else "", stats)
     return stats
 
 
 if __name__ == "__main__":
+    import argparse
     import sys
+
+    parser = argparse.ArgumentParser(description="Signal North extraction pipeline")
+    parser.add_argument("--limit", type=int, default=20,
+                        help="max documents to process this run (default 20)")
+    parser.add_argument("--model", default=DEFAULT_MODEL,
+                        help=f"Claude model id (default {DEFAULT_MODEL})")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="call Claude and resolve orgs but write nothing (smoke test)")
+    args = parser.parse_args()
+
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    result = run_extraction()
+    result = run_extraction(batch_size=args.limit, model=args.model, dry_run=args.dry_run)
     sys.exit(0 if result["errors"] == 0 else 1)
