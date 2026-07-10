@@ -20,6 +20,7 @@ _PROMPTS_DIR = Path(__file__).parent
 # a matching CHANGELOG.md entry in the same commit.
 ACTIVE_VERSIONS = {
     "extraction": 1,
+    "discovery": 1,
 }
 
 

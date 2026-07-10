@@ -19,3 +19,12 @@ stamped onto produced artifacts as `<name>@v<version>` (e.g. `extraction@v1`).
   the live DB enums / `categories.slug` values. Ported as-is from PR #6; that
   code inserted successfully, so they are likely valid, but confirm before
   extracting at scale.
+
+## discovery@v1 — 2026-07-11
+- Initial discovery triage prompt (weekly propose-then-approve job; see
+  docs/discovery-engine-design.md). Surfaces candidate organizations, senior
+  appointments, and company-Canada-intent from batches of rich-bodied
+  documents. Text-stated facts only, exact names, mandatory [doc:UUID]
+  evidence per candidate — a candidate without evidence must be omitted.
+  Precision over recall: everything it surfaces is human-reviewed, nothing it
+  proposes is acted on automatically.
