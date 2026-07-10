@@ -1,198 +1,249 @@
-"""RSS feed collector for government newsrooms and other RSS-based sources.
+"""Government newsroom RSS/Atom collector.
 
-Collects from:
-  - Ontario Newsroom (Solicitor General)
-  - Public Safety Canada News
-  - Any future RSS source added to the sources table with collector='rss'
+Official government newsrooms ONLY — the publisher's own feed on the
+publisher's own domain. No Google News, no aggregators, no search-query feeds.
+(This rebuilds the concept from the quarantined first-generation collector,
+whose Google News rows were provenance-broken and whose empty filter_terms
+collected everything.)
 
-Each entry becomes a document row. Defence-relevance tagging uses the same
-keyword filter as the CanadaBuys collector.
+Standards applied:
+  - Keyword filtering is ON for every feed, no exceptions: an entry must pass
+    the same keywords.txt relevance filter the CanadaBuys collector uses.
+    Broad multi-ministry feeds additionally carry per-feed scope terms.
+  - Publisher URLs only: an entry is dropped unless its link is on the feed's
+    allowed domains — a feed that syndicates or redirects elsewhere can't
+    smuggle in third-party URLs.
+  - Full-body fetch where the feed truncates: if an entry's summary is cut
+    short, the article page is fetched (robots.txt + polite delay via the
+    shared PoliteFetcher) and its text stored in documents.content so
+    extraction reads the real release, not a teaser.
+  - content_hash dedupe identical to the other collectors.
+  - Feeds are hardcoded configuration — nothing auto-adds a source
+    (discovery is a separate propose-then-approve job).
+
+Verify feed configs with a zero-write run:  python -m src.rss_collector --dry-run
 """
+import argparse
 import logging
+import sys
 from datetime import datetime, timezone
 from typing import Optional
+from urllib.parse import urlparse
 
-import feedparser
-
+from . import supabase_client
+from .board_minutes import PoliteFetcher, html_to_text
 from .filters import Keywords, evaluate, load_keywords
 from .hashing import content_hash
-from . import config, supabase_client
 
 log = logging.getLogger(__name__)
 
-# RSS feed URLs mapped to source IDs (from the sources table)
-RSS_FEEDS = {
-    "cd9828f5-4b45-4c71-9b6d-9963c490415a": {
-        "name": "Ontario Newsroom — Solicitor General",
-        "url": "https://news.ontario.ca/newsroom/en/rss",
-        "filter_terms": ["solicitor general", "public safety", "police", "corrections",
-                         "community safety", "fire", "emergency", "justice"],
-    },
-    "a4ea7d3a-857a-41df-8ea9-379281f152a9": {
-        "name": "Public Safety Canada — News",
-        "url": "https://www.canada.ca/en/public-safety-canada.atom.xml",
-        "filter_terms": [],  # All entries from PS Canada are relevant
-    },
-}
+MAX_ENTRIES_PER_FEED = 50
+MAX_STORED_CHARS = 400_000
+# A summary this short (or ending in an ellipsis) is treated as truncated and
+# triggers a full-body fetch of the article page.
+TRUNCATION_MIN_CHARS = 400
+_ELLIPSES = ("...", "…", "[...]", "[…]", "(...)", "Read more", "read more")
 
-# Additional newsroom feeds to register as new sources
-ADDITIONAL_FEEDS = [
+FEEDS = [
     {
-        "name": "Canada.ca — Department of National Defence News",
-        "url": "https://www.canada.ca/en/department-national-defence.atom.xml",
-        "source_type": "newsroom",
-        "jurisdiction": "federal",
-        "province": None,
-        "collector": "rss",
-        "cadence": "daily",
-        "filter_terms": [],
+        "name": "Ontario Newsroom",
+        # VERIFY with --dry-run before first real run.
+        "feed_url": "https://news.ontario.ca/newsroom/en/rss",
+        "allowed_hosts": ["news.ontario.ca", "www.ontario.ca"],
+        # Multi-ministry firehose: scope to public-safety business first,
+        # then the keywords.txt filter applies on top.
+        "scope_terms": ["solicitor general", "public safety", "police",
+                        "corrections", "community safety", "fire", "emergency",
+                        "justice", "opp"],
+        "source_name_candidates": ["Ontario Newsroom — Solicitor General",
+                                   "Ontario Newsroom"],
+        "source_id_env": "ONTARIO_NEWSROOM_SOURCE_ID",
     },
     {
-        "name": "Canada.ca — RCMP News",
-        "url": "https://www.canada.ca/en/royal-canadian-mounted-police.atom.xml",
-        "source_type": "newsroom",
-        "jurisdiction": "federal",
-        "province": None,
-        "collector": "rss",
-        "cadence": "daily",
-        "filter_terms": [],
+        "name": "Public Safety Canada — News",
+        "feed_url": "https://www.canada.ca/en/public-safety-canada.atom.xml",
+        "allowed_hosts": ["www.canada.ca", "canada.ca"],
+        "scope_terms": [],   # single-department feed; keywords.txt still applies
+        "source_name_candidates": ["Public Safety Canada — News",
+                                   "Public Safety Canada News"],
+        "source_id_env": "PS_CANADA_NEWS_SOURCE_ID",
     },
     {
-        "name": "BC Government — Public Safety News",
-        "url": "https://news.gov.bc.ca/ministries/public-safety-solicitor-general/atom",
-        "source_type": "newsroom",
-        "jurisdiction": "provincial",
-        "province": "BC",
-        "collector": "rss",
-        "cadence": "daily",
-        "filter_terms": [],
+        "name": "Department of National Defence — News",
+        "feed_url": "https://www.canada.ca/en/department-national-defence.atom.xml",
+        "allowed_hosts": ["www.canada.ca", "canada.ca", "www.forces.gc.ca"],
+        "scope_terms": [],
+        "source_name_candidates": ["Department of National Defence — News",
+                                   "DND News", "Canada.ca — Department of National Defence News"],
+        "source_id_env": "DND_NEWS_SOURCE_ID",
     },
     {
-        "name": "Alberta Government News — Public Safety",
-        "url": "https://www.alberta.ca/news.rss",
-        "source_type": "newsroom",
-        "jurisdiction": "provincial",
-        "province": "AB",
-        "collector": "rss",
-        "cadence": "daily",
-        "filter_terms": ["police", "public safety", "rcmp", "corrections", "emergency",
-                         "fire", "justice", "security"],
+        "name": "RCMP — News",
+        "feed_url": "https://www.canada.ca/en/royal-canadian-mounted-police.atom.xml",
+        "allowed_hosts": ["www.canada.ca", "canada.ca", "www.rcmp-grc.gc.ca", "rcmp-grc.gc.ca"],
+        "scope_terms": [],
+        "source_name_candidates": ["RCMP — News", "RCMP News",
+                                   "Canada.ca — RCMP News"],
+        "source_id_env": "RCMP_NEWS_SOURCE_ID",
     },
 ]
 
 
-def _parse_entry_date(entry) -> Optional[str]:
-    """Extract a date from an RSS/Atom entry."""
+def _norm(name: str) -> str:
+    return " ".join((name or "").split()).lower()
+
+
+def resolve_source_id(feed: dict, sources: list) -> Optional[str]:
+    import os
+    override = os.environ.get(feed["source_id_env"], "").strip()
+    if override:
+        return override
+    candidates = {_norm(c) for c in feed["source_name_candidates"]}
+    for row in sources:
+        if _norm(row.get("name", "")) in candidates:
+            return row["id"]
+    return None
+
+
+def entry_date(entry) -> Optional[str]:
     for attr in ("published_parsed", "updated_parsed"):
         parsed = getattr(entry, attr, None)
         if parsed:
             try:
-                dt = datetime(*parsed[:6], tzinfo=timezone.utc)
-                return dt.date().isoformat()
+                return datetime(*parsed[:6], tzinfo=timezone.utc).date().isoformat()
             except (ValueError, TypeError):
                 continue
     return None
 
 
-def _entry_matches_filter(entry, filter_terms: list) -> bool:
-    """Check if an RSS entry matches any of the filter terms."""
-    if not filter_terms:
-        return True  # No filter = keep everything
-    text = f"{getattr(entry, 'title', '')} {getattr(entry, 'summary', '')}".lower()
-    return any(term.lower() in text for term in filter_terms)
+def is_publisher_url(url: str, allowed_hosts: list) -> bool:
+    host = urlparse(url).netloc.lower()
+    return host in {h.lower() for h in allowed_hosts}
 
 
-def collect_feed(source_id: str, feed_config: dict, keywords: Keywords) -> dict:
-    """Collect a single RSS feed and insert new documents."""
-    stats = {"seen": 0, "kept": 0, "inserted": 0, "skipped_duplicate": 0}
-    
-    feed_url = feed_config["url"]
-    filter_terms = feed_config.get("filter_terms", [])
-    
-    log.info("Fetching RSS feed: %s", feed_config["name"])
-    feed = feedparser.parse(feed_url)
-    
-    if feed.bozo and not feed.entries:
-        log.warning("Feed parse error for %s: %s", feed_url, feed.bozo_exception)
-        return stats
-    
-    for entry in feed.entries:
+def matches_scope(entry_text: str, scope_terms: list) -> bool:
+    if not scope_terms:
+        return True
+    lower = entry_text.lower()
+    return any(term.lower() in lower for term in scope_terms)
+
+
+def looks_truncated(summary: str) -> bool:
+    s = (summary or "").strip()
+    if len(s) < TRUNCATION_MIN_CHARS:
+        return True
+    return any(s.endswith(e) or s.lower().endswith(e.lower()) for e in _ELLIPSES)
+
+
+def collect_feed(feed: dict, entries: list, source_id: str, keywords: Keywords,
+                 fetcher: PoliteFetcher, limit: int, dry_run: bool) -> dict:
+    stats = {"seen": 0, "kept": 0, "inserted": 0, "skipped_duplicate": 0,
+             "dropped_offsite": 0, "dropped_filter": 0, "bodies_fetched": 0,
+             "errors": 0}
+
+    for entry in entries[:limit]:
         stats["seen"] += 1
-        
-        title = getattr(entry, "title", "").strip()
-        summary = getattr(entry, "summary", "").strip()
-        link = getattr(entry, "link", "").strip()
-        published_on = _parse_entry_date(entry)
-        
-        # Apply source-specific filter first
-        if not _entry_matches_filter(entry, filter_terms):
+        title = (getattr(entry, "title", "") or "").strip()
+        summary = html_to_text(getattr(entry, "summary", "") or "")
+        link = (getattr(entry, "link", "") or "").strip()
+
+        # Provenance rule: the publisher's own URL or nothing.
+        if not link or not is_publisher_url(link, feed["allowed_hosts"]):
+            stats["dropped_offsite"] += 1
             continue
-        
-        # Apply keyword relevance filter (same as CanadaBuys)
+
+        # Keyword filtering ON for every feed: scope terms (if any) AND the
+        # shared keywords.txt relevance filter. No empty-filter passthrough.
         result = evaluate(title, summary, "", keywords)
-        if not result.kept:
-            # Even if keywords don't match, keep it if source-specific filter passed
-            # and the source has no filter_terms (meaning everything is relevant)
-            if filter_terms:
-                continue
-        
+        if not matches_scope(f"{title} {summary}", feed["scope_terms"]) or not result.kept:
+            stats["dropped_filter"] += 1
+            continue
         stats["kept"] += 1
-        
-        # Deduplicate
-        chash = content_hash(link or title, "news_release")
-        existing = supabase_client.get_document_by_hash(chash)
-        if existing:
+
+        chash = content_hash(link, "news_release")
+        if supabase_client.get_document_by_hash(chash):
             stats["skipped_duplicate"] += 1
             continue
-        
-        # Insert document
-        doc_payload = {
-            "source_id": source_id,
-            "url": link,
-            "title": title[:500] if title else None,
-            "doc_type": "news_release",
-            "status": "captured",
-            "published_on": published_on,
-            "content_hash": chash,
-        }
-        
-        # Add defence_relevant flag if the document table supports it
-        if result.defence_relevant:
-            doc_payload["defence_relevant"] = True
-        
+
         try:
-            supabase_client.insert_document(doc_payload)
+            body = summary
+            if looks_truncated(summary):
+                resp = fetcher.get(link)
+                if resp is not None:
+                    body = html_to_text(resp.text)
+                    stats["bodies_fetched"] += 1
+
+            payload = {
+                "source_id": source_id,
+                "url": link,
+                "title": title[:500] or None,
+                "doc_type": "news_release",
+                "status": "captured",
+                "published_on": entry_date(entry),
+                "content_hash": chash,
+                "content": body[:MAX_STORED_CHARS] or None,
+                "defence_relevant": result.defence_relevant,
+            }
+            if dry_run:
+                log.info("[dry-run] would insert: %r (%s, %d chars body)",
+                         title[:80], link, len(body))
+            else:
+                supabase_client.insert_document(payload)
             stats["inserted"] += 1
-        except Exception as e:
-            log.warning("Failed to insert document '%s': %s", title[:50], e)
-    
+        except Exception:   # noqa: BLE001 - one bad entry must not kill the feed
+            log.exception("Error collecting %s", link)
+            stats["errors"] += 1
+
     return stats
 
 
-def run_rss_collection() -> int:
-    """Run collection for all configured RSS feeds."""
+def run(limit: int = MAX_ENTRIES_PER_FEED, dry_run: bool = False) -> int:
+    import feedparser  # lazy so the module imports without the dependency
+
     keywords = load_keywords()
+    fetcher = PoliteFetcher()
     now = datetime.now(timezone.utc)
+    sources = supabase_client.fetch_rows("sources", "id,name")
     failures = []
-    
-    for source_id, feed_config in RSS_FEEDS.items():
+
+    for feed in FEEDS:
+        source_id = resolve_source_id(feed, sources)
+        if not source_id:
+            log.error(
+                "No sources row found for %s (tried names: %s). Run the sources "
+                "seed migration or set %s.",
+                feed["name"], feed["source_name_candidates"], feed["source_id_env"],
+            )
+            failures.append(feed["name"])
+            continue
         try:
-            stats = collect_feed(source_id, feed_config, keywords)
-            log.info("RSS %s: %s", feed_config["name"], stats)
-            supabase_client.update_source_last_collected(source_id, now)
+            parsed = feedparser.parse(feed["feed_url"])
+            if parsed.bozo and not parsed.entries:
+                raise RuntimeError(f"feed parse error: {parsed.bozo_exception}")
+            stats = collect_feed(feed, parsed.entries, source_id, keywords,
+                                 fetcher, limit, dry_run)
+            log.info("Feed %s: %s%s", feed["name"], stats, " (DRY RUN)" if dry_run else "")
+            if stats["errors"]:
+                failures.append(feed["name"])
+            elif not dry_run:
+                supabase_client.update_source_last_collected(source_id, now)
         except Exception:
-            log.exception("RSS collection failed for %s", feed_config["name"])
-            failures.append(feed_config["name"])
-    
+            log.exception("Feed collection failed for %s", feed["name"])
+            failures.append(feed["name"])
+
     if failures:
-        log.error("RSS run finished with failures: %s", ", ".join(failures))
+        log.error("Newsroom RSS run finished with failures in: %s", ", ".join(failures))
         return 1
-    
-    log.info("RSS collection finished successfully")
+    log.info("Newsroom RSS run finished successfully")
     return 0
 
 
 if __name__ == "__main__":
-    import sys
+    parser = argparse.ArgumentParser(description="Government newsroom RSS collector")
+    parser.add_argument("--limit", type=int, default=MAX_ENTRIES_PER_FEED,
+                        help=f"max entries per feed per run (default {MAX_ENTRIES_PER_FEED})")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="fetch and filter but write nothing (verify feed configs)")
+    args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    sys.exit(run_rss_collection())
+    sys.exit(run(limit=args.limit, dry_run=args.dry_run))
