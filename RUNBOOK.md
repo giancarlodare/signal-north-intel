@@ -38,48 +38,81 @@ commit;
 
 ---
 
-## Step 2 — insert missing federal buyers  ·  `migrations/2026-07-09_seed_missing_orgs.sql`
+## Step 2 — insert missing buyers  ·  `migrations/2026-07-09_seed_missing_orgs.sql`
 
-A pre-check found PSPC, CSC, and CSE absent, so the alias seed had nothing to
-attach them to. Insert them first (idempotent via `where not exists`). Run the
-shape-check query in the PR discussion first if unsure about column defaults.
+An existence check found 11 major buyers absent (8 federal + 3 municipal police).
+Insert them first (idempotent via `where not exists`). Does NOT touch the two
+Toronto records, which already exist and stay separate. Municipal rows carry a
+province code.
 
 ```sql
 begin;
-insert into organizations (canonical_name, aliases, org_type, jurisdiction, website)
+insert into organizations (canonical_name, aliases, org_type, jurisdiction, province, website)
 select v.canonical_name, v.aliases, v.org_type::org_type,
-       v.jurisdiction::jurisdiction_level, v.website
+       v.jurisdiction::jurisdiction_level, v.province, v.website
 from (values
     ('Public Services and Procurement Canada',
         array['PSPC', 'PWGSC', 'Public Services and Procurement Canada',
               'Public Works and Government Services Canada'],
-        'federal_department', 'federal',
+        'federal_department', 'federal', null,
         'https://www.canada.ca/en/public-services-procurement.html'),
     ('Correctional Service of Canada',
         array['CSC', 'Correctional Service of Canada', 'Correctional Service Canada'],
-        'corrections', 'federal',
+        'corrections', 'federal', null,
         'https://www.canada.ca/en/correctional-service.html'),
     ('Communications Security Establishment',
         array['CSE', 'CSE Canada', 'Communications Security Establishment'],
-        'federal_agency', 'federal',
-        'https://www.cse-cst.gc.ca/en')
-) as v(canonical_name, aliases, org_type, jurisdiction, website)
+        'federal_agency', 'federal', null,
+        'https://www.cse-cst.gc.ca/en'),
+    ('Shared Services Canada',
+        array['SSC', 'SSC-SPC', 'Shared Services Canada'],
+        'federal_department', 'federal', null,
+        'https://www.canada.ca/en/shared-services.html'),
+    ('Defence Construction Canada',
+        array['DCC', 'Defence Construction Canada'],
+        'crown_corp', 'federal', null,
+        'https://www.dcc-cdc.gc.ca/'),
+    ('Canadian Coast Guard',
+        array['CCG', 'Canadian Coast Guard', 'Coast Guard'],
+        'federal_agency', 'federal', null,
+        'https://www.ccg-gcc.gc.ca/index-eng.html'),
+    ('Canadian Security Intelligence Service',
+        array['CSIS', 'Canadian Security Intelligence Service'],
+        'federal_agency', 'federal', null,
+        'https://www.canada.ca/en/security-intelligence-service.html'),
+    ('Transport Canada',
+        array['Transport Canada', 'TC'],
+        'federal_department', 'federal', null,
+        'https://tc.canada.ca/en'),
+    ('Service de police de la Ville de Montréal',
+        array['SPVM', 'Service de police de la Ville de Montréal'],
+        'police_service', 'municipal', 'QC',
+        'https://spvm.qc.ca/'),
+    ('Edmonton Police Service',
+        array[]::text[],
+        'police_service', 'municipal', 'AB',
+        'https://www.edmontonpolice.ca/'),
+    ('Ottawa Police Service',
+        array[]::text[],
+        'police_service', 'municipal', 'ON',
+        'https://www.ottawapolice.ca/')
+) as v(canonical_name, aliases, org_type, jurisdiction, province, website)
 where not exists (
     select 1 from organizations o where o.canonical_name = v.canonical_name
 );
 commit;
 ```
 
-**Reversible?** Delete the three by `canonical_name` (the FK from `signals`
+**Reversible?** Delete the 11 by `canonical_name` (the FK from `signals`
 blocks deletion once any signal references them — a desirable guard).
 
 ---
 
 ## Step 3 — org alias seed  ·  `migrations/2026-07-09_org_aliases_seed.sql`
 
-Run **after** Step 2 (so all eight orgs exist). The seed already lists all eight
-patterns; it adds aliases to the five that pre-existed and is a dedupe no-op for
-the three just inserted. No edit needed.
+Run **after** Step 2 (so all the orgs exist). Adds short-form aliases to the
+existing federal/provincial buyers — including `SQ` for the already-existing
+Sûreté du Québec. A dedupe no-op for aliases already set inline by Step 2.
 
 ```sql
 begin;
@@ -100,7 +133,9 @@ with seed(match_pattern, new_aliases) as (
         ('%Correctional Service%',
             array['CSC', 'Correctional Service of Canada']),
         ('%Communications Security Establishment%',
-            array['CSE', 'Communications Security Establishment'])
+            array['CSE', 'Communications Security Establishment']),
+        ('%Sûreté du Québec%',
+            array['SQ', 'Sûreté du Québec'])
 )
 update organizations o
 set aliases = (
