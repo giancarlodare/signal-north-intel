@@ -69,3 +69,17 @@ You'll do this from the Vercel website. The repo already contains everything.
 Every push to `main` (once this PR merges) triggers a Vercel redeploy
 automatically. To change the login password: Supabase → Authentication → Users →
 your user → reset password.
+
+### Skipped builds (`vercel.json` → `ignoreCommand`)
+`web/vercel.json` sets `"ignoreCommand": "git diff --quiet HEAD^ HEAD -- ."`.
+The project's Root Directory is `web`, and Vercel runs the ignore command from
+that directory, so `.` means "anything under `web/`". Exit code 0 (no diff) =
+**build skipped**; non-zero (diff found, or `HEAD^` unavailable on a brand-new
+branch) = build proceeds. Docs-only or collector-only commits therefore no
+longer trigger web builds or PR preview deployments.
+
+Caveat: the command compares only `HEAD^..HEAD` (the deployment's head commit
+against its parent). If a single push contains multiple commits and only an
+*earlier* one touched `web/`, the build is wrongly skipped — push web changes
+as their own push, or hit **Redeploy** in the Vercel dashboard if that ever
+happens.
