@@ -172,12 +172,26 @@ def build_signal_payload(raw: dict, document_id: str, stamp: str,
     }
 
 
+def fill_prompt(template: str, **values) -> str:
+    """Substitute {name} placeholders without str.format().
+
+    The prompt contains a literal JSON example ({"signals": [...]}), so
+    str.format() would read it as a replacement field and raise KeyError. We
+    replace only the known named tokens and leave every other brace untouched.
+    """
+    filled = template
+    for key, value in values.items():
+        filled = filled.replace("{" + key + "}", str(value))
+    return filled
+
+
 def extract_signals(doc: dict, source_name: str, model: str) -> tuple:
     """Call Claude to extract signals from one document. Returns (signals, stamp)."""
     import anthropic  # lazy so the module imports without the SDK installed
 
     prompt_text, stamp = prompts.get_prompt("extraction")
-    filled = prompt_text.format(
+    filled = fill_prompt(
+        prompt_text,
         title=doc.get("title", "Unknown"),
         doc_type=doc.get("doc_type", "other"),
         source_name=source_name,

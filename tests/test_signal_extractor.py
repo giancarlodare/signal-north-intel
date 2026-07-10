@@ -3,8 +3,10 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+import prompts
+
 from src import signal_extractor as se
-from src.signal_extractor import build_resolver, build_signal_payload
+from src.signal_extractor import build_resolver, build_signal_payload, fill_prompt
 
 
 def _orgs():
@@ -104,6 +106,26 @@ def test_materiality_and_enums_are_clamped_and_validated():
     assert p["materiality"] == 5                    # clamped into 1..5
     assert p["signal_type"] == "other"             # invalid enum -> other
     assert p["confidence"] == "probable"           # invalid enum -> default
+
+
+def test_fill_prompt_preserves_literal_json_braces():
+    # The prompt ends with a literal {"signals": [...]} example. str.format()
+    # would treat that as a replacement field and raise KeyError: '"signals"'.
+    template = 'Title: {title}\nRespond as {"signals": [ ...objects... ]}'
+    out = fill_prompt(template, title="Body-worn cameras", content="x")
+    assert "Title: Body-worn cameras" in out
+    assert '{"signals": [ ...objects... ]}' in out   # literal braces untouched
+
+
+def test_real_extraction_prompt_fills_without_error():
+    # Regression for the CI dry-run crash: the shipped prompt must fill cleanly.
+    template, _stamp = prompts.get_prompt("extraction")
+    out = fill_prompt(
+        template, title="T", doc_type="award_notice", source_name="S",
+        published_on="2026-01-01", url="http://x", content="C",
+    )
+    assert "{title}" not in out and "{content}" not in out  # tokens substituted
+    assert '{"signals":' in out                              # example preserved
 
 
 def test_dry_run_writes_nothing(monkeypatch):
