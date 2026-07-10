@@ -223,6 +223,15 @@ commit;
 
 ## Step 6 — run the extractor
 
+> ⚠️ **BLOCKER before the full backlog run: signal-level dedup is not yet
+> implemented.** The 10-doc smoke test produced two byte-identical signals from
+> two different source documents (same award, "Regional standing offer … O&P
+> region"). Nothing in the extractor currently collapses these, so a full-backlog
+> run would write twinned signals. Add signal-level dedup (e.g. on
+> normalized-title + organization + signal_type, or a content hash) **before**
+> draining the queue. The `--limit 10 --dry-run` smoke test is unaffected and
+> safe to run now; this blocks only the real drain loop below.
+
 Runs locally with the three secrets in the environment. The service_role key is
 server-side only — never put it in the web app.
 
