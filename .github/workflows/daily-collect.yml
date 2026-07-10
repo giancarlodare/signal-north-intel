@@ -66,6 +66,16 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python -m src.main
 
+      # Board minutes ride the same guard and the workflow-level concurrency
+      # group. A failure here fails the job, so the healthcheck ping below is
+      # withheld and the dead-man's switch pages on it.
+      - name: Run board minutes collector
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.board_minutes
+
       # Dead-man's switch: ping healthchecks.io only after a real collection
       # run has SUCCEEDED. success() is false if any step above failed, so a
       # failed run sends no ping and healthchecks.io alerts on the miss. The

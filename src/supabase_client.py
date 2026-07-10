@@ -130,7 +130,7 @@ def insert_contract_award(payload: dict) -> dict:
     return resp.json()[0]
 
 
-def get_documents_by_status(status: str, limit: int, select: str = "id,title,doc_type,url,published_on,source_id") -> list:
+def get_documents_by_status(status: str, limit: int, select: str = "id,title,doc_type,url,published_on,source_id,content") -> list:
     resp = _request(
         "GET",
         "documents",
