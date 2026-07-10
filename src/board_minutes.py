@@ -48,10 +48,11 @@ from .hashing import content_hash
 
 log = logging.getLogger(__name__)
 
-USER_AGENT = (
-    "SignalNorthCollector/1.0 (+https://github.com/giancarlodare/signal-north-intel; "
-    "public-record procurement research)"
-)
+# Deliberately terse but still honest: tpsb.ca's server returned 415 to the
+# longer parenthesized form (URL + description), which some WAFs choke on.
+# The name still identifies us as an automated collector — this is
+# compatibility, not disguise. Full provenance lives in this repo.
+USER_AGENT = "SignalNorthCollector/1.0"
 POLITE_DELAY_SECONDS = 2.0
 REQUEST_TIMEOUT = 30
 MAX_DOCUMENT_BYTES = 25 * 1024 * 1024   # refuse PDFs larger than this
@@ -73,8 +74,8 @@ BOARDS = [
             "TPSB",
         ],
         "source_id_env": "TPSB_SOURCE_ID",
-        # VERIFY: the board's public meetings page (dry run before first use).
-        "listing_urls": ["https://tpsb.ca/meetings"],
+        # Verified in-browser 2026-07-10 (the earlier /meetings guess 404s).
+        "listing_urls": ["https://tpsb.ca/home/current-and-past-meetings/"],
     },
     {
         "name": "Peel Police Services Board",
@@ -85,8 +86,11 @@ BOARDS = [
             "Peel Regional Police Services Board",
         ],
         "source_id_env": "PEEL_PSB_SOURCE_ID",
-        # VERIFY: the board's public meetings page (dry run before first use).
-        "listing_urls": ["https://www.peelpoliceboard.ca/en/board-meetings.aspx"],
+        # Verified in-browser 2026-07-10 (the earlier /en/... guess 404s).
+        "listing_urls": [
+            "https://www.peelpoliceboard.ca/meetings-updates/presentations/#2026",
+            "https://www.peelpoliceboard.ca/news-and-updates/",
+        ],
     },
 ]
 
