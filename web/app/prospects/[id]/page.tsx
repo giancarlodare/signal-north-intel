@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { addInteraction, updateStatus } from "../actions";
-import { INTERACTION_TYPES, STATUSES, label } from "../constants";
+import { addInteraction, updateClassification, updateStatus } from "../actions";
+import { INTERACTION_TYPES, STATUSES, TIERS, WAVES, label } from "../constants";
 
 export const dynamic = "force-dynamic";
 
@@ -112,6 +112,44 @@ export default async function ProspectDetailPage({
           <button className="approve" type="submit" style={{ flex: 1 }}>
             Update status
           </button>
+        </form>
+
+        <form action={updateClassification} style={{ marginTop: 10 }}>
+          <input type="hidden" name="id" value={prospect.id} />
+          <div className="row">
+            <div className="field" style={{ flex: 2, marginTop: 0 }}>
+              <label htmlFor="tier">Tier</label>
+              <select id="tier" name="tier" defaultValue={prospect.tier}>
+                {TIERS.map((t) => (
+                  <option key={t} value={t}>
+                    {label(t)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="field" style={{ flex: 1, marginTop: 0 }}>
+              <label htmlFor="wave">Wave</label>
+              <select id="wave" name="wave" defaultValue={prospect.wave}>
+                {WAVES.map((w) => (
+                  <option key={w} value={w}>
+                    wave {w}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <label className="checkrow" htmlFor="is_reference_candidate">
+            <input
+              id="is_reference_candidate"
+              name="is_reference_candidate"
+              type="checkbox"
+              defaultChecked={prospect.is_reference_candidate}
+            />
+            <span className="star">★</span> Reference candidate
+          </label>
+          <div className="row" style={{ marginTop: 10 }}>
+            <button type="submit">Update classification</button>
+          </div>
         </form>
       </article>
 
