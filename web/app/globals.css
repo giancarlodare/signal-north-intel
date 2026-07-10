@@ -98,3 +98,29 @@ button:active { transform: translateY(1px); }
 .login .approve { min-height: 46px; }
 .err { color: var(--no); font-size: 14px; text-align: center; margin: 0; }
 .link { background: none; border: none; color: var(--muted); font-size: 13px; }
+
+/* Prospects */
+.filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.filters select {
+  min-height: 42px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--card); color: var(--text); padding: 6px 10px; font: inherit;
+}
+.filters button { grid-column: span 2; min-height: 42px; }
+
+.cardlink { display: block; text-decoration: none; color: inherit; }
+.star { color: var(--warn); }
+.tag.ok { color: var(--ok); border-color: var(--ok); }
+.tag.no { color: var(--no); border-color: var(--no); }
+
+.field { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+.field label { font-size: 13px; color: var(--muted); }
+.field input, .field select {
+  min-height: 42px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--text); padding: 8px 10px; font: inherit;
+  width: 100%;
+}

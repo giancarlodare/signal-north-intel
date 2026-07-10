@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { approve, reject, signOut } from "./actions";
 
@@ -43,6 +44,9 @@ export default async function ReviewPage() {
       <div className="topbar">
         <h1>Signal Review</h1>
         <span className="count">{signals.length} pending</span>
+        <Link className="link" href="/prospects">
+          Prospects
+        </Link>
         <form action={signOut}>
           <button className="link" type="submit">
             Sign out
