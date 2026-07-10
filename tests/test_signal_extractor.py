@@ -3,6 +3,7 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from src import signal_extractor as se
 from src.signal_extractor import build_resolver, build_signal_payload
 
 
@@ -103,3 +104,33 @@ def test_materiality_and_enums_are_clamped_and_validated():
     assert p["materiality"] == 5                    # clamped into 1..5
     assert p["signal_type"] == "other"             # invalid enum -> other
     assert p["confidence"] == "probable"           # invalid enum -> default
+
+
+def test_dry_run_writes_nothing(monkeypatch):
+    """Smoke-test mode must call extraction + resolution but never touch the DB."""
+    monkeypatch.setattr(se.supabase_client, "fetch_rows",
+                        lambda table, select, limit=10000: [])
+    monkeypatch.setattr(se.supabase_client, "get_documents_by_status",
+                        lambda status, limit, **k: [
+                            {"id": "d1", "title": "t", "doc_type": "award_notice",
+                             "url": "u", "published_on": None, "source_id": "s1"}])
+    monkeypatch.setattr(se.supabase_client, "get_source_name", lambda sid: "Src")
+    monkeypatch.setattr(se, "extract_signals",
+                        lambda doc, source_name, model: (
+                            [{"title": "x", "signal_type": "other", "summary": "s",
+                              "confidence": "probable", "materiality": 3,
+                              "organization_name": None, "category_slug": None}],
+                            "extraction@v1"))
+
+    calls = {"insert": 0, "update": 0}
+    monkeypatch.setattr(se.supabase_client, "insert_signal",
+                        lambda p: calls.__setitem__("insert", calls["insert"] + 1))
+    monkeypatch.setattr(se.supabase_client, "update_document_status",
+                        lambda *a, **k: calls.__setitem__("update", calls["update"] + 1))
+
+    stats = se.run_extraction(batch_size=10, dry_run=True)
+
+    assert calls["insert"] == 0          # nothing written
+    assert calls["update"] == 0          # no status change
+    assert stats["signals_created"] == 1  # but still counted/verified
+    assert stats["documents_processed"] == 1
