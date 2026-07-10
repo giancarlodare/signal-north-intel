@@ -185,11 +185,20 @@ def fill_prompt(template: str, **values) -> str:
     return filled
 
 
+# Cap the body passed to Claude. Board minutes can run to hundreds of pages;
+# the first N chars carry the agenda and decisions, and an unbounded body is
+# an unbounded token bill. Tune with EXTRACTION_MAX_BODY_CHARS if needed.
+MAX_BODY_CHARS = int(os.environ.get("EXTRACTION_MAX_BODY_CHARS", "60000"))
+
+
 def extract_signals(doc: dict, source_name: str, model: str) -> tuple:
     """Call Claude to extract signals from one document. Returns (signals, stamp)."""
     import anthropic  # lazy so the module imports without the SDK installed
 
     prompt_text, stamp = prompts.get_prompt("extraction")
+    # Rich doc types (board_minutes) store their full text in documents.content;
+    # title-only doc types (CSV/RSS rows) fall back to the title as before.
+    body = (doc.get("content") or "").strip() or doc.get("title", "")
     filled = fill_prompt(
         prompt_text,
         title=doc.get("title", "Unknown"),
@@ -197,7 +206,7 @@ def extract_signals(doc: dict, source_name: str, model: str) -> tuple:
         source_name=source_name,
         published_on=doc.get("published_on", "Unknown"),
         url=doc.get("url", ""),
-        content=doc.get("title", ""),  # title-only until document bodies are captured
+        content=body[:MAX_BODY_CHARS],
     )
 
     client = anthropic.Anthropic()
