@@ -83,7 +83,7 @@ NO_KEYWORDS = Keywords(general=("drone",), defence=("armoured",))
 # ---------------------------------------------------------------------------
 def test_find_document_links_keeps_minutes_and_agendas_only():
     links = bm.find_document_links(LISTING_HTML, "https://board.example.ca/meetings")
-    urls = [u for u, _ in links]
+    urls = [u for u, *_ in links]
     assert "https://board.example.ca/docs/minutes-2026-06-25.pdf" in urls
     assert "https://board.example.ca/agenda-july.html" in urls          # same-host HTML ok
     assert "https://elsewhere.example.com/minutes.pdf" in urls           # offsite PDF ok
@@ -240,7 +240,7 @@ def test_media_pdf_pattern_matches_without_minutes_wording():
     '''
     patterns = [re.compile(r"/media/.+\.pdf$", re.IGNORECASE)]
     links = bm.find_document_links(html, "https://board.example.ca/meetings", patterns)
-    urls = [u for u, _ in links]
+    urls = [u for u, *_ in links]
     assert "https://board.example.ca/media/ab12cd/board-report-june-27.pdf" in urls
     assert not any("photo.jpg" in u for u in urls)          # pattern is .pdf only
     assert not any("elsewhere" in u for u in urls)          # extra rule is same-host only
@@ -338,8 +338,52 @@ def test_backfill_derives_dates_and_never_overwrites(monkeypatch):
                         lambda t, i, p: updates.append((i, p)))
     stats = bf.run(dry_run=False)
     assert stats == {"examined": 2, "dated": 1, "still_unknown": 1, "errors": 0}
-    assert updates == [("d1", {"published_on": "2025-09-26"})]
+    assert updates == [("d1", {"published_on": "2025-09-26", "date_precision": "day"})]
 
     updates.clear()
     stats = bf.run(dry_run=True)                     # dry run writes nothing
     assert stats["dated"] == 1 and updates == []
+
+
+def test_derive_event_date_precisions():
+    d = bm.derive_event_date
+    # Full date anywhere wins, precision 'day'
+    assert d("Minutes June 25, 2026", "/media/ab/33-04-26-x.pdf") == ("2026-06-25", "day")
+    # Peel item-month-year convention -> month precision, day=01 placeholder
+    assert d("FIFA World Cup", "https://x.ca/media/4ytdw3za/32-04-26-fifa.pdf") == ("2026-04-01", "month")
+    # Invalid month in convention -> nothing
+    assert d("", "/media/ab/03-13-26-bad.pdf") == (None, None)
+    assert d("no date", "/media/ab/plain-slug.pdf") == (None, None)
+
+
+def test_listing_context_feeds_date_derivation(monkeypatch):
+    """Option 3: the meeting date next to the link on the listing page dates
+    documents whose own text carries no date."""
+    pdf = _mini_pdf("no date in this deck at all")
+    listing = ('<h3>Meeting of June 27, 2025</h3>'
+               '<a href="/media/qq11/some-presentation.pdf">Watch the deck</a>')
+    fetcher = FakeFetcher({
+        "https://board.example.ca/meetings": FakeResponse(listing),
+        "https://board.example.ca/media/qq11/some-presentation.pdf": FakeResponse(
+            headers={"Content-Type": "application/pdf"}, content=pdf),
+    })
+    board = dict(BOARD, doc_url_patterns=[r"/media/.+\.pdf$"])
+    inserted = _wire(monkeypatch)
+    bm.collect_board(board, "src-1", fetcher, NO_KEYWORDS, limit=5, dry_run=False)
+    assert inserted[0]["published_on"] == "2025-06-27"
+    assert inserted[0]["date_precision"] == "day"
+
+
+def test_month_precision_lands_in_payload(monkeypatch):
+    pdf = _mini_pdf("deck without any written date")
+    listing = '<a href="/media/zz9/33-04-26-quarterly-update.pdf">Quarterly Update</a>'
+    fetcher = FakeFetcher({
+        "https://board.example.ca/meetings": FakeResponse(listing),
+        "https://board.example.ca/media/zz9/33-04-26-quarterly-update.pdf": FakeResponse(
+            headers={"Content-Type": "application/pdf"}, content=pdf),
+    })
+    board = dict(BOARD, doc_url_patterns=[r"/media/.+\.pdf$"])
+    inserted = _wire(monkeypatch)
+    bm.collect_board(board, "src-1", fetcher, NO_KEYWORDS, limit=5, dry_run=False)
+    assert inserted[0]["published_on"] == "2026-04-01"
+    assert inserted[0]["date_precision"] == "month"
