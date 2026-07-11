@@ -304,9 +304,21 @@ Notes: Ontario program deadlines are the event dates (`published_on`);
 A deadline or status change re-inserts the program as a fresh document —
 that's the signal, not a bug. `guidelines_gated=true` marks programs whose
 evaluation rubrics sit behind a TPON login / by-request gate (collected, not
-skipped). Federal grant AWARDS (open.canada.ca proactive disclosure) are
-design-first: see `docs/grants-federal-awards-design.md` — nothing ingests
-until the design is approved.
+skipped).
+
+### Step 8b — federal awards collector (design approved 2026-07-11)
+
+1. Apply `migrations/2026-07-11_federal_awards_sources_seed.sql` (four
+   sources rows, URL-keyed guards, `'api'::collector_method`). Verify query
+   at the bottom — expect 4 rows.
+2. Dry-run and eyeball: `python -m src.grants_federal_awards --dry-run`
+   (the CI dry-run also probes the RECORD_URL_TEMPLATE format — that must
+   pass before the first real run).
+3. Scheduled runs need nothing further: it rides `weekly-discovery.yml`
+   after the PS Canada step. open.canada.ca's Crawl-delay of 20s is honored,
+   so the first windowed ingest (agreement_start_date ≥ 2024-04-01, capped
+   at 25 new docs/dept/run) takes a few minutes and pages through over
+   successive Sundays. Amendments insert as fresh documents by design.
 
 ---
 

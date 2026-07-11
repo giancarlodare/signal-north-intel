@@ -67,3 +67,14 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python -m src.grants_pscanada
+
+      # Federal grant/contribution awards (open.canada.ca datastore API).
+      # Steady state is ~one API page per department; open.canada.ca's
+      # 20s Crawl-delay is honored, so the first windowed ingest takes a few
+      # minutes — weekly cadence absorbs that easily.
+      - name: Run federal awards collector
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.grants_federal_awards
