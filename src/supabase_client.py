@@ -185,12 +185,30 @@ def fetch_rows(table: str, select: str, limit: int = 10000) -> list:
     return resp.json()
 
 
-def fetch_rows_where(table: str, select: str, filters: dict, limit: int = 10000) -> list:
+def fetch_rows_where(table: str, select: str, filters: dict, limit: int = 10000,
+                     offset: int = 0) -> list:
     """Fetch rows with PostgREST filters, e.g. {"status": "eq.captured",
     "created_at": "gte.2026-06-11"}."""
     params = {"select": select, "limit": limit, **filters}
+    if offset:
+        params["offset"] = offset
     resp = _request("GET", table, headers=_headers(), params=params)
     return resp.json()
+
+
+def fetch_all_rows_where(table: str, select: str, filters: dict,
+                         page_size: int = 1000) -> list:
+    """Page through every matching row. PostgREST silently caps a single
+    response at the server's max-rows (1,000 by default), so one large-limit
+    request quietly truncates once a table grows past that."""
+    rows: list = []
+    offset = 0
+    while True:
+        batch = fetch_rows_where(table, select, filters, limit=page_size, offset=offset)
+        rows.extend(batch)
+        if len(batch) < page_size:
+            return rows
+        offset += page_size
 
 
 def insert_row(table: str, payload: dict) -> dict:

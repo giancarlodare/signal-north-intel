@@ -58,6 +58,7 @@ REQUEST_TIMEOUT = 30
 MAX_DOCUMENT_BYTES = 25 * 1024 * 1024   # refuse PDFs larger than this
 MAX_STORED_CHARS = 400_000              # cap documents.content
 MAX_DOCS_PER_BOARD = 25                 # per run; backlog drains over a few days
+MAX_EXPANDED_PAGES = 20                 # cap on section-expanded listing pages
 
 # A link is a candidate document if its text or URL mentions minutes/agenda.
 DOC_LINK_RE = re.compile(r"minutes|agenda", re.IGNORECASE)
@@ -74,8 +75,23 @@ BOARDS = [
             "TPSB",
         ],
         "source_id_env": "TPSB_SOURCE_ID",
+        # PARKED 2026-07-11: tpsb.ca's WAF returns 415 to this client
+        # SITE-WIDE — robots.txt AND the listing page — regardless of
+        # User-Agent, even though robots.txt (verified in-browser) allows all
+        # crawling. Per the operator's call: park rather than fight the WAF.
+        # Unparking options: contact the board office about collector access,
+        # or revisit if the WAF policy changes. Flip enabled to True to retry.
+        "enabled": False,
+        "parked_reason": "tpsb.ca WAF 415s all collector requests (2026-07-11)",
         # Verified in-browser 2026-07-10 (the earlier /meetings guess 404s).
+        # Structure: year headings, then meeting dates, some with links.
         "listing_urls": ["https://tpsb.ca/home/current-and-past-meetings/"],
+        # TPSB documents are same-host PDFs under /wp-content/uploads/ with
+        # link texts like "Read Agenda", "Read the Minutes" (caught by the
+        # generic pattern) but also "Item 19" / "New Business" (not caught) —
+        # so any on-host uploads PDF is a candidate. YouTube and other
+        # non-PDF links are excluded by the .pdf-only pattern.
+        "doc_url_patterns": [r"/wp-content/uploads/.+\.pdf$"],
     },
     {
         "name": "Peel Police Services Board",
@@ -89,8 +105,24 @@ BOARDS = [
         # Verified in-browser 2026-07-10 (the earlier /en/... guess 404s).
         "listing_urls": [
             "https://www.peelpoliceboard.ca/meetings-updates/presentations/#2026",
+            "https://www.peelpoliceboard.ca/reports/",
+            # news-and-updates: HTML posts (paginated ×16), not PDFs. Page 1 is
+            # scanned for any /media PDFs it links; collecting the posts
+            # themselves as documents is a noted follow-up, not built here.
             "https://www.peelpoliceboard.ca/news-and-updates/",
         ],
+        # /reports/ links out to sub-pages (Annual Performance, Corporate Risk,
+        # Budget, Public Complaints, Missing Persons, …) that carry the PDFs;
+        # same-host links under this prefix are fetched as additional listing
+        # pages (one level deep, capped).
+        "listing_expand_prefixes": ["/reports/"],
+        # Peel's documents are same-host PDFs at /media/{hash}/{slug}.pdf with
+        # descriptive link text that never says "minutes"/"agenda", so the
+        # generic name pattern misses them all. Any on-host /media PDF is a
+        # candidate; the title comes from the link text. The listings span
+        # 2017–2026 — the per-run cap pages through that backlog over multiple
+        # runs because duplicates don't consume the cap.
+        "doc_url_patterns": [r"/media/.+\.pdf$"],
     },
 ]
 
@@ -124,14 +156,22 @@ class PoliteFetcher:
         try:
             self._wait()
             resp = self.session.get(robots_url, timeout=REQUEST_TIMEOUT)
-            if resp.status_code == 404:
-                parser = robotparser.RobotFileParser()
-                parser.parse([])           # no robots.txt => everything allowed
-            elif resp.ok:
+            if resp.ok:
                 parser = robotparser.RobotFileParser()
                 parser.parse(resp.text.splitlines())
+            elif 400 <= resp.status_code < 500:
+                # RFC 9309 §2.3.1.3: robots.txt "unavailable" (4xx) => crawlers
+                # MAY access any resources. tpsb.ca's WAF 415s our client's
+                # robots.txt request even though the file itself (verified
+                # in-browser 2026-07-10: empty Disallow, Yoast block) allows
+                # all crawling — so treating 4xx as allow follows both the RFC
+                # and the publisher's stated policy.
+                log.info("robots.txt for %s returned %s (4xx); allow-all per RFC 9309",
+                         host, resp.status_code)
+                parser = robotparser.RobotFileParser()
+                parser.parse([])
             else:
-                # robots.txt exists but can't be read: be conservative.
+                # 5xx: robots.txt exists but the server is unwell — stay out.
                 log.warning("robots.txt for %s returned %s; skipping host", host, resp.status_code)
                 parser = None
         except requests.RequestException as e:
@@ -222,13 +262,16 @@ def html_to_text(html: str) -> str:
     return extractor.text()
 
 
-def find_document_links(html: str, base_url: str) -> list[tuple[str, str]]:
+def find_document_links(html: str, base_url: str,
+                        extra_url_patterns: Optional[list] = None) -> list[tuple[str, str]]:
     """Candidate minutes/agenda documents on a listing page.
 
-    A link qualifies if its text or URL mentions minutes/agenda, and it points
-    at a PDF or a same-host page (off-host links are someone else's document —
-    the provenance rule wants the publisher's copy, which for these boards is
-    on their own domain).
+    A link qualifies if its text or URL mentions minutes/agenda, OR its
+    same-host URL path matches one of the board's extra_url_patterns (compiled
+    regexes) — for boards like Peel whose documents live at /media/*.pdf with
+    descriptive link text that never says minutes/agenda. Either way it must
+    point at a PDF or a same-host page (off-host links are someone else's
+    document — the provenance rule wants the publisher's copy).
     """
     base_host = urlparse(base_url).netloc
     seen: set[str] = set()
@@ -236,10 +279,13 @@ def find_document_links(html: str, base_url: str) -> list[tuple[str, str]]:
     for url, text in extract_links(html, base_url):
         if url in seen:
             continue
-        if not DOC_LINK_RE.search(text) and not DOC_LINK_RE.search(url):
-            continue
         parsed = urlparse(url)
         if parsed.scheme not in ("http", "https"):
+            continue
+        named = bool(DOC_LINK_RE.search(text) or DOC_LINK_RE.search(url))
+        extra = parsed.netloc == base_host and any(
+            p.search(parsed.path) for p in (extra_url_patterns or []))
+        if not named and not extra:
             continue
         is_pdf = parsed.path.lower().endswith(".pdf")
         if not is_pdf and parsed.netloc != base_host:
@@ -325,16 +371,55 @@ def collect_board(board: dict, source_id: str, fetcher: PoliteFetcher,
     stats = {"listing_pages": 0, "candidates": 0, "inserted": 0,
              "skipped_duplicate": 0, "skipped_robots": 0, "errors": 0}
 
+    extra_patterns = [re.compile(p, re.IGNORECASE)
+                      for p in board.get("doc_url_patterns", [])]
+    expand_prefixes = board.get("listing_expand_prefixes", [])
+    configured = list(board["listing_urls"])
+    queue = list(configured)
+    visited: set[str] = set()
+    expanded = 0
     candidates: list[tuple[str, str]] = []
-    for listing_url in board["listing_urls"]:
+    seen_urls: set[str] = set()
+    while queue:
+        listing_url = queue.pop(0)
+        if listing_url in visited:
+            continue
+        visited.add(listing_url)
         resp = fetcher.get(listing_url)
         if resp is None:
             stats["skipped_robots"] += 1
             continue
         stats["listing_pages"] += 1
-        candidates.extend(find_document_links(resp.text, listing_url))
+        html = resp.text
+        for url, text in find_document_links(html, listing_url, extra_patterns):
+            if url not in seen_urls:      # dedup across listing pages
+                seen_urls.add(url)
+                candidates.append((url, text))
+        # Section expansion, ONE level deep: same-host non-PDF links under a
+        # configured prefix (e.g. Peel's /reports/ sub-pages) are fetched as
+        # additional listing pages. Only links found on the CONFIGURED pages
+        # expand — pages discovered by expansion never expand further, so this
+        # cannot crawl beyond the section.
+        if expand_prefixes and listing_url in configured:
+            host = urlparse(listing_url).netloc
+            for url, _text in extract_links(html, listing_url):
+                parsed = urlparse(url)
+                if (expanded < MAX_EXPANDED_PAGES
+                        and parsed.netloc == host
+                        and not parsed.path.lower().endswith(".pdf")
+                        and any(parsed.path.startswith(p) for p in expand_prefixes)
+                        and url not in visited and url not in configured):
+                    queue.append(url)
+                    expanded += 1
 
-    for url, link_text in candidates[: limit]:
+    # The cap counts NEW documents, not candidates: already-collected docs are
+    # skipped without consuming it. That's what lets a multi-year backlog page
+    # through over successive runs instead of stalling on the first 25 forever.
+    for url, link_text in candidates:
+        if stats["inserted"] >= limit:
+            log.info("Per-run cap (%d) reached; %d candidates left for future runs",
+                     limit, len(candidates) - stats["candidates"])
+            break
         stats["candidates"] += 1
         chash = content_hash(url, "board_minutes")
         if supabase_client.get_document_by_hash(chash):
@@ -398,6 +483,10 @@ def run(limit: int = MAX_DOCS_PER_BOARD, dry_run: bool = False) -> int:
     failures = []
 
     for board in BOARDS:
+        if not board.get("enabled", True):
+            log.info("Board %s is PARKED (%s); skipping",
+                     board["name"], board.get("parked_reason", "no reason recorded"))
+            continue
         source_id = resolve_source_id(board, sources)
         if not source_id:
             log.error(

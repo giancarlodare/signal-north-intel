@@ -356,7 +356,7 @@ def run(dry_run: bool = False, skip_llm: bool = False) -> int:
                    "skipped_reviewed": 0, "errors": 0}
 
     try:
-        documents = supabase_client.fetch_rows_where(
+        documents = supabase_client.fetch_all_rows_where(
             "documents", "id,source_id,title,content",
             {"created_at": f"gte.{since}"})
         stats["documents"] = len(documents)
@@ -384,7 +384,7 @@ def run(dry_run: bool = False, skip_llm: bool = False) -> int:
                 stats["source_proposals"] += 1
 
         # Detector 2 tier 1 — unresolved orgs
-        signals = supabase_client.fetch_rows_where(
+        signals = supabase_client.fetch_all_rows_where(
             "signals", "id,document_id,unresolved_org_name",
             {"needs_org_resolution": "eq.true", "created_at": f"gte.{since}"})
         entity_proposals = detect_unresolved_orgs(signals, org_lookup)
