@@ -29,6 +29,23 @@ The unpark path is a small adapter for their JSON backend (still the official
 publisher source), run through the same keyword/scope filters and content_hash
 dedupe as the RSS feeds.
 
+## Brief generation (future) — event-date discipline (editorial constraint)
+
+**Binding constraint from editorial review (2026-07-11):** when the brief
+generator is built, its selection query MUST filter and sort on the **event
+date** — the source document's `published_on`, surfaced through the signal's
+document join — never on `created_at`/collection date. The two dates diverge
+by design: collectors backfill history (Peel's board archive spans 2017–2026),
+so collection-date ordering would let backfilled history masquerade as news.
+A 2019 board decision collected yesterday is context, not a headline.
+
+Corollaries for the implementer:
+- Signals whose document has `published_on IS NULL` need an explicit policy
+  (exclude from dated briefs, or a separate "date unknown" section) — never
+  silently substitute the collection date.
+- The review page already leads each card with the event date (`tag.event`),
+  so the reviewer sees what the brief reader would see.
+
 ## Parked / waiting
 
 - **TPSB board minutes** — parked in `src/board_minutes.py`: tpsb.ca's WAF

@@ -4,7 +4,12 @@ import { approve, reject, signOut } from "./actions";
 
 export const dynamic = "force-dynamic";
 
-type Doc = { title: string | null; url: string | null; doc_type: string | null };
+type Doc = {
+  title: string | null;
+  url: string | null;
+  doc_type: string | null;
+  published_on: string | null;
+};
 type Org = { canonical_name: string | null };
 type Signal = {
   id: string;
@@ -30,7 +35,7 @@ export default async function ReviewPage() {
   const { data, error } = await supabase
     .from("signals")
     .select(
-      "id, title, summary, signal_type, confidence, materiality, needs_org_resolution, unresolved_org_name, documents(title,url,doc_type), organizations(canonical_name)"
+      "id, title, summary, signal_type, confidence, materiality, needs_org_resolution, unresolved_org_name, documents(title,url,doc_type,published_on), organizations(canonical_name)"
     )
     .eq("reviewed", false)
     .order("materiality", { ascending: false })
@@ -77,6 +82,12 @@ export default async function ReviewPage() {
         return (
           <article key={s.id} className="card">
             <div className="meta">
+              {/* EVENT date (the source document's published_on) — editorially
+                  distinct from collection date, which the review must not
+                  confuse with when something actually happened. */}
+              <span className="tag event">
+                {doc?.published_on ?? "event date unknown"}
+              </span>
               <span className={"tag " + mClass}>M{s.materiality}</span>
               <span className="tag">{s.confidence}</span>
               <span className="tag">{s.signal_type}</span>
