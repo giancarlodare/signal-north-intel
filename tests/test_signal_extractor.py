@@ -156,3 +156,17 @@ def test_dry_run_writes_nothing(monkeypatch):
     assert calls["update"] == 0          # no status change
     assert stats["signals_created"] == 1  # but still counted/verified
     assert stats["documents_processed"] == 1
+
+
+def test_doc_type_filter_is_passed_through(monkeypatch):
+    seen = {}
+
+    def fake_get(status, limit, select="x", doc_type=None):
+        seen["doc_type"] = doc_type
+        return []
+
+    monkeypatch.setattr(se.supabase_client, "fetch_rows",
+                        lambda table, select, limit=10000: [])
+    monkeypatch.setattr(se.supabase_client, "get_documents_by_status", fake_get)
+    se.run_extraction(batch_size=5, dry_run=True, doc_type="board_minutes")
+    assert seen["doc_type"] == "board_minutes"
