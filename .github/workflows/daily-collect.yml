@@ -83,6 +83,16 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python -m src.rss_collector
 
+      # Ontario grants: daily on the open funding directory — new programs
+      # and deadline changes are the signal. The closed-archive baseline is a
+      # separate one-time manual run (--baseline), never scheduled.
+      - name: Run Ontario grants collector
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.grants_ontario
+
       # Dead-man's switch: ping healthchecks.io only after a real collection
       # run has SUCCEEDED. success() is false if any step above failed, so a
       # failed run sends no ping and healthchecks.io alerts on the miss. The

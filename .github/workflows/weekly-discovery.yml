@@ -57,3 +57,13 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python -m src.discovery
+
+      # PS Canada funding programs change rarely (~30 standing programs), so
+      # they ride the weekly cadence rather than the daily one. Ordered after
+      # discovery: a collector failure here must not cost the discovery pass.
+      - name: Run PS Canada funding-programs collector
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.grants_pscanada
