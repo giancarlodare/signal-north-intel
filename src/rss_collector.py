@@ -102,6 +102,19 @@ FEEDS = [
         "source_id_env": "DND_NEWS_SOURCE_ID",
     },
     {
+        "name": "Defence Investment Agency — News",
+        # Operator-approved 2026-07-11 (manual discovery approval): the GC
+        # newsroom where procurement-grade defence content currently publishes
+        # (e.g. Canadian Patrol Submarine Project). dept code CI-probe-verified.
+        "feed_url": _GC_NEWS_API.format(dept="defenceinvestmentagency",
+                                        title="Defence%20Investment%20Agency"),
+        "allowed_hosts": ["www.canada.ca", "canada.ca"],
+        "scope_terms": [],
+        "source_name_candidates": ["Defence Investment Agency — News",
+                                   "Defence Investment Agency"],
+        "source_id_env": "DIA_NEWS_SOURCE_ID",
+    },
+    {
         "name": "RCMP — News",
         # PARKED 2026-07-11: no functioning feed found anywhere. The GC News
         # Centre carries no RCMP items in the recent window (unfiltered probe),
