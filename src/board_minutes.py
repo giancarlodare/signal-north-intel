@@ -91,6 +91,13 @@ BOARDS = [
             "https://www.peelpoliceboard.ca/meetings-updates/presentations/#2026",
             "https://www.peelpoliceboard.ca/news-and-updates/",
         ],
+        # Peel's documents are same-host PDFs at /media/{hash}/{slug}.pdf with
+        # descriptive link text that never says "minutes"/"agenda", so the
+        # generic name pattern misses them all. Any on-host /media PDF is a
+        # candidate; the title comes from the link text. The listings span
+        # 2017–2026 — the per-run cap pages through that backlog over multiple
+        # runs because duplicates don't consume the cap.
+        "doc_url_patterns": [r"/media/.+\.pdf$"],
     },
 ]
 
@@ -124,14 +131,22 @@ class PoliteFetcher:
         try:
             self._wait()
             resp = self.session.get(robots_url, timeout=REQUEST_TIMEOUT)
-            if resp.status_code == 404:
-                parser = robotparser.RobotFileParser()
-                parser.parse([])           # no robots.txt => everything allowed
-            elif resp.ok:
+            if resp.ok:
                 parser = robotparser.RobotFileParser()
                 parser.parse(resp.text.splitlines())
+            elif 400 <= resp.status_code < 500:
+                # RFC 9309 §2.3.1.3: robots.txt "unavailable" (4xx) => crawlers
+                # MAY access any resources. tpsb.ca's WAF 415s our client's
+                # robots.txt request even though the file itself (verified
+                # in-browser 2026-07-10: empty Disallow, Yoast block) allows
+                # all crawling — so treating 4xx as allow follows both the RFC
+                # and the publisher's stated policy.
+                log.info("robots.txt for %s returned %s (4xx); allow-all per RFC 9309",
+                         host, resp.status_code)
+                parser = robotparser.RobotFileParser()
+                parser.parse([])
             else:
-                # robots.txt exists but can't be read: be conservative.
+                # 5xx: robots.txt exists but the server is unwell — stay out.
                 log.warning("robots.txt for %s returned %s; skipping host", host, resp.status_code)
                 parser = None
         except requests.RequestException as e:
@@ -222,13 +237,16 @@ def html_to_text(html: str) -> str:
     return extractor.text()
 
 
-def find_document_links(html: str, base_url: str) -> list[tuple[str, str]]:
+def find_document_links(html: str, base_url: str,
+                        extra_url_patterns: Optional[list] = None) -> list[tuple[str, str]]:
     """Candidate minutes/agenda documents on a listing page.
 
-    A link qualifies if its text or URL mentions minutes/agenda, and it points
-    at a PDF or a same-host page (off-host links are someone else's document —
-    the provenance rule wants the publisher's copy, which for these boards is
-    on their own domain).
+    A link qualifies if its text or URL mentions minutes/agenda, OR its
+    same-host URL path matches one of the board's extra_url_patterns (compiled
+    regexes) — for boards like Peel whose documents live at /media/*.pdf with
+    descriptive link text that never says minutes/agenda. Either way it must
+    point at a PDF or a same-host page (off-host links are someone else's
+    document — the provenance rule wants the publisher's copy).
     """
     base_host = urlparse(base_url).netloc
     seen: set[str] = set()
@@ -236,10 +254,13 @@ def find_document_links(html: str, base_url: str) -> list[tuple[str, str]]:
     for url, text in extract_links(html, base_url):
         if url in seen:
             continue
-        if not DOC_LINK_RE.search(text) and not DOC_LINK_RE.search(url):
-            continue
         parsed = urlparse(url)
         if parsed.scheme not in ("http", "https"):
+            continue
+        named = bool(DOC_LINK_RE.search(text) or DOC_LINK_RE.search(url))
+        extra = parsed.netloc == base_host and any(
+            p.search(parsed.path) for p in (extra_url_patterns or []))
+        if not named and not extra:
             continue
         is_pdf = parsed.path.lower().endswith(".pdf")
         if not is_pdf and parsed.netloc != base_host:
@@ -325,16 +346,29 @@ def collect_board(board: dict, source_id: str, fetcher: PoliteFetcher,
     stats = {"listing_pages": 0, "candidates": 0, "inserted": 0,
              "skipped_duplicate": 0, "skipped_robots": 0, "errors": 0}
 
+    extra_patterns = [re.compile(p, re.IGNORECASE)
+                      for p in board.get("doc_url_patterns", [])]
     candidates: list[tuple[str, str]] = []
+    seen_urls: set[str] = set()
     for listing_url in board["listing_urls"]:
         resp = fetcher.get(listing_url)
         if resp is None:
             stats["skipped_robots"] += 1
             continue
         stats["listing_pages"] += 1
-        candidates.extend(find_document_links(resp.text, listing_url))
+        for url, text in find_document_links(resp.text, listing_url, extra_patterns):
+            if url not in seen_urls:      # dedup across listing pages
+                seen_urls.add(url)
+                candidates.append((url, text))
 
-    for url, link_text in candidates[: limit]:
+    # The cap counts NEW documents, not candidates: already-collected docs are
+    # skipped without consuming it. That's what lets a multi-year backlog page
+    # through over successive runs instead of stalling on the first 25 forever.
+    for url, link_text in candidates:
+        if stats["inserted"] >= limit:
+            log.info("Per-run cap (%d) reached; %d candidates left for future runs",
+                     limit, len(candidates) - stats["candidates"])
+            break
         stats["candidates"] += 1
         chash = content_hash(url, "board_minutes")
         if supabase_client.get_document_by_hash(chash):

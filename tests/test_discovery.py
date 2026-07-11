@@ -192,3 +192,18 @@ def test_dry_run_writes_nothing(monkeypatch):
     assert dv.upsert_source_proposal(_proposal(), dry_run=True) == "would_refresh"
     assert calls["insert"] == [] and calls["update"] == []
     assert calls2["insert"] == [] and calls2["update"] == []
+
+
+def test_fetch_all_rows_where_pages_past_server_cap(monkeypatch):
+    from src import supabase_client as sc
+    calls = []
+
+    def fake_fetch(table, select, filters, limit=10000, offset=0):
+        calls.append(offset)
+        full = [{"id": i} for i in range(2500)]
+        return full[offset:offset + limit]
+
+    monkeypatch.setattr(sc, "fetch_rows_where", fake_fetch)
+    rows = sc.fetch_all_rows_where("documents", "id", {}, page_size=1000)
+    assert len(rows) == 2500
+    assert calls == [0, 1000, 2000]

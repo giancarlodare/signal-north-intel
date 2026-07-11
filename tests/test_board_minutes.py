@@ -219,3 +219,53 @@ def test_resolve_source_id_by_name_and_env(monkeypatch):
     assert bm.resolve_source_id(BOARD, sources) == "override-id"
     monkeypatch.delenv("TESTVILLE_SOURCE_ID")
     assert bm.resolve_source_id(BOARD, [{"id": "z", "name": "Other Board"}]) is None
+
+
+# ---------------------------------------------------------------------------
+# RFC 9309: 4xx robots => allow; extra URL patterns; cap semantics
+# ---------------------------------------------------------------------------
+def test_robots_4xx_treated_as_allow_per_rfc9309():
+    # tpsb.ca's WAF 415s robots.txt even though the file allows all crawling.
+    fetcher = _fetcher_with_robots(FakeResponse("blocked", status_code=415))
+    assert fetcher.allowed("https://board.example.ca/meetings") is True
+
+
+def test_media_pdf_pattern_matches_without_minutes_wording():
+    import re
+    html = '''
+      <a href="/media/ab12cd/board-report-june-27.pdf">Public Board Meeting Report</a>
+      <a href="/media/ef34gh/photo.jpg">Photo gallery</a>
+      <a href="https://elsewhere.example.com/media/x.pdf">Offsite media PDF</a>
+      <a href="/newsletter">Newsletter</a>
+    '''
+    patterns = [re.compile(r"/media/.+\.pdf$", re.IGNORECASE)]
+    links = bm.find_document_links(html, "https://board.example.ca/meetings", patterns)
+    urls = [u for u, _ in links]
+    assert "https://board.example.ca/media/ab12cd/board-report-june-27.pdf" in urls
+    assert not any("photo.jpg" in u for u in urls)          # pattern is .pdf only
+    assert not any("elsewhere" in u for u in urls)          # extra rule is same-host only
+    assert not any(u.endswith("/newsletter") for u in urls)
+    # Title comes from the link text downstream:
+    assert links[0][1] == "Public Board Meeting Report"
+
+
+def test_cap_counts_new_docs_not_candidates(monkeypatch):
+    """Backlog paging: duplicates must not consume the per-run cap, or a
+    multi-year listing stalls on its first N docs forever."""
+    from src.hashing import content_hash
+    html = "".join(
+        f'<a href="/docs/minutes-{i}.pdf">Minutes part {i}</a>' for i in range(6))
+    pdf = _mini_pdf("body text")
+    pages = {"https://board.example.ca/meetings": FakeResponse(html)}
+    for i in range(6):
+        pages[f"https://board.example.ca/docs/minutes-{i}.pdf"] = FakeResponse(
+            headers={"Content-Type": "application/pdf"}, content=pdf)
+    # First 4 documents are already collected:
+    existing = {content_hash(f"https://board.example.ca/docs/minutes-{i}.pdf",
+                             "board_minutes") for i in range(4)}
+    inserted = _wire(monkeypatch, existing_hashes=existing)
+    stats = bm.collect_board(BOARD, "src-1", FakeFetcher(pages), NO_KEYWORDS,
+                             limit=2, dry_run=False)
+    assert stats["skipped_duplicate"] == 4      # skipped without consuming cap
+    assert stats["inserted"] == 2               # both NEW docs collected
+    assert len(inserted) == 2
