@@ -1,9 +1,8 @@
-# Federal grant awards ingest — design proposal (NOT built)
+# Federal grant awards ingest — design (operator-approved 2026-07-11)
 
-**Status: awaiting operator approval.** Per instruction (2026-07-11), the
-grant-award ingest is design-first: nothing below is implemented, and nothing
-ingests until this design is approved. The program collectors
-(`grants_ontario`, `grants_pscanada`) are independent and already built.
+**Status: APPROVED and built** (`src/grants_federal_awards.py`). All four
+open questions were answered by the operator, as recorded at the bottom;
+the collector encodes them. This document remains the design record.
 
 ## What the source actually is (CI-probe-verified 2026-07-11)
 
@@ -71,7 +70,17 @@ DEPARTMENTS = ["ps-sp", "rcmp-grc", "dnd-mdn", "cbsa-asfc"]
    separate operator decision. No value floor — sub-threshold awards being
    invisible to tender monitoring is the point.
 
-## Open questions for the operator
+## Open questions — RESOLVED (operator, 2026-07-11)
+
+1. **Record URL:** the record's own search.open.canada.ca page, exact format
+   verified by CI probe before the first real run (fallback: the search page
+   pinned to the ref_number).
+2. **Departments:** start with exactly the four; csc-scc and jus are later
+   one-line reviewed config changes.
+3. **Window:** 2024-04-01 stands; deeper backfill is a separate decision.
+4. **Cap:** 25 new docs/department/run, backlog pages through weekly runs.
+
+Original questions as posed:
 
 1. **Record URL / provenance.** The datastore API is not a page a human can
    open. The search UI deep-links records (something like

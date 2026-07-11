@@ -17,11 +17,14 @@ Built (RUNBOOK Step 8 has the apply order):
 - `src/grants_pscanada.py` — PS Canada's ~30 contribution/grant programs with
   detail-page terms as bodies (weekly).
 
-Remaining, design-first (operator instruction — propose before building):
-- **Federal grant awards** as `grant_award` docs from the open.canada.ca
-  proactive-disclosure grants dataset, filtered to ps-sp / rcmp-grc /
-  dnd-mdn / cbsa-asfc. Probe-verified access path and proposed ingest:
-  `docs/grants-federal-awards-design.md`. Nothing ingests until approved.
+- `src/grants_federal_awards.py` — federal `grant_award` docs from the
+  open.canada.ca proactive-disclosure datastore (design approved 2026-07-11,
+  `docs/grants-federal-awards-design.md`; ps-sp / rcmp-grc / dnd-mdn /
+  cbsa-asfc, window 2024-04-01+, 25/dept/run, weekly).
+
+Remaining follow-ups:
+- **csc-scc and jus** as additional awards departments — one-line reviewed
+  config changes when wanted.
 - **Transfer Payment Ontario listings + ministry grant pages + newsroom grant
   announcements** as additional Ontario feeders, if the directory proves to
   lag them.

@@ -137,14 +137,19 @@ class PoliteFetcher:
     def __init__(self, delay: float = POLITE_DELAY_SECONDS):
         self.delay = delay
         self._robots: dict[str, Optional[robotparser.RobotFileParser]] = {}
+        # Hosts that declare a robots.txt Crawl-delay LONGER than our default
+        # get it honored (open.canada.ca asks for 20s). Shorter declarations
+        # don't speed us up — self.delay stays the floor.
+        self._host_delay: dict[str, float] = {}
         self._last_request = 0.0
         self.session = requests.Session()
         self.session.headers["User-Agent"] = USER_AGENT
 
-    def _wait(self) -> None:
+    def _wait(self, host: Optional[str] = None) -> None:
+        delay = max(self.delay, self._host_delay.get(host or "", 0.0))
         elapsed = time.monotonic() - self._last_request
-        if elapsed < self.delay:
-            time.sleep(self.delay - elapsed)
+        if elapsed < delay:
+            time.sleep(delay - elapsed)
         self._last_request = time.monotonic()
 
     def _robots_for(self, url: str) -> Optional[robotparser.RobotFileParser]:
@@ -178,6 +183,14 @@ class PoliteFetcher:
             log.warning("robots.txt fetch failed for %s (%s); skipping host", host, e)
             parser = None
         self._robots[host] = parser
+        if parser is not None:
+            try:
+                declared = parser.crawl_delay(USER_AGENT)
+            except AttributeError:
+                declared = None
+            if declared and float(declared) > self.delay:
+                self._host_delay[host] = float(declared)
+                log.info("Honoring robots.txt Crawl-delay of %ss for %s", declared, host)
         return parser
 
     def allowed(self, url: str) -> bool:
@@ -190,8 +203,21 @@ class PoliteFetcher:
         if not self.allowed(url):
             log.info("robots.txt disallows %s; skipping", url)
             return None
-        self._wait()
+        self._wait(urlparse(url).netloc)
         resp = self.session.get(url, timeout=REQUEST_TIMEOUT, stream=True)
+        resp.raise_for_status()
+        return resp
+
+    def post_json(self, url: str, payload: dict) -> Optional[requests.Response]:
+        """POST a JSON body (CKAN action-API style). Same robots check and
+        per-host delay as get(); the body keeps parameters out of the query
+        string, so URL-pattern Disallow rules can't be tripped even under
+        wildcard interpretations robotparser doesn't apply."""
+        if not self.allowed(url):
+            log.info("robots.txt disallows %s; skipping", url)
+            return None
+        self._wait(urlparse(url).netloc)
+        resp = self.session.post(url, json=payload, timeout=REQUEST_TIMEOUT)
         resp.raise_for_status()
         return resp
 
