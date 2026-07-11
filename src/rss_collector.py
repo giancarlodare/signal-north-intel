@@ -173,6 +173,15 @@ def collect_feed(feed: dict, entries: list, source_id: str, keywords: Keywords,
              "dropped_offsite": 0, "dropped_filter": 0, "bodies_fetched": 0,
              "errors": 0}
 
+    # Department scoping by publisher URL path, for feeds pulled from a
+    # multi-department upstream (DND has no working dept= code). Applied
+    # BEFORE the per-feed limit so the limit budgets the department's own
+    # items, not the whole multi-department firehose.
+    path_filter = feed.get("link_path_contains")
+    if path_filter:
+        entries = [e for e in entries
+                   if path_filter in (getattr(e, "link", "") or "")]
+
     for entry in entries[:limit]:
         stats["seen"] += 1
         title = (getattr(entry, "title", "") or "").strip()
@@ -182,13 +191,6 @@ def collect_feed(feed: dict, entries: list, source_id: str, keywords: Keywords,
         # Provenance rule: the publisher's own URL or nothing.
         if not link or not is_publisher_url(link, feed["allowed_hosts"]):
             stats["dropped_offsite"] += 1
-            continue
-
-        # Department scoping by publisher URL path, for feeds pulled from a
-        # multi-department upstream (DND has no working dept= code).
-        path_filter = feed.get("link_path_contains")
-        if path_filter and path_filter not in link:
-            stats["dropped_filter"] += 1
             continue
 
         # Keyword filtering ON for every feed: scope terms (if any) AND the

@@ -233,6 +233,6 @@ def test_link_path_filter_scopes_multi_department_feed(monkeypatch):
     ]
     stats = rc.collect_feed(feed, entries, "src-1", KEYWORDS, FakeFetcher(),
                             limit=10, dry_run=False)
-    assert stats["dropped_filter"] == 1
+    assert stats["seen"] == 1               # pre-filtered before the limit
     assert [d["url"] for d in inserted] == [
         "https://news.example.gc.ca/en/department-national-defence/news/y"]
