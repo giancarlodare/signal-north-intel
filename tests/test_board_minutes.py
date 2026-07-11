@@ -312,3 +312,34 @@ def test_parked_board_is_skipped_not_failed(monkeypatch):
                                             parked_reason="WAF blocks client")])
     monkeypatch.setattr(bm, "load_keywords", lambda: NO_KEYWORDS)
     assert bm.run(limit=5, dry_run=True) == 0     # parked != failure
+
+
+def test_guess_meeting_date_richer_formats():
+    g = bm.guess_meeting_date
+    assert g("Board meeting of 26 September 2025") == "2025-09-26"
+    assert g("Sept. 26, 2025 Regular Meeting") == "2025-09-26"
+    assert g("Friday, the 30th of October 2025") == "2025-10-30"
+    assert g("Oct 30 2025") == "2025-10-30"
+    assert g("meeting 24/04/26") is None            # ambiguous numeric unparsed
+    assert g("Item 32-05-26 discussion") is None    # item numbers don't match
+
+
+def test_backfill_derives_dates_and_never_overwrites(monkeypatch):
+    from src import backfill_event_dates as bf
+    updates = []
+    monkeypatch.setattr(bf.supabase_client, "fetch_all_rows_where",
+                        lambda t, s, f, page_size=1000: [
+                            {"id": "d1", "title": "Update on plan", "url": "u1",
+                             "content": "Regular Meeting — Sept. 26, 2025. Agenda..."},
+                            {"id": "d2", "title": "No date anywhere", "url": "u2",
+                             "content": "lorem ipsum"},
+                        ])
+    monkeypatch.setattr(bf.supabase_client, "update_row",
+                        lambda t, i, p: updates.append((i, p)))
+    stats = bf.run(dry_run=False)
+    assert stats == {"examined": 2, "dated": 1, "still_unknown": 1, "errors": 0}
+    assert updates == [("d1", {"published_on": "2025-09-26"})]
+
+    updates.clear()
+    stats = bf.run(dry_run=True)                     # dry run writes nothing
+    assert stats["dated"] == 1 and updates == []

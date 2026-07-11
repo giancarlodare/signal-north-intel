@@ -311,36 +311,62 @@ def pdf_to_text(data: bytes) -> str:
     return " ".join(" ".join(pages).split())
 
 
-_DATE_PATTERNS = [
-    # (?<!\d)/(?!\d) instead of \b: underscore is a word character, so \b
-    # would fail to match dates embedded in filenames like agenda_2026-03-14.
-    re.compile(r"(?<!\d)(20\d{2})[-_./](\d{1,2})[-_./](\d{1,2})(?!\d)"),
-    re.compile(
-        r"\b(January|February|March|April|May|June|July|August|September|"
-        r"October|November|December)\s+(\d{1,2}),?\s+(20\d{2})\b",
-        re.IGNORECASE,
-    ),
-]
+# Month name (full or abbreviated, optional trailing period) → 1..12.
 _MONTHS = {m: i + 1 for i, m in enumerate(
     ["january", "february", "march", "april", "may", "june", "july",
      "august", "september", "october", "november", "december"])}
+for _full, _n in list(_MONTHS.items()):
+    _MONTHS[_full[:3]] = _n
+_MONTHS["sept"] = 9
+_MONTH_RE = (r"(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|"
+             r"Jul(?:y)?|Aug(?:ust)?|Sept?(?:ember)?|Oct(?:ober)?|"
+             r"Nov(?:ember)?|Dec(?:ember)?)")
+
+_DATE_PATTERNS = [
+    # ISO-ish: 2026-04-24 (also _ . / separators). (?<!\d)/(?!\d) instead of
+    # \b: underscore is a word character, so \b would fail on filenames like
+    # agenda_2026-03-14.
+    re.compile(r"(?<!\d)(20\d{2})[-_./](\d{1,2})[-_./](\d{1,2})(?!\d)"),
+    # Month-first: "April 24, 2026", "Sept. 26 2025".
+    re.compile(rf"\b{_MONTH_RE}\.?\s+(\d{{1,2}})(?:st|nd|rd|th)?,?\s+(20\d{{2}})\b",
+               re.IGNORECASE),
+    # Day-first: "26 September 2025", "26th of Sept. 2025" — common atop
+    # board minutes and presentations.
+    re.compile(rf"\b(\d{{1,2}})(?:st|nd|rd|th)?\s+(?:of\s+)?{_MONTH_RE}\.?,?\s+(20\d{{2}})\b",
+               re.IGNORECASE),
+]
+
+
+def _valid(y: int, mo: int, d: int) -> Optional[str]:
+    if 1 <= mo <= 12 and 1 <= d <= 31:
+        return f"{y:04d}-{mo:02d}-{d:02d}"
+    return None
 
 
 def guess_meeting_date(*texts: str) -> Optional[str]:
     """Best-effort meeting date from link text / URL / body. None if unsure —
-    a null published_on is better than a fuzzy-parsed wrong one."""
+    a null published_on is better than a fuzzy-parsed wrong one. (Ambiguous
+    all-numeric forms like 24/04/26 are deliberately not parsed.)"""
     for text in texts:
         if not text:
             continue
         m = _DATE_PATTERNS[0].search(text)
         if m:
-            y, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3))
-            if 1 <= mo <= 12 and 1 <= d <= 31:
-                return f"{y:04d}-{mo:02d}-{d:02d}"
+            result = _valid(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+            if result:
+                return result
         m = _DATE_PATTERNS[1].search(text)
         if m:
-            mo = _MONTHS[m.group(1).lower()]
-            return f"{int(m.group(3)):04d}-{mo:02d}-{int(m.group(2)):02d}"
+            result = _valid(int(m.group(3)), _MONTHS[m.group(1).lower().rstrip(".")],
+                            int(m.group(2)))
+            if result:
+                return result
+        m = _DATE_PATTERNS[2].search(text)
+        if m:
+            result = _valid(int(m.group(3)), _MONTHS[m.group(2).lower().rstrip(".")],
+                            int(m.group(1)))
+            if result:
+                return result
     return None
 
 
@@ -447,7 +473,7 @@ def collect_board(board: dict, source_id: str, fetcher: PoliteFetcher,
 
             title = link_text or urlparse(url).path.rsplit("/", 1)[-1]
             title = f"{board['name']} — {title}"[:500]
-            published_on = guess_meeting_date(link_text, url, body[:2000])
+            published_on = guess_meeting_date(link_text, url, body[:4000])
             # Tag-only: board business is in-scope by construction.
             result = evaluate(title, body[:20000], "", keywords)
 
