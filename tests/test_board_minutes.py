@@ -269,3 +269,37 @@ def test_cap_counts_new_docs_not_candidates(monkeypatch):
     assert stats["skipped_duplicate"] == 4      # skipped without consuming cap
     assert stats["inserted"] == 2               # both NEW docs collected
     assert len(inserted) == 2
+
+
+def test_section_expansion_one_level_only(monkeypatch):
+    """/reports/ sub-pages are scanned as listings; their own sub-links are not."""
+    pdf = _mini_pdf("annual performance details")
+    root = "https://board.example.ca/reports/"
+    sub = "https://board.example.ca/reports/annual-performance/"
+    deeper = "https://board.example.ca/reports/annual-performance/archive/"
+    fetcher = FakeFetcher({
+        "https://board.example.ca/meetings": FakeResponse(
+            f'<a href="{root}">Reports</a>'),          # not under prefix match? root IS
+        root: FakeResponse(
+            f'<a href="{sub}">Annual Performance</a>'
+            f'<a href="/media/aa11/summary.pdf">Budget Summary</a>'),
+        sub: FakeResponse(
+            f'<a href="/media/bb22/annual-perf.pdf">2025 Annual Performance Report</a>'
+            f'<a href="{deeper}">Archive</a>'),
+        "https://board.example.ca/media/aa11/summary.pdf": FakeResponse(
+            headers={"Content-Type": "application/pdf"}, content=pdf),
+        "https://board.example.ca/media/bb22/annual-perf.pdf": FakeResponse(
+            headers={"Content-Type": "application/pdf"}, content=pdf),
+    })
+    board = dict(BOARD,
+                 listing_urls=[root],
+                 listing_expand_prefixes=["/reports/"],
+                 doc_url_patterns=[r"/media/.+\.pdf$"])
+    inserted = _wire(monkeypatch)
+    stats = bm.collect_board(board, "src-1", fetcher, NO_KEYWORDS,
+                             limit=10, dry_run=False)
+    urls = [d["url"] for d in inserted]
+    assert any(u.endswith("summary.pdf") for u in urls)        # from configured page
+    assert any(u.endswith("annual-perf.pdf") for u in urls)    # from expanded sub-page
+    assert deeper not in fetcher.requested                     # one level only
+    assert stats["listing_pages"] == 2

@@ -58,6 +58,7 @@ REQUEST_TIMEOUT = 30
 MAX_DOCUMENT_BYTES = 25 * 1024 * 1024   # refuse PDFs larger than this
 MAX_STORED_CHARS = 400_000              # cap documents.content
 MAX_DOCS_PER_BOARD = 25                 # per run; backlog drains over a few days
+MAX_EXPANDED_PAGES = 20                 # cap on section-expanded listing pages
 
 # A link is a candidate document if its text or URL mentions minutes/agenda.
 DOC_LINK_RE = re.compile(r"minutes|agenda", re.IGNORECASE)
@@ -75,7 +76,14 @@ BOARDS = [
         ],
         "source_id_env": "TPSB_SOURCE_ID",
         # Verified in-browser 2026-07-10 (the earlier /meetings guess 404s).
+        # Structure: year headings, then meeting dates, some with links.
         "listing_urls": ["https://tpsb.ca/home/current-and-past-meetings/"],
+        # TPSB documents are same-host PDFs under /wp-content/uploads/ with
+        # link texts like "Read Agenda", "Read the Minutes" (caught by the
+        # generic pattern) but also "Item 19" / "New Business" (not caught) —
+        # so any on-host uploads PDF is a candidate. YouTube and other
+        # non-PDF links are excluded by the .pdf-only pattern.
+        "doc_url_patterns": [r"/wp-content/uploads/.+\.pdf$"],
     },
     {
         "name": "Peel Police Services Board",
@@ -89,8 +97,17 @@ BOARDS = [
         # Verified in-browser 2026-07-10 (the earlier /en/... guess 404s).
         "listing_urls": [
             "https://www.peelpoliceboard.ca/meetings-updates/presentations/#2026",
+            "https://www.peelpoliceboard.ca/reports/",
+            # news-and-updates: HTML posts (paginated ×16), not PDFs. Page 1 is
+            # scanned for any /media PDFs it links; collecting the posts
+            # themselves as documents is a noted follow-up, not built here.
             "https://www.peelpoliceboard.ca/news-and-updates/",
         ],
+        # /reports/ links out to sub-pages (Annual Performance, Corporate Risk,
+        # Budget, Public Complaints, Missing Persons, …) that carry the PDFs;
+        # same-host links under this prefix are fetched as additional listing
+        # pages (one level deep, capped).
+        "listing_expand_prefixes": ["/reports/"],
         # Peel's documents are same-host PDFs at /media/{hash}/{slug}.pdf with
         # descriptive link text that never says "minutes"/"agenda", so the
         # generic name pattern misses them all. Any on-host /media PDF is a
@@ -348,18 +365,44 @@ def collect_board(board: dict, source_id: str, fetcher: PoliteFetcher,
 
     extra_patterns = [re.compile(p, re.IGNORECASE)
                       for p in board.get("doc_url_patterns", [])]
+    expand_prefixes = board.get("listing_expand_prefixes", [])
+    configured = list(board["listing_urls"])
+    queue = list(configured)
+    visited: set[str] = set()
+    expanded = 0
     candidates: list[tuple[str, str]] = []
     seen_urls: set[str] = set()
-    for listing_url in board["listing_urls"]:
+    while queue:
+        listing_url = queue.pop(0)
+        if listing_url in visited:
+            continue
+        visited.add(listing_url)
         resp = fetcher.get(listing_url)
         if resp is None:
             stats["skipped_robots"] += 1
             continue
         stats["listing_pages"] += 1
-        for url, text in find_document_links(resp.text, listing_url, extra_patterns):
+        html = resp.text
+        for url, text in find_document_links(html, listing_url, extra_patterns):
             if url not in seen_urls:      # dedup across listing pages
                 seen_urls.add(url)
                 candidates.append((url, text))
+        # Section expansion, ONE level deep: same-host non-PDF links under a
+        # configured prefix (e.g. Peel's /reports/ sub-pages) are fetched as
+        # additional listing pages. Only links found on the CONFIGURED pages
+        # expand — pages discovered by expansion never expand further, so this
+        # cannot crawl beyond the section.
+        if expand_prefixes and listing_url in configured:
+            host = urlparse(listing_url).netloc
+            for url, _text in extract_links(html, listing_url):
+                parsed = urlparse(url)
+                if (expanded < MAX_EXPANDED_PAGES
+                        and parsed.netloc == host
+                        and not parsed.path.lower().endswith(".pdf")
+                        and any(parsed.path.startswith(p) for p in expand_prefixes)
+                        and url not in visited and url not in configured):
+                    queue.append(url)
+                    expanded += 1
 
     # The cap counts NEW documents, not candidates: already-collected docs are
     # skipped without consuming it. That's what lets a multi-year backlog page
