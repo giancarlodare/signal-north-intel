@@ -145,3 +145,77 @@ def test_resolve_source_id(monkeypatch):
     assert rc.resolve_source_id(FEED, [{"id": "s1", "name": " testroom "}]) == "s1"
     monkeypatch.setenv("TESTROOM_SOURCE_ID", "env-id")
     assert rc.resolve_source_id(FEED, []) == "env-id"
+
+
+def _run_wiring(monkeypatch, parse_results):
+    """Wire run() with fake feeds: parse_results maps feed name -> entries
+    list or Exception."""
+    monkeypatch.setattr(rc.supabase_client, "fetch_rows",
+                        lambda t, s, limit=10000: [
+                            {"id": "s-ps", "name": "Public Safety Canada — News"},
+                            {"id": "s-dnd", "name": "Department of National Defence — News"},
+                            {"id": "s-rcmp", "name": "RCMP — News"},
+                            {"id": "s-on", "name": "Ontario Newsroom — Solicitor General"}])
+    monkeypatch.setattr(rc.supabase_client, "get_document_by_hash", lambda h: None)
+    monkeypatch.setattr(rc.supabase_client, "insert_document", lambda p: {"id": "d"})
+    monkeypatch.setattr(rc.supabase_client, "update_source_last_collected",
+                        lambda sid, when: None)
+    monkeypatch.setattr(rc, "load_keywords", lambda: KEYWORDS)
+    monkeypatch.setattr(rc, "PoliteFetcher", lambda: FakeFetcher())
+
+    class Parsed:
+        def __init__(self, entries):
+            self.entries = entries
+            self.bozo = 0
+            self.bozo_exception = None
+
+    def fake_parse(url):
+        for name, result in parse_results.items():
+            if name in url or any(name in f["feed_url"] for f in rc.FEEDS
+                                  if f["name"] == name and f["feed_url"] == url):
+                pass
+        # match by configured feed_url
+        for f in rc.FEEDS:
+            if f["feed_url"] == url:
+                result = parse_results[f["name"]]
+                if isinstance(result, Exception):
+                    raise result
+                return Parsed(result)
+        raise AssertionError(f"unexpected feed url {url}")
+
+    monkeypatch.setattr(rc, "_parse_feed", fake_parse)
+
+
+GOOD_ENTRY = [_entry("Body-worn camera expansion", LONG_BODY,
+                     "https://www.canada.ca/en/news/1")]
+
+
+def test_one_rotten_feed_does_not_fail_run(monkeypatch):
+    _run_wiring(monkeypatch, {
+        "Public Safety Canada — News": GOOD_ENTRY,
+        "Department of National Defence — News": RuntimeError("parse error"),
+        "RCMP — News": GOOD_ENTRY,
+    })
+    assert rc.run(limit=5, dry_run=True) == 0     # 2 ok, 1 failed -> continue
+
+
+def test_all_feeds_failing_is_systemic_and_fails(monkeypatch):
+    _run_wiring(monkeypatch, {
+        "Public Safety Canada — News": RuntimeError("parse error"),
+        "Department of National Defence — News": RuntimeError("parse error"),
+        "RCMP — News": RuntimeError("parse error"),
+    })
+    assert rc.run(limit=5, dry_run=True) == 1     # systemic -> page
+
+
+def test_parked_feed_is_skipped(monkeypatch):
+    calls = []
+    _run_wiring(monkeypatch, {
+        "Public Safety Canada — News": GOOD_ENTRY,
+        "Department of National Defence — News": GOOD_ENTRY,
+        "RCMP — News": GOOD_ENTRY,
+    })
+    orig = rc._parse_feed
+    monkeypatch.setattr(rc, "_parse_feed", lambda url: calls.append(url) or orig(url))
+    rc.run(limit=5, dry_run=True)
+    assert not any("ontario" in u for u in calls)  # parked feed never fetched

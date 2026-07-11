@@ -11,6 +11,10 @@
 --      and the guard mismatches invisibly. Now keyed on `url`, which is pure
 --      ASCII and stable, so the guard can never be defeated by typography.
 --
+-- FEED URLS corrected 2026-07-11: the canada.ca/en/<dept>.atom.xml pattern
+-- returns an HTML Not Found page with HTTP 200 (broke the first live run);
+-- the Canada News Centre API atom URLs below are CI-probe-verified real feeds.
+--
 -- Idempotent: safe to run whether or not the rows were already inserted
 -- directly (the 2026-07-10 production hotfix inserted them by hand).
 -- ============================================================================
@@ -18,16 +22,16 @@ begin;
 
 insert into sources (name, url, source_type, jurisdiction, collector, cadence)
 select 'Department of National Defence — News',
-       'https://www.canada.ca/en/department-national-defence.atom.xml',
+       'https://api.io.canada.ca/io-server/gc/news/en/v2?dept=departmentofnationaldefence&sort=publishedDate&orderBy=desc&pick=50&format=atom&atomtitle=National%20Defence',
        'newsroom'::source_type, 'federal'::jurisdiction_level, 'rss', 'daily'
 where not exists (select 1 from sources
-  where url = 'https://www.canada.ca/en/department-national-defence.atom.xml');
+  where url = 'https://api.io.canada.ca/io-server/gc/news/en/v2?dept=departmentofnationaldefence&sort=publishedDate&orderBy=desc&pick=50&format=atom&atomtitle=National%20Defence');
 
 insert into sources (name, url, source_type, jurisdiction, collector, cadence)
 select 'RCMP — News',
-       'https://www.canada.ca/en/royal-canadian-mounted-police.atom.xml',
+       'https://api.io.canada.ca/io-server/gc/news/en/v2?dept=royalcanadianmountedpolice&sort=publishedDate&orderBy=desc&pick=50&format=atom&atomtitle=RCMP',
        'newsroom'::source_type, 'federal'::jurisdiction_level, 'rss', 'daily'
 where not exists (select 1 from sources
-  where url = 'https://www.canada.ca/en/royal-canadian-mounted-police.atom.xml');
+  where url = 'https://api.io.canada.ca/io-server/gc/news/en/v2?dept=royalcanadianmountedpolice&sort=publishedDate&orderBy=desc&pick=50&format=atom&atomtitle=RCMP');
 
 commit;

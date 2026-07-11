@@ -44,10 +44,25 @@ MAX_STORED_CHARS = 400_000
 TRUNCATION_MIN_CHARS = 400
 _ELLIPSES = ("...", "…", "[...]", "[…]", "(...)", "Read more", "read more")
 
+# Canada.ca department news feeds come from the Canada News Centre API — the
+# documented custom-feed mechanism. CI probe 2026-07-11 confirmed these return
+# valid Atom XML, while the previously-configured
+# https://www.canada.ca/en/<dept>.atom.xml URLs return an HTML "Not Found"
+# page with HTTP 200, which is what broke every feed on the first live run.
+_GC_NEWS_API = ("https://api.io.canada.ca/io-server/gc/news/en/v2"
+                "?dept={dept}&sort=publishedDate&orderBy=desc&pick=50"
+                "&format=atom&atomtitle={title}")
+
 FEEDS = [
     {
         "name": "Ontario Newsroom",
-        # VERIFY with --dry-run before first real run.
+        # PARKED 2026-07-11: news.ontario.ca is a JS single-page app; every
+        # candidate feed path (newsroom/en/rss, en/rss, mcscs/en/rss, en/feed —
+        # CI probe) returns the app's HTML shell, not a feed. Unpark once a
+        # real feed URL is found (operator browser check) or an API adapter
+        # for their JSON backend is built as a reviewed follow-up.
+        "enabled": False,
+        "parked_reason": "SPA shell at every candidate feed path (probe 2026-07-11)",
         "feed_url": "https://news.ontario.ca/newsroom/en/rss",
         "allowed_hosts": ["news.ontario.ca", "www.ontario.ca"],
         # Multi-ministry firehose: scope to public-safety business first,
@@ -61,7 +76,8 @@ FEEDS = [
     },
     {
         "name": "Public Safety Canada — News",
-        "feed_url": "https://www.canada.ca/en/public-safety-canada.atom.xml",
+        "feed_url": _GC_NEWS_API.format(dept="publicsafetycanada",
+                                        title="Public%20Safety%20Canada"),
         "allowed_hosts": ["www.canada.ca", "canada.ca"],
         "scope_terms": [],   # single-department feed; keywords.txt still applies
         "source_name_candidates": ["Public Safety Canada — News",
@@ -70,7 +86,8 @@ FEEDS = [
     },
     {
         "name": "Department of National Defence — News",
-        "feed_url": "https://www.canada.ca/en/department-national-defence.atom.xml",
+        "feed_url": _GC_NEWS_API.format(dept="departmentofnationaldefence",
+                                        title="National%20Defence"),
         "allowed_hosts": ["www.canada.ca", "canada.ca", "www.forces.gc.ca"],
         "scope_terms": [],
         "source_name_candidates": ["Department of National Defence — News",
@@ -79,7 +96,8 @@ FEEDS = [
     },
     {
         "name": "RCMP — News",
-        "feed_url": "https://www.canada.ca/en/royal-canadian-mounted-police.atom.xml",
+        "feed_url": _GC_NEWS_API.format(dept="royalcanadianmountedpolice",
+                                        title="RCMP"),
         "allowed_hosts": ["www.canada.ca", "canada.ca", "www.rcmp-grc.gc.ca", "rcmp-grc.gc.ca"],
         "scope_terms": [],
         "source_name_candidates": ["RCMP — News", "RCMP News",
@@ -197,16 +215,25 @@ def collect_feed(feed: dict, entries: list, source_id: str, keywords: Keywords,
     return stats
 
 
-def run(limit: int = MAX_ENTRIES_PER_FEED, dry_run: bool = False) -> int:
+def _parse_feed(url: str):
     import feedparser  # lazy so the module imports without the dependency
 
+    return feedparser.parse(url)
+
+
+def run(limit: int = MAX_ENTRIES_PER_FEED, dry_run: bool = False) -> int:
     keywords = load_keywords()
     fetcher = PoliteFetcher()
     now = datetime.now(timezone.utc)
     sources = supabase_client.fetch_rows("sources", "id,name")
+    successes = 0
     failures = []
 
     for feed in FEEDS:
+        if not feed.get("enabled", True):
+            log.info("Feed %s is PARKED (%s); skipping",
+                     feed["name"], feed.get("parked_reason", "no reason recorded"))
+            continue
         source_id = resolve_source_id(feed, sources)
         if not source_id:
             log.error(
@@ -217,7 +244,7 @@ def run(limit: int = MAX_ENTRIES_PER_FEED, dry_run: bool = False) -> int:
             failures.append(feed["name"])
             continue
         try:
-            parsed = feedparser.parse(feed["feed_url"])
+            parsed = _parse_feed(feed["feed_url"])
             if parsed.bozo and not parsed.entries:
                 raise RuntimeError(f"feed parse error: {parsed.bozo_exception}")
             stats = collect_feed(feed, parsed.entries, source_id, keywords,
@@ -225,16 +252,28 @@ def run(limit: int = MAX_ENTRIES_PER_FEED, dry_run: bool = False) -> int:
             log.info("Feed %s: %s%s", feed["name"], stats, " (DRY RUN)" if dry_run else "")
             if stats["errors"]:
                 failures.append(feed["name"])
-            elif not dry_run:
-                supabase_client.update_source_last_collected(source_id, now)
+            else:
+                successes += 1
+                if not dry_run:
+                    supabase_client.update_source_last_collected(source_id, now)
         except Exception:
             log.exception("Feed collection failed for %s", feed["name"])
             failures.append(feed["name"])
 
-    if failures:
-        log.error("Newsroom RSS run finished with failures in: %s", ", ".join(failures))
+    # Failure policy: one rotten feed must not fail the run (and page the
+    # dead-man's switch) while the others collected fine — feed rot is
+    # publisher churn, not a broken pipeline, and it stays loud in this log.
+    # But if EVERY enabled feed failed, that's systemic (bad URLs, network,
+    # auth) and SHOULD page.
+    if failures and successes == 0:
+        log.error("ALL enabled feeds failed (%s) — systemic; failing the run",
+                  ", ".join(failures))
         return 1
-    log.info("Newsroom RSS run finished successfully")
+    if failures:
+        log.warning("Continuing despite failed feeds (%d ok): %s",
+                    successes, ", ".join(failures))
+    log.info("Newsroom RSS run finished (%d feeds ok, %d failed)",
+             successes, len(failures))
     return 0
 
 
