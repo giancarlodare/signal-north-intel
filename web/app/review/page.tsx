@@ -9,7 +9,23 @@ type Doc = {
   url: string | null;
   doc_type: string | null;
   published_on: string | null;
+  date_precision: string | null;
 };
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+// Month-precision dates carry a conventional day=01 placeholder — rendering
+// the full date would fabricate a day that isn't in the source. Render
+// "Apr 2026" instead. (Binding rule for the brief generator too; ROADMAP.)
+function eventDate(doc: Doc | null): string {
+  if (!doc?.published_on) return "event date unknown";
+  if (doc.date_precision === "month") {
+    const [y, m] = doc.published_on.split("-");
+    return `${MONTHS[Number(m) - 1] ?? m} ${y}`;
+  }
+  return doc.published_on;
+}
 type Org = { canonical_name: string | null };
 type Signal = {
   id: string;
@@ -35,7 +51,7 @@ export default async function ReviewPage() {
   const { data, error } = await supabase
     .from("signals")
     .select(
-      "id, title, summary, signal_type, confidence, materiality, needs_org_resolution, unresolved_org_name, documents(title,url,doc_type,published_on), organizations(canonical_name)"
+      "id, title, summary, signal_type, confidence, materiality, needs_org_resolution, unresolved_org_name, documents(title,url,doc_type,published_on,date_precision), organizations(canonical_name)"
     )
     .eq("reviewed", false)
     .order("materiality", { ascending: false })
@@ -85,9 +101,7 @@ export default async function ReviewPage() {
               {/* EVENT date (the source document's published_on) — editorially
                   distinct from collection date, which the review must not
                   confuse with when something actually happened. */}
-              <span className="tag event">
-                {doc?.published_on ?? "event date unknown"}
-              </span>
+              <span className="tag event">{eventDate(doc)}</span>
               <span className={"tag " + mClass}>M{s.materiality}</span>
               <span className="tag">{s.confidence}</span>
               <span className="tag">{s.signal_type}</span>

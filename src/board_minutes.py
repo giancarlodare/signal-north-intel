@@ -200,11 +200,19 @@ class PoliteFetcher:
 # HTML parsing (stdlib only — no new heavyweight dependency for link lists)
 # ---------------------------------------------------------------------------
 class _LinkCollector(HTMLParser):
+    """Collects (href, text, context): context is the page text immediately
+    PRECEDING the link — listing pages put the meeting date in a heading or
+    row label next to the link, not inside it (option-3 listing-context
+    capture; see derive_event_date)."""
+
+    _CONTEXT_CHARS = 200
+
     def __init__(self) -> None:
         super().__init__()
-        self.links: list[tuple[str, str]] = []   # (href, text)
+        self.links: list[tuple[str, str, str]] = []   # (href, text, context)
         self._href: Optional[str] = None
         self._text_parts: list[str] = []
+        self._context = ""
 
     def handle_starttag(self, tag, attrs):
         if tag == "a":
@@ -216,11 +224,14 @@ class _LinkCollector(HTMLParser):
     def handle_data(self, data):
         if self._href is not None:
             self._text_parts.append(data)
+        else:
+            self._context = (self._context + " " + data)[-self._CONTEXT_CHARS:]
 
     def handle_endtag(self, tag):
         if tag == "a" and self._href is not None:
             text = " ".join(" ".join(self._text_parts).split())
-            self.links.append((self._href, text))
+            context = " ".join(self._context.split())
+            self.links.append((self._href, text, context))
             self._href = None
             self._text_parts = []
 
@@ -251,9 +262,15 @@ class _TextExtractor(HTMLParser):
 
 def extract_links(html: str, base_url: str) -> list[tuple[str, str]]:
     """All (absolute_url, link_text) pairs on a page."""
+    return [(u, t) for u, t, _ in extract_links_with_context(html, base_url)]
+
+
+def extract_links_with_context(html: str, base_url: str) -> list[tuple[str, str, str]]:
+    """(absolute_url, link_text, preceding_page_text) triples."""
     collector = _LinkCollector()
     collector.feed(html)
-    return [(urljoin(base_url, href), text) for href, text in collector.links]
+    return [(urljoin(base_url, href), text, ctx)
+            for href, text, ctx in collector.links]
 
 
 def html_to_text(html: str) -> str:
@@ -275,8 +292,8 @@ def find_document_links(html: str, base_url: str,
     """
     base_host = urlparse(base_url).netloc
     seen: set[str] = set()
-    results: list[tuple[str, str]] = []
-    for url, text in extract_links(html, base_url):
+    results: list[tuple[str, str, str]] = []
+    for url, text, context in extract_links_with_context(html, base_url):
         if url in seen:
             continue
         parsed = urlparse(url)
@@ -291,7 +308,7 @@ def find_document_links(html: str, base_url: str,
         if not is_pdf and parsed.netloc != base_host:
             continue
         seen.add(url)
-        results.append((url, text))
+        results.append((url, text, context))
     return results
 
 
@@ -370,6 +387,31 @@ def guess_meeting_date(*texts: str) -> Optional[str]:
     return None
 
 
+# Peel's document slugs open with {agenda-item}-{MM}-{YY} (e.g. 33-04-26- =
+# item 33, April 2026 meeting). Verified against every document where a full
+# date was independently derivable. Decodes the meeting MONTH only — the day
+# is not present — so dates derived this way carry date_precision='month'
+# with the conventional day=01 placeholder. Renderers must show "Apr 2026",
+# never a fabricated full date (docs/ROADMAP.md).
+_ITEM_MONTH_YEAR_RE = re.compile(r"/media/[^/]+/\d{1,2}-(\d{2})-(\d{2})-")
+
+
+def derive_event_date(*texts: str) -> tuple:
+    """(published_on, date_precision) from link text / url / listing context /
+    body — or (None, None). Full parseable dates win ('day'); the Peel
+    item-month-year filename convention is the month-precision fallback."""
+    full = guess_meeting_date(*texts)
+    if full:
+        return full, "day"
+    for text in texts:
+        m = _ITEM_MONTH_YEAR_RE.search(text or "")
+        if m:
+            mo, yy = int(m.group(1)), int(m.group(2))
+            if 1 <= mo <= 12 and 15 <= yy <= 35:
+                return f"20{yy:02d}-{mo:02d}-01", "month"
+    return None, None
+
+
 # ---------------------------------------------------------------------------
 # Source resolution
 # ---------------------------------------------------------------------------
@@ -417,10 +459,10 @@ def collect_board(board: dict, source_id: str, fetcher: PoliteFetcher,
             continue
         stats["listing_pages"] += 1
         html = resp.text
-        for url, text in find_document_links(html, listing_url, extra_patterns):
+        for url, text, context in find_document_links(html, listing_url, extra_patterns):
             if url not in seen_urls:      # dedup across listing pages
                 seen_urls.add(url)
-                candidates.append((url, text))
+                candidates.append((url, text, context))
         # Section expansion, ONE level deep: same-host non-PDF links under a
         # configured prefix (e.g. Peel's /reports/ sub-pages) are fetched as
         # additional listing pages. Only links found on the CONFIGURED pages
@@ -441,7 +483,7 @@ def collect_board(board: dict, source_id: str, fetcher: PoliteFetcher,
     # The cap counts NEW documents, not candidates: already-collected docs are
     # skipped without consuming it. That's what lets a multi-year backlog page
     # through over successive runs instead of stalling on the first 25 forever.
-    for url, link_text in candidates:
+    for url, link_text, listing_context in candidates:
         if stats["inserted"] >= limit:
             log.info("Per-run cap (%d) reached; %d candidates left for future runs",
                      limit, len(candidates) - stats["candidates"])
@@ -473,7 +515,12 @@ def collect_board(board: dict, source_id: str, fetcher: PoliteFetcher,
 
             title = link_text or urlparse(url).path.rsplit("/", 1)[-1]
             title = f"{board['name']} — {title}"[:500]
-            published_on = guess_meeting_date(link_text, url, body[:4000])
+            # Date derivation order: link text, URL, the listing page's text
+            # right before the link (meeting dates live in headings/rows next
+            # to links), then the document body. Full dates -> 'day'; the Peel
+            # item-month-year filename convention -> 'month'.
+            published_on, date_precision = derive_event_date(
+                link_text, url, listing_context, body[:4000])
             # Tag-only: board business is in-scope by construction.
             result = evaluate(title, body[:20000], "", keywords)
 
@@ -484,13 +531,14 @@ def collect_board(board: dict, source_id: str, fetcher: PoliteFetcher,
                 "doc_type": "board_minutes",
                 "status": "captured",
                 "published_on": published_on,
+                "date_precision": date_precision or "day",
                 "content_hash": chash,
                 "content": body[:MAX_STORED_CHARS] or None,
                 "defence_relevant": result.defence_relevant,
             }
             if dry_run:
-                log.info("[dry-run] would insert: %s (%s, %d chars body, published %s)",
-                         title, url, len(body), published_on)
+                log.info("[dry-run] would insert: %s (%s, %d chars body, published %s [%s])",
+                         title, url, len(body), published_on, date_precision or "day")
             else:
                 supabase_client.insert_document(payload)
             stats["inserted"] += 1

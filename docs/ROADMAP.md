@@ -39,6 +39,12 @@ by design: collectors backfill history (Peel's board archive spans 2017–2026),
 so collection-date ordering would let backfilled history masquerade as news.
 A 2019 board decision collected yesterday is context, not a headline.
 
+**Date precision is explicit in the data** (`documents.date_precision`,
+'day'|'month'): Peel's {item}-{MM}-{YY} filename convention dates a document
+to its meeting month only, stored as day=01 with precision 'month'.
+**Renderers MUST show month-precision dates as "Apr 2026", never as a full
+date** — the review page's eventDate() does; the brief generator must.
+
 Corollaries for the implementer:
 - Signals whose document has `published_on IS NULL` need an explicit policy
   (exclude from dated briefs, or a separate "date unknown" section) — never

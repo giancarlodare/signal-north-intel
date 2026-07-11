@@ -20,7 +20,7 @@ import logging
 import sys
 
 from . import supabase_client
-from .board_minutes import guess_meeting_date
+from .board_minutes import derive_event_date
 
 log = logging.getLogger(__name__)
 
@@ -29,25 +29,27 @@ BODY_WINDOW = 4000   # same window the collector reads
 
 def run(doc_type: str = "board_minutes", dry_run: bool = False) -> dict:
     stats = {"examined": 0, "dated": 0, "still_unknown": 0, "errors": 0}
+    # month-precision counts fold into "dated"; the log line shows [month]
     docs = supabase_client.fetch_all_rows_where(
         "documents", "id,title,url,content",
         {"doc_type": f"eq.{doc_type}", "published_on": "is.null"})
 
     for doc in docs:
         stats["examined"] += 1
-        date = guess_meeting_date(doc.get("title") or "", doc.get("url") or "",
-                                  (doc.get("content") or "")[:BODY_WINDOW])
+        date, precision = derive_event_date(
+            doc.get("title") or "", doc.get("url") or "",
+            (doc.get("content") or "")[:BODY_WINDOW])
         if not date:
             stats["still_unknown"] += 1
             continue
+        payload = {"published_on": date, "date_precision": precision}
         try:
             if dry_run:
-                log.info("[dry-run] would set published_on=%s for %r (%s)",
-                         date, (doc.get("title") or "")[:70], doc["id"])
+                log.info("[dry-run] would set published_on=%s [%s] for %r (%s)",
+                         date, precision, (doc.get("title") or "")[:70], doc["id"])
             else:
-                supabase_client.update_row("documents", doc["id"],
-                                           {"published_on": date})
-                log.info("set published_on=%s for %r", date,
+                supabase_client.update_row("documents", doc["id"], payload)
+                log.info("set published_on=%s [%s] for %r", date, precision,
                          (doc.get("title") or "")[:70])
             stats["dated"] += 1
         except Exception:   # noqa: BLE001 - one bad row must not kill the pass
