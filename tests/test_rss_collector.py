@@ -219,3 +219,20 @@ def test_parked_feed_is_skipped(monkeypatch):
     monkeypatch.setattr(rc, "_parse_feed", lambda url: calls.append(url) or orig(url))
     rc.run(limit=5, dry_run=True)
     assert not any("ontario" in u for u in calls)  # parked feed never fetched
+
+
+def test_link_path_filter_scopes_multi_department_feed(monkeypatch):
+    """DND pulls the unfiltered GC feed; only its own URL-path entries land."""
+    inserted = _wire(monkeypatch)
+    feed = dict(FEED, link_path_contains="/department-national-defence/")
+    entries = [
+        _entry("Body-worn camera pilot for MPs", LONG_BODY,
+               "https://news.example.gc.ca/en/housing-infrastructure/news/x"),
+        _entry("Armoured vehicle project advances", LONG_BODY,
+               "https://news.example.gc.ca/en/department-national-defence/news/y"),
+    ]
+    stats = rc.collect_feed(feed, entries, "src-1", KEYWORDS, FakeFetcher(),
+                            limit=10, dry_run=False)
+    assert stats["dropped_filter"] == 1
+    assert [d["url"] for d in inserted] == [
+        "https://news.example.gc.ca/en/department-national-defence/news/y"]

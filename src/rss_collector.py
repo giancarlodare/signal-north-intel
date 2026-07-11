@@ -86,8 +86,15 @@ FEEDS = [
     },
     {
         "name": "Department of National Defence — News",
-        "feed_url": _GC_NEWS_API.format(dept="departmentofnationaldefence",
-                                        title="National%20Defence"),
+        # No working dept= code exists for DND (probes 2026-07-11: every
+        # candidate returns an empty feed; entries carry no department field
+        # to learn the code from). The unfiltered GC News Centre feed DOES
+        # carry DND items, and their publisher URLs identify the department —
+        # so pull unfiltered and keep only /department-national-defence/ links.
+        "feed_url": ("https://api.io.canada.ca/io-server/gc/news/en/v2"
+                     "?sort=publishedDate&orderBy=desc&pick=100&format=atom"
+                     "&atomtitle=GC%20News"),
+        "link_path_contains": "/department-national-defence/",
         "allowed_hosts": ["www.canada.ca", "canada.ca", "www.forces.gc.ca"],
         "scope_terms": [],
         "source_name_candidates": ["Department of National Defence — News",
@@ -96,6 +103,13 @@ FEEDS = [
     },
     {
         "name": "RCMP — News",
+        # PARKED 2026-07-11: no functioning feed found anywhere. The GC News
+        # Centre carries no RCMP items in the recent window (unfiltered probe),
+        # every dept= candidate returns empty, and rcmp-grc.gc.ca serves HTML
+        # at every feed-shaped path. Unpark path: an HTML collector for
+        # rcmp-grc.gc.ca/en/news (reviewed follow-up; see docs/ROADMAP.md).
+        "enabled": False,
+        "parked_reason": "no functioning RSS/Atom feed found (probes 2026-07-11)",
         "feed_url": _GC_NEWS_API.format(dept="royalcanadianmountedpolice",
                                         title="RCMP"),
         "allowed_hosts": ["www.canada.ca", "canada.ca", "www.rcmp-grc.gc.ca", "rcmp-grc.gc.ca"],
@@ -168,6 +182,13 @@ def collect_feed(feed: dict, entries: list, source_id: str, keywords: Keywords,
         # Provenance rule: the publisher's own URL or nothing.
         if not link or not is_publisher_url(link, feed["allowed_hosts"]):
             stats["dropped_offsite"] += 1
+            continue
+
+        # Department scoping by publisher URL path, for feeds pulled from a
+        # multi-department upstream (DND has no working dept= code).
+        path_filter = feed.get("link_path_contains")
+        if path_filter and path_filter not in link:
+            stats["dropped_filter"] += 1
             continue
 
         # Keyword filtering ON for every feed: scope terms (if any) AND the
