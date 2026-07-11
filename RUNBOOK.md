@@ -279,6 +279,37 @@ Nothing goes public until you say the ethics gate has cleared.
 
 ---
 
+## Step 8 — grants collectors (Ontario + PS Canada)
+
+Order matters: the enum migration must COMMIT before anything else runs.
+
+1. Apply `migrations/2026-07-11_grants_doc_types.sql` **alone, in its own SQL
+   editor tab with nothing highlighted** (adds `grant_program`/`grant_award`
+   to the doc_type enum + `documents.guidelines_gated`; new enum labels are
+   unusable until this transaction commits — the file's header explains).
+2. Apply `migrations/2026-07-11_grants_sources_seed.sql` (three sources rows,
+   URL-keyed guards). Verify query at the bottom of the file — expect 3 rows.
+3. Dry-run both collectors and eyeball the previews:
+   `python -m src.grants_ontario --dry-run` and
+   `python -m src.grants_pscanada --dry-run`.
+4. One-time closed-archive baseline (after the dry-runs look right):
+   `python -m src.grants_ontario --baseline --dry-run`, then without
+   `--dry-run`. Never scheduled; safe to re-run (content_hash idempotent).
+5. Scheduled runs then need nothing: Ontario open directory rides
+   `daily-collect.yml` (same guard/concurrency/healthcheck), PS Canada rides
+   `weekly-discovery.yml` Sundays.
+
+Notes: Ontario program deadlines are the event dates (`published_on`);
+"ongoing" deadlines and all closed-archive entries are honestly null.
+A deadline or status change re-inserts the program as a fresh document —
+that's the signal, not a bug. `guidelines_gated=true` marks programs whose
+evaluation rubrics sit behind a TPON login / by-request gate (collected, not
+skipped). Federal grant AWARDS (open.canada.ca proactive disclosure) are
+design-first: see `docs/grants-federal-awards-design.md` — nothing ingests
+until the design is approved.
+
+---
+
 ## Operations — scheduling reliability (standing, not a one-time step)
 
 The daily collector's trigger architecture, alerting, and the one recurring
