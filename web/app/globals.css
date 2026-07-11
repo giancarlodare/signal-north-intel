@@ -130,3 +130,7 @@ button:active { transform: translateY(1px); }
   font-size: 14px; color: var(--text);
 }
 .checkrow input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent); }
+
+/* Event date: the lead tag on a review card — the date the thing happened,
+   not the date we collected it. */
+.tag.event { color: var(--text); border-color: var(--accent); font-weight: 650; }
