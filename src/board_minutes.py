@@ -75,6 +75,14 @@ BOARDS = [
             "TPSB",
         ],
         "source_id_env": "TPSB_SOURCE_ID",
+        # PARKED 2026-07-11: tpsb.ca's WAF returns 415 to this client
+        # SITE-WIDE — robots.txt AND the listing page — regardless of
+        # User-Agent, even though robots.txt (verified in-browser) allows all
+        # crawling. Per the operator's call: park rather than fight the WAF.
+        # Unparking options: contact the board office about collector access,
+        # or revisit if the WAF policy changes. Flip enabled to True to retry.
+        "enabled": False,
+        "parked_reason": "tpsb.ca WAF 415s all collector requests (2026-07-11)",
         # Verified in-browser 2026-07-10 (the earlier /meetings guess 404s).
         # Structure: year headings, then meeting dates, some with links.
         "listing_urls": ["https://tpsb.ca/home/current-and-past-meetings/"],
@@ -475,6 +483,10 @@ def run(limit: int = MAX_DOCS_PER_BOARD, dry_run: bool = False) -> int:
     failures = []
 
     for board in BOARDS:
+        if not board.get("enabled", True):
+            log.info("Board %s is PARKED (%s); skipping",
+                     board["name"], board.get("parked_reason", "no reason recorded"))
+            continue
         source_id = resolve_source_id(board, sources)
         if not source_id:
             log.error(

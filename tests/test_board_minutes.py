@@ -303,3 +303,12 @@ def test_section_expansion_one_level_only(monkeypatch):
     assert any(u.endswith("annual-perf.pdf") for u in urls)    # from expanded sub-page
     assert deeper not in fetcher.requested                     # one level only
     assert stats["listing_pages"] == 2
+
+
+def test_parked_board_is_skipped_not_failed(monkeypatch):
+    monkeypatch.setattr(bm.supabase_client, "fetch_rows",
+                        lambda table, select, limit=10000: [])
+    monkeypatch.setattr(bm, "BOARDS", [dict(BOARD, enabled=False,
+                                            parked_reason="WAF blocks client")])
+    monkeypatch.setattr(bm, "load_keywords", lambda: NO_KEYWORDS)
+    assert bm.run(limit=5, dry_run=True) == 0     # parked != failure
