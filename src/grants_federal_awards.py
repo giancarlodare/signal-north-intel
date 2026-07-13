@@ -65,6 +65,8 @@ DEPARTMENTS = [
     {"org": "rcmp-grc",  "env": "AWARDS_SOURCE_ID_RCMP_GRC"},
     {"org": "dnd-mdn",   "env": "AWARDS_SOURCE_ID_DND_MDN"},
     {"org": "cbsa-asfc", "env": "AWARDS_SOURCE_ID_CBSA_ASFC"},
+    {"org": "csc-scc",   "env": "AWARDS_SOURCE_ID_CSC_SCC"},
+    {"org": "jus",       "env": "AWARDS_SOURCE_ID_JUS"},
 ]
 
 # The record's page on the publisher's search UI. Format is CI-probe-verified
