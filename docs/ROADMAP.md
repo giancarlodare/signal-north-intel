@@ -3,6 +3,29 @@
 Durable record of agreed next builds, so nothing lives as folklore. Each item
 lands as its own reviewed PR when its phase stabilizes.
 
+## Prediction and track-record ledger (strategy pivot, 2026-07-13)
+
+**The core asset.** Signal North is a predictive intelligence engine whose
+value is a provable, time-stamped track record of calling which companies win
+government attention before the market sees it. The current propose-then-
+approve loop evolves into propose, predict, approve, reconcile. Build order is
+dependency order, A then B then C then D, with collector and coverage PRs
+interleaved so collection never pauses:
+
+- **Phase A:** demand-strength taxonomy on every signal (chatter, intent,
+  commitment, in_market, awarded) plus a first-class `procurements` entity.
+- **Phase B:** the immutable, public-provenance prediction ledger plus a
+  weekly propose-only reconciliation job and a hit-rate and lead-time view.
+- **Phase C:** decision-adjacent seller outputs and the two-sided export seam
+  (seller built, investor designed but gated off).
+- **Phase D:** incumbent vulnerability, timing windows, competitor positioning.
+
+Design docs (approved build order, code not started): see
+`docs/prediction-ledger-design.md` (Phases A and B schema and modules) and
+`docs/legal-seam-investor.md` (securities, MNPI, and manipulation flags for
+counsel; the investor line is Phase 2, pending legal review, nothing
+investor-facing is built).
+
 ## Grants collectors — BUILT 2026-07-11 (programs); awards design-first
 
 **Design note (operator, 2026-07-11):** grant awards are leading indicators of
