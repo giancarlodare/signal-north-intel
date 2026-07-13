@@ -78,3 +78,15 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python -m src.grants_federal_awards
+
+      # Procurement proposer (propose-only, like discovery): clusters the
+      # week's graded signals into candidate procurements for human review on
+      # the Procurements page. Writes only procurements + procurement_signals
+      # as 'proposed'. Ordered last: it reads signals the collectors and
+      # extractor have produced, and a failure here costs nothing upstream.
+      - name: Run procurement proposer (propose-only)
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.procurement_proposer

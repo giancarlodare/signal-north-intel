@@ -74,6 +74,9 @@ export default async function ReviewPage() {
       <div className="topbar">
         <h1>Signal Review</h1>
         <span className="count">{signals.length} pending</span>
+        <Link className="link" href="/procurements">
+          Procurements
+        </Link>
         <Link className="link" href="/prospects">
           Prospects
         </Link>
