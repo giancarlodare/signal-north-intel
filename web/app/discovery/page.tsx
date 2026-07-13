@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { signOut } from "../review/actions";
+import { signOut } from "../auth-actions";
 import {
   addToProspects,
   approveEntity,
@@ -107,8 +107,8 @@ export default async function DiscoveryPage() {
         <span className="count">
           {sources.length + entities.length} proposed
         </span>
-        <Link className="link" href="/review">
-          Signals
+        <Link className="link" href="/corpus">
+          Corpus
         </Link>
         <Link className="link" href="/procurements">
           Procurements

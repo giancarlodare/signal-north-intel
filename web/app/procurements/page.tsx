@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { signOut } from "../review/actions";
+import { signOut } from "../auth-actions";
 import {
   confirmProcurement,
   editProcurement,
@@ -118,7 +118,7 @@ export default async function ProcurementsPage() {
       <div className="topbar">
         <h1>Procurements</h1>
         <span className="count">{proposed.length} proposed</span>
-        <Link className="link" href="/review">Review</Link>
+        <Link className="link" href="/corpus">Corpus</Link>
         <Link className="link" href="/predictions">
           Predictions
         </Link>

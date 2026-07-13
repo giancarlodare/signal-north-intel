@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { signOut } from "../review/actions";
+import { signOut } from "../auth-actions";
 import { authorPrediction, confirmOutcome } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -94,7 +94,7 @@ export default async function PredictionsPage() {
       <div className="topbar">
         <h1>Predictions</h1>
         <span className="count">{predictions.length} claims</span>
-        <Link className="link" href="/review">Review</Link>
+        <Link className="link" href="/corpus">Corpus</Link>
         <Link className="link" href="/procurements">Procurements</Link>
         <Link className="link" href="/prospects">Prospects</Link>
         <form action={signOut}>
