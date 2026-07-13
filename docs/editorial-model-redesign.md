@@ -141,8 +141,12 @@ The raw approve/reject queue is removed. It becomes `/corpus`: a read-only,
 filterable, searchable browser over live signals, for when the operator WANTS to
 look, never a to-do list. It reuses the filters and event-date sort built in
 PR #50 (doc_type, confidence, min grade, min materiality, freshness fresh/stale/
-undated, newest/oldest). The only write affordance is a per-signal "suppress"
-toggle (sets `suppressed`), which is the editorial override, not an approval.
+undated, newest/oldest).
+
+Phase 2 ships `/corpus` READ-ONLY (browse only, no write affordance). The
+per-signal "suppress" toggle (sets `suppressed`, the editorial override, not an
+approval) lands in Phase 3 alongside the brief, so Phase 2 stays a focused,
+low-risk read-only conversion.
 
 ### 6.2 /brief (new): the weekly job
 
@@ -176,18 +180,47 @@ Page summary:
 
 ## 7. The Weekly Signal brief
 
-### 7.1 Generation (weekly job)
+### 7.1 Selection: timing-aware, not only publication-fresh
 
-Select the week's signals where all hold:
-  * event date (documents.published_on) within the covered week (fresh);
+A signal earns a place in the brief if it clears the materiality/grade bar AND is
+timing-relevant this week by EITHER of two independent paths. Pure
+"event-date-this-week" selection would miss the most actionable items (an
+imminent grant deadline or an expected tender window on a signal collected weeks
+ago), so both paths qualify:
+
+  * Path A, freshly published: event date (documents.published_on) within the
+    covered week; OR
+  * Path B, imminent timing: the signal has a forward-looking date within a
+    lead window (default: within the next 30 days) that makes it a lead item now,
+    regardless of when it was collected. Sources of a forward date, in order:
+    a grant program's parsed deadline, and a signal's `expected_timing` (the
+    extractor's expected tender/award window). A grant closing in two weeks or a
+    tender expected next month is a lead item this week even if published a month
+    ago.
+
+Common gates for both paths:
   * materiality >= threshold (default M3, tunable);
   * evidence_grade >= threshold (default commitment/3, tunable);
   * `suppressed=false`.
 
-Cluster them (by procurement where linked, else by organization, else by theme),
-rank by a simple salience score (grade, then materiality, then amount), and write
-a `draft` brief with `brief_items`. The generator writes nothing outside briefs/
-brief_items; it never confirms a procurement or authors a prediction.
+Cluster the selected signals (by procurement where linked, else by organization,
+else by theme), rank by salience (imminent-timing items lead, then grade, then
+materiality, then amount), and write a `draft` brief with `brief_items`. Imminent
+(Path B) items are tagged so the operator sees WHY each is included (published
+this week vs deadline/window approaching).
+
+Threshold tuning visibility (operator decision, 2026-07-13): the generator MUST
+report, each week, the count of signals EXCLUDED because they fell below the
+materiality/grade bar (broken down by which gate they missed), so the operator
+can see what the bar is filtering out and tune M3/grade>=3 with evidence rather
+than blind. This exclusion report is written into the draft brief (or its run
+log) every week; it is not optional.
+
+The generator writes nothing outside briefs/brief_items; it never confirms a
+procurement or authors a prediction. It needs read access to a forward date per
+signal (grant deadline / expected_timing); where a phase-3 implementation finds
+neither, the signal simply qualifies via Path A only (never a fabricated date,
+per the honesty rule).
 
 ### 7.2 Edit and publish
 
@@ -239,14 +272,23 @@ denominators). Mitigation is score-calibration audits, not eyeballing everything
 ## 9. Calibration audit (the replacement safeguard)
 
 Because the scores are now the trust layer, they must be kept honest. Add a
-recurring precision audit:
+precision audit that fires on two triggers (operator decision, 2026-07-13):
 
-  * Monthly, sample N (default 30) random live signals stratified by grade.
-  * For each, record the source URL, the extracted fields, and a verdict slot
-    (accurate / inaccurate / unclear) for a human spot-check, or an automated
-    re-extraction cross-check where feasible.
-  * Report a precision number per grade band and overall, tracked over time, so
-    score drift is visible.
+  * Scheduled: monthly, sample N (default 30) random live signals stratified by
+    grade.
+  * Triggered: an additional audit sample after ANY change to a collector or an
+    extraction prompt. Those are exactly the changes that can silently shift
+    extraction accuracy, and under this model no human approval catches the
+    regression, so the audit is the safety net and must run when the scorer
+    changes, not only on the calendar. (Mechanically: a manual/dispatchable audit
+    run the operator or CI fires as part of shipping any collector or
+    extraction-prompt change.)
+  * For each sampled signal, record the source URL, the extracted fields, and a
+    verdict slot (accurate / inaccurate / unclear) for a human spot-check, or an
+    automated re-extraction cross-check where feasible.
+  * Report a precision number per grade band and overall, tracked over time (and
+    labelled scheduled vs triggered, so a post-change sample is comparable
+    against the baseline), so score drift is visible.
 
 The audit is propose-only: it writes an audit sample table and a report, never
 changes signals. If precision drops below a floor, that is the signal to retune
@@ -275,15 +317,20 @@ Phase 1: flip the trust model.
     weekly step before the proposer.
   * Tests updated. Reversible and small.
 
-Phase 2: /corpus.
-  * Convert /review to a read-only browser (reuse #50 filters + event-date sort)
-    with a per-signal suppress toggle. Remove the bulk approve/reject UI.
+Phase 2: /corpus (read-only).
+  * Convert /review to a read-only browser (reuse #50 filters + event-date sort).
+    Remove the bulk approve/reject UI. NO write affordance in this phase (the
+    suppress toggle is deferred to Phase 3), keeping Phase 2 a low-risk
+    read-only conversion.
 
-Phase 3: the brief.
+Phase 3: the brief (+ suppress toggle).
   * Migration: briefs + brief_items.
-  * Weekly generator (fresh + strong-grade + high-materiality + not-suppressed),
-    propose-only.
+  * Weekly generator: timing-aware selection (Path A published-this-week OR
+    Path B imminent deadline/expected-timing) + strong-grade + high-materiality
+    + not-suppressed; surfaces the below-threshold exclusion count every week
+    (section 7.1); propose-only.
   * /brief editor page: edit, reorder, cut, publish.
+  * Add the /corpus per-signal suppress toggle here.
   * Wire the generator into the weekly workflow after the proposer.
 
 Phase 4: prediction candidate feed.
@@ -291,7 +338,8 @@ Phase 4: prediction candidate feed.
     preserve the non-destructive merge at authoring time.
 
 Phase 5: calibration audit.
-  * Audit sample table + monthly job + a small report surface.
+  * Audit sample table + monthly scheduled job + a dispatchable triggered run for
+    after collector/extraction-prompt changes + a small report surface.
 
 Predictions, reconcile, anchoring, discovery, and all collectors are untouched
 across every phase.
@@ -305,6 +353,14 @@ across every phase.
   4. Calibration audit is in scope as the replacement safeguard.
   5. This doc is committed before any code; phases build only after it is reviewed.
 
-Open for confirmation at review: the default brief thresholds (M3, grade >= 3),
-the audit cadence and sample size (monthly, N=30), and whether the /corpus
-suppress toggle ships in Phase 2 or waits for Phase 3.
+Confirmed at review (2026-07-13):
+  6. Brief thresholds M3 / grade >= 3, AND the generator must report the count of
+     signals excluded below threshold each week so the bar can be tuned with
+     evidence (section 7.1).
+  7. Calibration audit: monthly N=30, PLUS a triggered audit after any collector
+     or extraction-prompt change (section 9).
+  8. The /corpus suppress toggle ships in Phase 3; Phase 2 is the read-only
+     browser only.
+  9. Brief selection is timing-aware: an imminent grant deadline or expected
+     tender window qualifies a signal even if collected weeks ago, not only
+     publication-fresh (section 7.1).
