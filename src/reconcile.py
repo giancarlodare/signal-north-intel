@@ -55,7 +55,9 @@ def decide_outcome(prediction: dict, subject_signals: list, today: date) -> Opti
 
     subject_signals: dicts with evidence_grade, published_on (the document
     event date, YYYY-MM-DD or None), and document_id. Returns
-    (outcome, settling_document_id) or None when the claim is still open.
+    (outcome, settling_document_id, settling_published_on) or None when the
+    claim is still open. The settling event date is returned so it can be
+    FROZEN into the outcome at proposal, fixing lead-time at settlement.
     """
     predicted = prediction.get("predicted_rung")
     made_on = str(prediction.get("made_at") or "")[:10]
@@ -72,10 +74,12 @@ def decide_outcome(prediction: dict, subject_signals: list, today: date) -> Opti
     ]
     if settling:
         settling.sort(key=lambda s: str(s["published_on"]))
-        return ("correct", settling[0].get("document_id"))
+        winner = settling[0]
+        return ("correct", winner.get("document_id"),
+                str(winner["published_on"])[:10])
 
     if horizon_end and horizon_end < today.isoformat():
-        return ("expired", None)
+        return ("expired", None, None)
 
     return None   # still open, within horizon, no settling evidence yet
 
@@ -149,7 +153,7 @@ def run(dry_run: bool = False) -> int:
             if decision is None:
                 stats["still_open"] += 1
                 continue
-            outcome, settling_doc = decision
+            outcome, settling_doc, settling_published_on = decision
 
             # Don't re-propose the same outcome the job already proposed.
             if any(o.get("outcome") == outcome for o in existing):
@@ -160,6 +164,9 @@ def run(dry_run: bool = False) -> int:
                 "prediction_id": pred["id"],
                 "outcome": outcome,
                 "settling_document_id": settling_doc,
+                # Freeze the settling event date at proposal so lead-time cannot
+                # move if the source document is later edited.
+                "settling_published_on": settling_published_on,
                 "resolved_on": today.isoformat(),
                 "status": "proposed",
                 "proposed_by": STAMP,
