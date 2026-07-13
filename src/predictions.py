@@ -12,10 +12,17 @@ Decisions encoded (docs/prediction-ledger-design.md, operator 2026-07-13):
   * Company-level (organization_category) claims are gated behind the investor
     seam; procurement-level claims are not.
   * The claim hash is a tamper-evident sha256 over the claim's identifying
-    fields plus the sorted evidence ids plus the authoritative timestamp.
+    fields, the frozen evidence basis, and the authoritative timestamp.
+
+The claim_hash here MIRRORS the database trigger predictions_freeze()
+(migration 2026-07-13_prediction_hash_trigger.sql), which is what actually
+computes the stored hash at insert. This function exists to INDEPENDENTLY
+VERIFY a stored claim: recompute from the row and compare. The canonical form
+is ASCII-only (uuids, integers, ISO-second timestamps) so Postgres, Python,
+and any other verifier agree byte for byte.
 """
 import hashlib
-import json
+from datetime import datetime, timezone
 
 # Default horizon in months by the subject's CURRENT demand rung (1..5). A
 # chatter-grade subject needs the longest runway to advancement; a subject
@@ -48,23 +55,53 @@ def gated_for(subject_kind: str) -> bool:
     return subject_kind == "organization_category"
 
 
+def canonical_timestamp(made_at) -> str:
+    """A timestamp to ISO second-precision UTC 'YYYY-MM-DDTHH:MM:SSZ', matching
+    the trigger's to_char(... 'YYYY-MM-DD"T"HH24:MI:SS"Z"'). Accepts a datetime
+    or an ISO string. Truncating to seconds avoids sub-second/format drift
+    between what was hashed and what Postgres stores and returns."""
+    if isinstance(made_at, str):
+        s = made_at.strip().replace("Z", "+00:00")
+        try:
+            dt = datetime.fromisoformat(s)
+        except ValueError:
+            return made_at            # already canonical or unparseable; use as-is
+    else:
+        dt = made_at
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(timezone.utc)
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def canonical_evidence(evidence_snapshot) -> str:
-    """Deterministic serialization of the frozen evidence snapshot: each cited
-    signal's material state at claim time, sorted by signal_id with sorted keys,
-    so the same evidence always serializes identically regardless of order."""
+    """The evidence basis, sorted by signal_id, as 'sid,grade,doc,pubdate'
+    joined by ';'. ASCII-only and identical to the trigger's string_agg. Binds
+    each cited signal's id, grade, document, and event date; the free-text
+    title/summary live in the snapshot for humans but are not hashed."""
+    def field(e, k):
+        v = e.get(k)
+        return "" if v is None else str(v)
     items = sorted((dict(e) for e in (evidence_snapshot or [])),
-                   key=lambda e: str(e.get("signal_id", "")))
-    return json.dumps(items, sort_keys=True, separators=(",", ":"), default=str)
+                   key=lambda e: field(e, "signal_id"))
+    return ";".join(",".join([field(e, "signal_id"), field(e, "evidence_grade"),
+                              field(e, "document_id"), field(e, "published_on")])
+                    for e in items)
 
 
-def claim_hash(*, subject_kind: str, subject_id: str, predicted_rung: int,
-               horizon_months: int, evidence_snapshot, made_at: str) -> str:
-    """Tamper-evident hash of a frozen claim. Binds the claim's parameters, the
-    authoritative made_at timestamp, AND the frozen evidence CONTENT (not just
-    its ids), so a later edit to a cited signal cannot silently change what the
-    claim was based on without breaking the hash. Order-independent."""
+def claim_hash(*, subject_kind: str, subject_procurement_id=None,
+               subject_organization_id=None, subject_category_id=None,
+               predicted_rung: int, horizon_months: int, evidence_snapshot,
+               made_at) -> str:
+    """Recompute a claim's tamper-evident hash for verification, byte-identical
+    to the predictions_freeze() DB trigger. Binds the subject, predicted rung,
+    horizon, the frozen evidence basis, and the authoritative second-precision
+    made_at, so any later edit to the claim or a cited signal's grade/document
+    breaks the hash."""
+    subject = ",".join([str(subject_procurement_id or ""),
+                        str(subject_organization_id or ""),
+                        str(subject_category_id or "")])
     canonical = "|".join([
-        subject_kind or "", str(subject_id or ""), str(predicted_rung),
-        str(horizon_months), canonical_evidence(evidence_snapshot), str(made_at or ""),
+        subject_kind or "", subject, str(predicted_rung), str(horizon_months),
+        canonical_evidence(evidence_snapshot), canonical_timestamp(made_at),
     ])
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()

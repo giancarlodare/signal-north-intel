@@ -77,6 +77,9 @@ export default async function ReviewPage() {
         <Link className="link" href="/procurements">
           Procurements
         </Link>
+        <Link className="link" href="/predictions">
+          Predictions
+        </Link>
         <Link className="link" href="/prospects">
           Prospects
         </Link>

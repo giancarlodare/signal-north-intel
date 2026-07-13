@@ -60,6 +60,9 @@ export default async function ProcurementsPage() {
         <h1>Procurements</h1>
         <span className="count">{proposed.length} proposed</span>
         <Link className="link" href="/review">Review</Link>
+        <Link className="link" href="/predictions">
+          Predictions
+        </Link>
         <Link className="link" href="/prospects">Prospects</Link>
         <Link className="link" href="/discovery">Discovery</Link>
         <form action={signOut}>

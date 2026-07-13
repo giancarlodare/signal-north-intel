@@ -62,6 +62,9 @@ export default async function ProspectsPage({
         <Link className="link" href="/discovery">
           Discovery
         </Link>
+        <Link className="link" href="/predictions">
+          Predictions
+        </Link>
         <form action={signOut}>
           <button className="link" type="submit">
             Sign out

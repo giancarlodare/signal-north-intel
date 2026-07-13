@@ -35,15 +35,16 @@ def test_company_level_claims_are_gated_procurement_level_not():
 
 def _snap(sid, grade, title="t"):
     return {"signal_id": sid, "evidence_grade": grade, "title": title,
+            "document_id": f"d-{sid}", "published_on": "2026-05-01",
             "document_url": f"https://ex.gc.ca/{sid}"}
 
 
 def test_claim_hash_is_stable_and_order_independent():
-    a = pd.claim_hash(subject_kind="procurement", subject_id="p1",
+    a = pd.claim_hash(subject_kind="procurement", subject_procurement_id="p1",
                       predicted_rung=4, horizon_months=9,
                       evidence_snapshot=[_snap("s2", 4), _snap("s1", 3)],
                       made_at="2026-07-13T00:00:00Z")
-    b = pd.claim_hash(subject_kind="procurement", subject_id="p1",
+    b = pd.claim_hash(subject_kind="procurement", subject_procurement_id="p1",
                       predicted_rung=4, horizon_months=9,
                       evidence_snapshot=[_snap("s1", 3), _snap("s2", 4)],  # reordered
                       made_at="2026-07-13T00:00:00Z")
@@ -51,26 +52,48 @@ def test_claim_hash_is_stable_and_order_independent():
     assert len(a) == 64
 
 
-def test_claim_hash_binds_evidence_content_not_just_ids():
-    """A later edit to a cited signal's content (its grade here) must change the
-    hash, so the frozen basis cannot be retroactively altered undetectably."""
-    h_low = pd.claim_hash(subject_kind="procurement", subject_id="p1",
+def test_claim_hash_binds_evidence_grade_not_just_ids():
+    """A later edit to a cited signal's grade must change the hash, so the
+    frozen basis cannot be retroactively altered undetectably."""
+    h_low = pd.claim_hash(subject_kind="procurement", subject_procurement_id="p1",
                           predicted_rung=4, horizon_months=9,
                           evidence_snapshot=[_snap("s1", 3)],
                           made_at="2026-07-13T00:00:00Z")
-    h_high = pd.claim_hash(subject_kind="procurement", subject_id="p1",
+    h_high = pd.claim_hash(subject_kind="procurement", subject_procurement_id="p1",
                            predicted_rung=4, horizon_months=9,
                            evidence_snapshot=[_snap("s1", 5)],   # same id, different grade
                            made_at="2026-07-13T00:00:00Z")
     assert h_low != h_high
 
 
+def test_claim_hash_timestamp_is_second_precision():
+    """Sub-second differences do not change the hash (they are truncated), so a
+    stored timestamp round-trips to the same hash regardless of ms formatting."""
+    h1 = pd.claim_hash(subject_kind="procurement", subject_procurement_id="p1",
+                       predicted_rung=4, horizon_months=9,
+                       evidence_snapshot=[_snap("s1", 3)],
+                       made_at="2026-07-13T12:00:00.123456Z")
+    h2 = pd.claim_hash(subject_kind="procurement", subject_procurement_id="p1",
+                       predicted_rung=4, horizon_months=9,
+                       evidence_snapshot=[_snap("s1", 3)],
+                       made_at="2026-07-13T12:00:00.999Z")
+    assert h1 == h2
+
+
 def test_claim_hash_changes_with_any_field():
-    base = dict(subject_kind="procurement", subject_id="p1", predicted_rung=4,
-                horizon_months=9, evidence_snapshot=[_snap("s1", 3)],
-                made_at="2026-07-13T00:00:00Z")
+    base = dict(subject_kind="procurement", subject_procurement_id="p1",
+                predicted_rung=4, horizon_months=9,
+                evidence_snapshot=[_snap("s1", 3)], made_at="2026-07-13T00:00:00Z")
     h0 = pd.claim_hash(**base)
     assert pd.claim_hash(**{**base, "made_at": "2026-07-14T00:00:00Z"}) != h0
     assert pd.claim_hash(**{**base, "predicted_rung": 5}) != h0
     assert pd.claim_hash(**{**base, "evidence_snapshot": [_snap("s1", 3), _snap("s2", 4)]}) != h0
-    assert pd.claim_hash(**{**base, "subject_id": "p2"}) != h0
+    assert pd.claim_hash(**{**base, "subject_procurement_id": "p2"}) != h0
+
+
+def test_canonical_forms_match_the_trigger_shape():
+    """Guards the exact serialization the DB trigger also builds, so the Python
+    verifier and Postgres agree byte for byte."""
+    assert pd.canonical_timestamp("2026-07-13T12:34:56.789Z") == "2026-07-13T12:34:56Z"
+    assert pd.canonical_evidence([_snap("s2", 4), _snap("s1", 3)]) == (
+        "s1,3,d-s1,2026-05-01;s2,4,d-s2,2026-05-01")
