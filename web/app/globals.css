@@ -69,6 +69,7 @@ html, body {
 .evidence { list-style: none; padding: 0; margin: 6px 0 0; }
 .evidence li { font-size: 13px; color: var(--muted); padding: 3px 0; word-break: break-word; }
 .evidence li a { color: var(--accent); }
+.evidence .srcorg { color: var(--text); font-weight: 600; }
 
 .title { font-size: 16px; font-weight: 650; margin: 2px 0 6px; }
 .summary { color: var(--text); margin: 0 0 8px; }

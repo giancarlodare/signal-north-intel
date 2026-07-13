@@ -79,6 +79,18 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python -m src.grants_federal_awards
 
+      # Federal contract awards (open.canada.ca datastore API). The awarded-rung
+      # source. Materiality-floored ($100k) and windowed (2024-04-01), newest-
+      # first, 50/dept/run; the 20s Crawl-delay is honored, so the first
+      # windowed ingest takes a few minutes. Ordered before the proposer so its
+      # awards (and their procurement_id hard keys) are available to cluster.
+      - name: Run federal contracts collector
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.contracts_federal
+
       # Procurement proposer (propose-only, like discovery): clusters the
       # week's graded signals into candidate procurements for human review on
       # the Procurements page. Writes only procurements + procurement_signals

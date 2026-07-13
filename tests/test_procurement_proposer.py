@@ -7,7 +7,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from src import procurement_proposer as pp
 
 
-def _sig(sid, org, grade, category=None, title="", doc_title="", doc_url=""):
+def _sig(sid, org, grade, category=None, title="", doc_title="", doc_url="",
+         doc_reference=None):
     return {
         "id": sid,
         "organization_id": org,
@@ -16,7 +17,8 @@ def _sig(sid, org, grade, category=None, title="", doc_title="", doc_url=""):
         "title": title,
         "organizations": {"canonical_name": "Toronto Police Service Board"},
         "categories": category,
-        "documents": {"title": doc_title, "url": doc_url, "published_on": None},
+        "documents": {"title": doc_title, "url": doc_url, "published_on": None,
+                      "reference_number": doc_reference},
     }
 
 
@@ -49,6 +51,34 @@ def test_reference_is_the_hard_key_across_buyers_and_scope():
     assert g["reference_number"] == "GC-2026-77"
     assert set(g["signal_ids"]) == {"s1", "s2"}
     assert g["stage"] == 5                       # strongest rung wins
+
+
+def test_structured_document_reference_is_the_hard_key():
+    """The wiring that makes awards and tenders cluster: a structured
+    documents.reference_number (a contract's procurement_id, a tender's
+    solicitation number) is the hard key, so an award and a tender for the same
+    solicitation land in ONE procurement even across buyers and categories."""
+    signals = [
+        # a contract award (awarded) with procurement_id D999 in the doc field
+        _sig("award", "org-A", 5, CAT_DRONE, doc_reference="D999"),
+        # a tender (in_market) for the same solicitation, different category text
+        _sig("tender", "org-B", 4, CAT_BWV, doc_reference="D999"),
+    ]
+    groups = pp.cluster(signals)
+    assert len(groups) == 1
+    g = groups[0]
+    assert g["reference_number"] == "D999"
+    assert set(g["signal_ids"]) == {"award", "tender"}
+    assert g["stage"] == 5
+
+
+def test_structured_reference_beats_text_parse():
+    """When a source provides a structured reference, it wins over any number
+    that might be text-parsed from the title."""
+    s = _sig("s1", "org-A", 5, CAT_BWV, doc_title="Solicitation No. ON-2026-0098",
+             doc_reference="D555")
+    groups = pp.cluster([s])
+    assert groups[0]["reference_number"] == "D555"
 
 
 def test_buyer_plus_scope_fallback_groups_and_separates():
