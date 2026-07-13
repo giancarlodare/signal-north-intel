@@ -60,6 +60,11 @@ html, body {
 .tag.m5 { color: #fff; background: #7a2530; border-color: #97313e; }
 .tag.m4 { color: #fff; background: #7a5320; border-color: #97662a; }
 .tag.warn { color: var(--warn); border-color: var(--warn); }
+/* Demand-strength grade: how much a signal proves real demand. */
+.tag.grade { text-transform: uppercase; letter-spacing: 0.04em; font-weight: 650; }
+.tag.grade.g-strong { color: #fff; background: #1f5f3f; border-color: #2c7d54; }
+.tag.grade.g-mid { color: var(--text); border-color: var(--accent); }
+.tag.grade.g-weak { color: var(--muted); border-color: var(--line); }
 
 .title { font-size: 16px; font-weight: 650; margin: 2px 0 6px; }
 .summary { color: var(--text); margin: 0 0 8px; }

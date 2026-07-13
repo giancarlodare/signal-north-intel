@@ -34,11 +34,20 @@ type Signal = {
   signal_type: string;
   confidence: string;
   materiality: number;
+  evidence_grade: number | null;
   needs_org_resolution: boolean | null;
   unresolved_org_name: string | null;
   documents: Doc | Doc[] | null;
   organizations: Org | Org[] | null;
 };
+
+// Demand-strength rungs, indexed by grade (mirrors src/taxonomy.RUNGS). Answers
+// "is this opportunity real": chatter is talk, awarded is money moved.
+const RUNGS = ["ungraded", "chatter", "intent", "commitment", "in_market", "awarded"];
+
+function gradeLabel(grade: number | null): string {
+  return RUNGS[grade ?? 0] ?? "ungraded";
+}
 
 // PostgREST embeds a to-one relationship as either an object or a 1-element
 // array depending on inference — normalize to a single value.
@@ -51,7 +60,7 @@ export default async function ReviewPage() {
   const { data, error } = await supabase
     .from("signals")
     .select(
-      "id, title, summary, signal_type, confidence, materiality, needs_org_resolution, unresolved_org_name, documents(title,url,doc_type,published_on,date_precision), organizations(canonical_name)"
+      "id, title, summary, signal_type, confidence, materiality, evidence_grade, needs_org_resolution, unresolved_org_name, documents(title,url,doc_type,published_on,date_precision), organizations(canonical_name)"
     )
     .eq("reviewed", false)
     .order("materiality", { ascending: false })
@@ -95,6 +104,10 @@ export default async function ReviewPage() {
             ? `${s.unresolved_org_name ?? "unknown"} — needs resolution`
             : "—");
         const mClass = s.materiality >= 5 ? "m5" : s.materiality >= 4 ? "m4" : "";
+        // Demand strength (is this opportunity real): commitment and above are
+        // the rungs that prove real demand rather than announcement.
+        const g = s.evidence_grade ?? 0;
+        const gClass = g >= 4 ? "g-strong" : g === 3 ? "g-mid" : "g-weak";
         return (
           <article key={s.id} className="card">
             <div className="meta">
@@ -102,6 +115,7 @@ export default async function ReviewPage() {
                   distinct from collection date, which the review must not
                   confuse with when something actually happened. */}
               <span className="tag event">{eventDate(doc)}</span>
+              <span className={"tag grade " + gClass}>{gradeLabel(s.evidence_grade)}</span>
               <span className={"tag " + mClass}>M{s.materiality}</span>
               <span className="tag">{s.confidence}</span>
               <span className="tag">{s.signal_type}</span>
