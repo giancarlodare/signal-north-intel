@@ -18,6 +18,7 @@ type LinkedSignal = {
   id: string;
   title: string | null;
   evidence_grade: number | null;
+  organizations: { canonical_name: string | null } | { canonical_name: string | null }[] | null;
   documents: { url: string | null } | { url: string | null }[] | null;
 };
 type Proc = {
@@ -40,7 +41,7 @@ export default async function ProcurementsPage() {
   const { data, error } = await supabase
     .from("procurements")
     .select(
-      "id, title, scope, reference_number, current_stage, status, buyer_organization_id, organizations(canonical_name), procurement_signals(active, signals(id, title, evidence_grade, documents(url)))"
+      "id, title, scope, reference_number, current_stage, status, buyer_organization_id, organizations(canonical_name), procurement_signals(active, signals(id, title, evidence_grade, organizations(canonical_name), documents(url)))"
     )
     .in("status", ["proposed", "confirmed"])
     .order("current_stage", { ascending: false })
@@ -96,9 +97,15 @@ export default async function ProcurementsPage() {
                   const s = one(l.signals);
                   if (!s) return null;
                   const url = one(s.documents)?.url ?? null;
+                  // The signal's own source org. On a merged procurement the
+                  // survivor's buyer is one org, but each evidence signal keeps
+                  // its own attribution here, so a board signal and a service
+                  // signal stay distinguishable and provenance is never lost.
+                  const srcOrg = one(s.organizations)?.canonical_name ?? null;
                   return (
                     <li key={s.id}>
                       <span className="tag grade g-weak">{rung(s.evidence_grade)}</span>{" "}
+                      {srcOrg ? <span className="srcorg">{srcOrg}</span> : null}{" "}
                       {url ? (
                         <a href={url} target="_blank" rel="noreferrer">{s.title ?? "signal"}</a>
                       ) : (

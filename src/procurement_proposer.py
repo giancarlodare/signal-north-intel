@@ -101,7 +101,13 @@ def cluster(signals: list) -> list:
         if not isinstance(grade, int):
             continue
         doc = _one(s.get("documents")) or {}
-        reference = parse_reference(s.get("title"), doc.get("title"), doc.get("url"))
+        # The structured documents.reference_number (a contract's procurement_id,
+        # a tender's solicitation number) is authoritative when a source
+        # provides it: that is what lets an award and its tender hard-key to the
+        # same procurement. Fall back to the conservative text parse only when
+        # the source carried no structured reference.
+        reference = (doc.get("reference_number")
+                     or parse_reference(s.get("title"), doc.get("title"), doc.get("url")))
         scope_text, category_id = signal_scope(s)
         key = procurements.procurement_identity(buyer, scope_text, reference)
 
@@ -154,7 +160,7 @@ def run(dry_run: bool = False, limit: int = DEFAULT_LIMIT) -> int:
         "signals",
         "id,organization_id,category_id,evidence_grade,review_note,title,"
         "organizations(canonical_name),categories(slug,name),"
-        "documents(url,title,published_on)",
+        "documents(url,title,published_on,reference_number)",
         {"organization_id": "not.is.null", "evidence_grade": "not.is.null"})
     # Exclude rejected signals: a claim the reviewer already threw out should
     # not seed an opportunity.
