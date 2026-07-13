@@ -52,6 +52,15 @@ create table if not exists predictions (
   rationale                text not null,
   evidence_signal_ids      uuid[] not null
                              check (array_length(evidence_signal_ids, 1) >= 1),
+  -- The evidence CONTENT frozen at claim time, not just the ids. Each element
+  -- captures a cited signal's material state (grade, title, summary, document
+  -- url, event date) as it was when the claim was made, so a later edit to a
+  -- signal can never retroactively alter what the claim was based on. The
+  -- claim_hash covers this snapshot, so tampering with the frozen evidence is
+  -- detectable too.
+  evidence_snapshot        jsonb not null
+                             check (jsonb_typeof(evidence_snapshot) = 'array'
+                                    and jsonb_array_length(evidence_snapshot) >= 1),
   claim_hash               text not null,
   gated                    boolean not null default false,   -- company-level: investor-gated
   created_at               timestamptz not null default now(),
@@ -80,6 +89,28 @@ drop trigger if exists trg_predictions_no_update on predictions;
 create trigger trg_predictions_no_update before update or delete on predictions
   for each row execute function predictions_are_immutable();
 
+-- Anti-backdating: made_at is the authoritative "we called it by then" stamp
+-- and the whole value proposition rests on it. The client supplies made_at
+-- (so it can fold it into claim_hash), but this trigger rejects any value not
+-- within a two-minute window of the SERVER clock, so a claim cannot be
+-- inserted with a backdated timestamp. (Post-insert edits are already blocked
+-- by immutability; this closes the insert-time gap.) Proof against manipulation
+-- of the server clock itself comes from the external anchor below.
+create or replace function predictions_made_at_is_now() returns trigger
+  language plpgsql as $$
+begin
+  if new.made_at < now() - interval '2 minutes'
+     or new.made_at > now() + interval '2 minutes' then
+    raise exception 'predictions.made_at (%) must be the current time; backdating is refused',
+      new.made_at;
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists trg_predictions_made_at on predictions;
+create trigger trg_predictions_made_at before insert on predictions
+  for each row execute function predictions_made_at_is_now();
+
 -- ---- prediction_outcomes (append-only reconciliation) -----------------------
 -- Kept separate so the claim stays frozen. The reconcile job inserts a
 -- 'proposed' outcome; a human confirms it. The hit-rate view reads the latest
@@ -101,6 +132,31 @@ create table if not exists prediction_outcomes (
 
 create index if not exists idx_outcomes_prediction
   on prediction_outcomes (prediction_id, created_at desc);
+
+-- ---- prediction_anchors (external timestamp proof) --------------------------
+-- The internal made_at + claim_hash + immutability prove a claim was not
+-- edited AFTER it was frozen, and the made_at trigger prevents backdating at
+-- insert. But proving to a skeptical third party (an investor, a regulator)
+-- that a claim existed by a given date needs an anchor OUTSIDE our own
+-- database, one we cannot backdate. This append-only table records where each
+-- claim's hash was externally committed: a public git commit whose hash log
+-- GitHub timestamps server-side, and/or an OpenTimestamps (Bitcoin-anchored)
+-- proof. Because predictions are immutable, the anchor cannot live on the
+-- claim row; it is recorded here after the fact by the anchoring job (built
+-- with the reconcile unit). One claim may gain several anchors over time.
+create table if not exists prediction_anchors (
+  id            uuid primary key default gen_random_uuid(),
+  prediction_id uuid not null references predictions(id),
+  claim_hash    text not null,            -- copied so the anchor is self-contained
+  anchor_type   text not null check (anchor_type in ('git_commit','opentimestamps','other')),
+  anchor_ref    text not null,            -- commit SHA, .ots reference, etc.
+  anchored_at   timestamptz not null default now(),
+  note          text,
+  created_at    timestamptz not null default now()
+);
+
+create index if not exists idx_anchors_prediction
+  on prediction_anchors (prediction_id);
 
 -- ---- hit-rate + lead-time view (reviewer-facing) ----------------------------
 -- The proof metric. Over confirmed, settled outcomes: the correct rate, and
@@ -132,6 +188,7 @@ left join documents d on d.id = l.settling_document_id;
 -- ---- RLS + grants -----------------------------------------------------------
 alter table predictions        enable row level security;
 alter table prediction_outcomes enable row level security;
+alter table prediction_anchors  enable row level security;
 
 -- predictions: reviewer reads all and INSERTs (authoring a frozen claim on
 -- approval). No update/delete grant, and the trigger blocks them anyway.
@@ -149,8 +206,14 @@ create policy "outcome_insert" on prediction_outcomes for insert to authenticate
 drop policy if exists "outcome_update" on prediction_outcomes;
 create policy "outcome_update" on prediction_outcomes for update to authenticated using (true) with check (true);
 
+-- anchors: reviewer reads all; the anchoring job (service_role) inserts. No
+-- update/delete: an anchor, like an outcome record, is append-only.
+drop policy if exists "anchor_read" on prediction_anchors;
+create policy "anchor_read" on prediction_anchors for select to authenticated using (true);
+
 grant select, insert         on table predictions        to authenticated;
 grant select, insert, update on table prediction_outcomes to authenticated;
+grant select                 on table prediction_anchors  to authenticated;
 grant select                 on prediction_scorecard      to authenticated;
 -- deliberately NO update/delete on predictions, no delete anywhere, nothing to
 -- anon. service_role (reconcile job) bypasses RLS but is ALSO blocked from

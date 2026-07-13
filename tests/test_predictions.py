@@ -33,29 +33,44 @@ def test_company_level_claims_are_gated_procurement_level_not():
     assert pd.gated_for("procurement") is False
 
 
+def _snap(sid, grade, title="t"):
+    return {"signal_id": sid, "evidence_grade": grade, "title": title,
+            "document_url": f"https://ex.gc.ca/{sid}"}
+
+
 def test_claim_hash_is_stable_and_order_independent():
     a = pd.claim_hash(subject_kind="procurement", subject_id="p1",
                       predicted_rung=4, horizon_months=9,
-                      evidence_signal_ids=["s2", "s1"], made_at="2026-07-13T00:00:00Z")
+                      evidence_snapshot=[_snap("s2", 4), _snap("s1", 3)],
+                      made_at="2026-07-13T00:00:00Z")
     b = pd.claim_hash(subject_kind="procurement", subject_id="p1",
                       predicted_rung=4, horizon_months=9,
-                      evidence_signal_ids=["s1", "s2"],  # different order, same set
+                      evidence_snapshot=[_snap("s1", 3), _snap("s2", 4)],  # reordered
                       made_at="2026-07-13T00:00:00Z")
     assert a == b
     assert len(a) == 64
 
 
+def test_claim_hash_binds_evidence_content_not_just_ids():
+    """A later edit to a cited signal's content (its grade here) must change the
+    hash, so the frozen basis cannot be retroactively altered undetectably."""
+    h_low = pd.claim_hash(subject_kind="procurement", subject_id="p1",
+                          predicted_rung=4, horizon_months=9,
+                          evidence_snapshot=[_snap("s1", 3)],
+                          made_at="2026-07-13T00:00:00Z")
+    h_high = pd.claim_hash(subject_kind="procurement", subject_id="p1",
+                           predicted_rung=4, horizon_months=9,
+                           evidence_snapshot=[_snap("s1", 5)],   # same id, different grade
+                           made_at="2026-07-13T00:00:00Z")
+    assert h_low != h_high
+
+
 def test_claim_hash_changes_with_any_field():
     base = dict(subject_kind="procurement", subject_id="p1", predicted_rung=4,
-                horizon_months=9, evidence_signal_ids=["s1"],
+                horizon_months=9, evidence_snapshot=[_snap("s1", 3)],
                 made_at="2026-07-13T00:00:00Z")
     h0 = pd.claim_hash(**base)
-    # a different timestamp -> different hash (two identical claims at different
-    # times are distinct records)
     assert pd.claim_hash(**{**base, "made_at": "2026-07-14T00:00:00Z"}) != h0
-    # a different predicted rung -> different hash
     assert pd.claim_hash(**{**base, "predicted_rung": 5}) != h0
-    # different evidence -> different hash
-    assert pd.claim_hash(**{**base, "evidence_signal_ids": ["s1", "s2"]}) != h0
-    # different subject -> different hash
+    assert pd.claim_hash(**{**base, "evidence_snapshot": [_snap("s1", 3), _snap("s2", 4)]}) != h0
     assert pd.claim_hash(**{**base, "subject_id": "p2"}) != h0
