@@ -30,6 +30,7 @@ from typing import Callable, Optional
 import prompts
 
 from . import supabase_client
+from . import taxonomy
 
 log = logging.getLogger(__name__)
 
@@ -127,10 +128,13 @@ def build_resolver(rows: list, key_fields: tuple, alias_field: Optional[str] = N
 
 def build_signal_payload(raw: dict, document_id: str, stamp: str,
                          resolve_org: Callable[[str], Optional[str]],
-                         resolve_cat: Callable[[str], Optional[str]]) -> dict:
+                         resolve_cat: Callable[[str], Optional[str]],
+                         doc_type: Optional[str] = None) -> dict:
     """Transform one raw LLM signal into a signals-table row payload.
 
     Pure function (no I/O) so it can be unit-tested without the API or DB.
+    doc_type is the source document's type; it sets a floor on the demand-
+    strength grade (src/taxonomy.py) and is passed by run_extraction.
     """
     org_name = (raw.get("organization_name") or "").strip()
     org_id = resolve_org(org_name) if org_name else None
@@ -157,6 +161,8 @@ def build_signal_payload(raw: dict, document_id: str, stamp: str,
         "organization_id": org_id,
         "category_id": cat_id,
         "signal_type": signal_type,
+        "evidence_grade": taxonomy.grade(signal_type, doc_type or ""),
+        "evidence_grade_version": taxonomy.TAXONOMY_VERSION,
         "title": (raw.get("title") or "Untitled signal")[:200],
         "summary": raw.get("summary") or "",
         "quote_or_line": raw.get("quote_or_line"),
@@ -257,13 +263,14 @@ def run_extraction(batch_size: int = 20, model: str = DEFAULT_MODEL, dry_run: bo
             source_name = supabase_client.get_source_name(doc["source_id"])
             raw_signals, stamp = extract_signals(doc, source_name, model)
             for raw in raw_signals:
-                payload = build_signal_payload(raw, doc["id"], stamp, resolve_org, resolve_cat)
+                payload = build_signal_payload(raw, doc["id"], stamp, resolve_org,
+                                               resolve_cat, doc.get("doc_type"))
                 if dry_run:
                     log.info(
-                        "[dry-run] would insert: extracted_by=%s type=%s conf=%s mat=%s "
+                        "[dry-run] would insert: extracted_by=%s type=%s grade=%s conf=%s mat=%s "
                         "org_id=%s needs_org_resolution=%s unresolved=%r title=%r",
-                        payload["extracted_by"], payload["signal_type"], payload["confidence"],
-                        payload["materiality"], payload["organization_id"],
+                        payload["extracted_by"], payload["signal_type"], payload["evidence_grade"],
+                        payload["confidence"], payload["materiality"], payload["organization_id"],
                         payload["needs_org_resolution"], payload["unresolved_org_name"],
                         payload["title"],
                     )
