@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { approve, reject, signOut } from "./actions";
+import { signOut } from "./actions";
+import BulkReview, { ReviewSignal } from "./BulkReview";
 
 export const dynamic = "force-dynamic";
 
@@ -26,28 +27,10 @@ function eventDate(doc: Doc | null): string {
   }
   return doc.published_on;
 }
-type Org = { canonical_name: string | null };
-type Signal = {
-  id: string;
-  title: string;
-  summary: string | null;
-  signal_type: string;
-  confidence: string;
-  materiality: number;
-  evidence_grade: number | null;
-  needs_org_resolution: boolean | null;
-  unresolved_org_name: string | null;
-  documents: Doc | Doc[] | null;
-  organizations: Org | Org[] | null;
-};
 
-// Demand-strength rungs, indexed by grade (mirrors src/taxonomy.RUNGS). Answers
-// "is this opportunity real": chatter is talk, awarded is money moved.
+// Demand-strength rungs, indexed by grade (mirrors src/taxonomy.RUNGS).
 const RUNGS = ["ungraded", "chatter", "intent", "commitment", "in_market", "awarded"];
-
-function gradeLabel(grade: number | null): string {
-  return RUNGS[grade ?? 0] ?? "ungraded";
-}
+const CONFIDENCES = ["confirmed", "probable", "speculative"];
 
 // PostgREST embeds a to-one relationship as either an object or a 1-element
 // array depending on inference — normalize to a single value.
@@ -55,108 +38,145 @@ function one<T>(v: T | T[] | null): T | null {
   return Array.isArray(v) ? v[0] ?? null : v;
 }
 
-export default async function ReviewPage() {
+type SearchParams = {
+  doc_type?: string;
+  grade?: string;
+  materiality?: string;
+  confidence?: string;
+};
+
+export default async function ReviewPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
   const supabase = createClient();
-  const { data, error } = await supabase
+
+  // Facets: the doc_types actually present in the unreviewed queue, so the
+  // filter dropdown never offers a type with zero matches (and never hides one
+  // that exists). Cheap: one column, capped at the queue size.
+  const { data: facetRows } = await supabase
+    .from("signals")
+    .select("documents!inner(doc_type)")
+    .eq("reviewed", false)
+    .limit(1000);
+  const docTypes = Array.from(
+    new Set(
+      (facetRows ?? [])
+        .map((r) => one(r.documents as Doc | Doc[] | null)?.doc_type)
+        .filter((d): d is string => !!d)
+    )
+  ).sort();
+
+  // Main query, filtered by the URL params. documents!inner so a doc_type
+  // filter narrows the parent signals (an inner join drops signals whose
+  // document doesn't match).
+  let query = supabase
     .from("signals")
     .select(
-      "id, title, summary, signal_type, confidence, materiality, evidence_grade, needs_org_resolution, unresolved_org_name, documents(title,url,doc_type,published_on,date_precision), organizations(canonical_name)"
+      "id, title, summary, signal_type, confidence, materiality, evidence_grade, needs_org_resolution, unresolved_org_name, documents!inner(title,url,doc_type,published_on,date_precision), organizations(canonical_name)"
     )
-    .eq("reviewed", false)
+    .eq("reviewed", false);
+
+  if (searchParams.doc_type) query = query.eq("documents.doc_type", searchParams.doc_type);
+  if (searchParams.confidence) query = query.eq("confidence", searchParams.confidence);
+  const gradeMin = Number(searchParams.grade);
+  if (gradeMin) query = query.gte("evidence_grade", gradeMin);
+  const matMin = Number(searchParams.materiality);
+  if (matMin) query = query.gte("materiality", matMin);
+
+  const { data, error } = await query
     .order("materiality", { ascending: false })
     .order("created_at", { ascending: false })
-    .limit(50);
+    .limit(200);
 
-  const signals = (data ?? []) as unknown as Signal[];
+  type Org = { canonical_name: string | null };
+  type Row = {
+    id: string;
+    title: string;
+    summary: string | null;
+    signal_type: string;
+    confidence: string;
+    materiality: number;
+    evidence_grade: number | null;
+    needs_org_resolution: boolean | null;
+    unresolved_org_name: string | null;
+    documents: Doc | Doc[] | null;
+    organizations: Org | Org[] | null;
+  };
+  const rows = (data ?? []) as unknown as Row[];
+
+  // Flatten to the exact card shape the client component needs.
+  const signals: ReviewSignal[] = rows.map((s) => {
+    const doc = one(s.documents);
+    const org = one(s.organizations);
+    return {
+      id: s.id,
+      title: s.title,
+      summary: s.summary,
+      signal_type: s.signal_type,
+      confidence: s.confidence,
+      materiality: s.materiality,
+      evidence_grade: s.evidence_grade,
+      needs_org_resolution: !!s.needs_org_resolution,
+      org_label:
+        org?.canonical_name ??
+        (s.needs_org_resolution
+          ? `${s.unresolved_org_name ?? "unknown"} — needs resolution`
+          : "—"),
+      source_url: doc?.url ?? null,
+      event_date: eventDate(doc),
+      doc_type: doc?.doc_type ?? null,
+    };
+  });
 
   return (
-    <main className="page">
+    <main className="page wide">
       <div className="topbar">
         <h1>Signal Review</h1>
-        <span className="count">{signals.length} pending</span>
-        <Link className="link" href="/procurements">
-          Procurements
-        </Link>
-        <Link className="link" href="/predictions">
-          Predictions
-        </Link>
-        <Link className="link" href="/prospects">
-          Prospects
-        </Link>
-        <Link className="link" href="/discovery">
-          Discovery
-        </Link>
+        <span className="count">{signals.length} shown</span>
+        <Link className="link" href="/procurements">Procurements</Link>
+        <Link className="link" href="/predictions">Predictions</Link>
+        <Link className="link" href="/prospects">Prospects</Link>
+        <Link className="link" href="/discovery">Discovery</Link>
         <form action={signOut}>
-          <button className="link" type="submit">
-            Sign out
-          </button>
+          <button className="link" type="submit">Sign out</button>
         </form>
       </div>
 
-      {error ? (
-        <p className="err">Could not load signals: {error.message}</p>
-      ) : null}
+      {/* GET form: filters live in the URL, so they survive reloads and the
+          back button. No client JS needed for filtering. */}
+      <form className="filters" method="get">
+        <select name="doc_type" defaultValue={searchParams.doc_type ?? ""}>
+          <option value="">All doc types</option>
+          {docTypes.map((d) => (
+            <option key={d} value={d}>{d}</option>
+          ))}
+        </select>
+        <select name="confidence" defaultValue={searchParams.confidence ?? ""}>
+          <option value="">All confidence</option>
+          {CONFIDENCES.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+        <select name="grade" defaultValue={searchParams.grade ?? ""}>
+          <option value="">Any grade</option>
+          {[1, 2, 3, 4, 5].map((g) => (
+            <option key={g} value={g}>{RUNGS[g]}+</option>
+          ))}
+        </select>
+        <select name="materiality" defaultValue={searchParams.materiality ?? ""}>
+          <option value="">Any materiality</option>
+          {[1, 2, 3, 4, 5].map((m) => (
+            <option key={m} value={m}>M{m}+</option>
+          ))}
+        </select>
+        <button className="btn" type="submit">Filter</button>
+      </form>
 
-      {!error && signals.length === 0 ? (
-        <p className="empty">Nothing to review right now.</p>
-      ) : null}
+      {error ? <p className="err">Could not load signals: {error.message}</p> : null}
 
-      {signals.map((s) => {
-        const doc = one(s.documents);
-        const org = one(s.organizations);
-        const orgLabel =
-          org?.canonical_name ??
-          (s.needs_org_resolution
-            ? `${s.unresolved_org_name ?? "unknown"} — needs resolution`
-            : "—");
-        const mClass = s.materiality >= 5 ? "m5" : s.materiality >= 4 ? "m4" : "";
-        // Demand strength (is this opportunity real): commitment and above are
-        // the rungs that prove real demand rather than announcement.
-        const g = s.evidence_grade ?? 0;
-        const gClass = g >= 4 ? "g-strong" : g === 3 ? "g-mid" : "g-weak";
-        return (
-          <article key={s.id} className="card">
-            <div className="meta">
-              {/* EVENT date (the source document's published_on) — editorially
-                  distinct from collection date, which the review must not
-                  confuse with when something actually happened. */}
-              <span className="tag event">{eventDate(doc)}</span>
-              <span className={"tag grade " + gClass}>{gradeLabel(s.evidence_grade)}</span>
-              <span className={"tag " + mClass}>M{s.materiality}</span>
-              <span className="tag">{s.confidence}</span>
-              <span className="tag">{s.signal_type}</span>
-              {s.needs_org_resolution ? <span className="tag warn">org?</span> : null}
-            </div>
-            <div className="title">{s.title}</div>
-            {s.summary ? <p className="summary">{s.summary}</p> : null}
-            <p className="sub">
-              {orgLabel}
-              {doc?.url ? (
-                <>
-                  {" · "}
-                  <a href={doc.url} target="_blank" rel="noreferrer">
-                    source
-                  </a>
-                </>
-              ) : null}
-            </p>
-            <div className="row">
-              <form action={approve} style={{ display: "flex", flex: 1 }}>
-                <input type="hidden" name="id" value={s.id} />
-                <button className="approve" type="submit">
-                  Approve
-                </button>
-              </form>
-              <form action={reject} style={{ display: "flex", flex: 1 }}>
-                <input type="hidden" name="id" value={s.id} />
-                <button className="reject" type="submit">
-                  Reject
-                </button>
-              </form>
-            </div>
-          </article>
-        );
-      })}
+      {!error ? <BulkReview signals={signals} /> : null}
     </main>
   );
 }

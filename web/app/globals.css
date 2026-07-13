@@ -144,3 +144,55 @@ button:active { transform: translateY(1px); }
 /* Event date: the lead tag on a review card — the date the thing happened,
    not the date we collected it. */
 .tag.event { color: var(--text); border-color: var(--accent); font-weight: 650; }
+
+/* ============================================================================
+   Desktop bulk review: a wider canvas, a multi-column card grid, per-card
+   multi-select, and a sticky action bar that operates on the checked rows.
+   Mobile-first still holds (single column, sticky bar stacks); the extra width
+   and columns only kick in on a real desktop viewport.
+   ============================================================================ */
+.page.wide { max-width: 1100px; }
+
+/* Review filter bar: flow the selects inline; the button hugs the end. */
+.wide .filters {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+.wide .filters button { grid-column: auto; }
+
+.bulk { display: block; }
+.selectall { padding: 2px 2px 10px; }
+
+/* One column on mobile, two on desktop. Cards stay tappable at any width. */
+.cards { display: grid; grid-template-columns: 1fr; gap: 14px; }
+@media (min-width: 760px) {
+  .cards { grid-template-columns: 1fr 1fr; }
+}
+
+/* A selectable card is a label wrapping its checkbox, so a click anywhere on
+   the card toggles selection, except on the source link, which the HTML spec
+   excludes from label activation (interactive descendant). */
+.card.selectable { display: block; cursor: pointer; margin-bottom: 0; }
+.card.selectable .meta input[type="checkbox"] {
+  width: 18px; height: 18px; accent-color: var(--accent); margin-right: 2px;
+}
+.card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+
+/* Sticky action bar: rides the bottom of the viewport while the reviewer
+   scrolls the grid, so Approve/Reject are always in reach. */
+.bulkbar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding: 12px;
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.bulkbar .count { font-weight: 650; color: var(--text); white-space: nowrap; }
+.bulkbar .note { flex: 1 1 220px; min-height: 44px; margin-top: 0; }
+.bulkbar .approve, .bulkbar .reject { flex: 0 0 auto; min-width: 150px; padding: 0 16px; }
+.bulkbar button:disabled { opacity: 0.45; }
