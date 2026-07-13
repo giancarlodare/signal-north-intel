@@ -156,16 +156,17 @@ def run(dry_run: bool = False, limit: int = DEFAULT_LIMIT) -> int:
     stats = {"candidates": 0, "proposed": 0, "linked_existing": 0,
              "skipped_rejected": 0, "signals_linked": 0, "errors": 0}
 
+    # Read the live corpus: every graded, org-resolved signal that has not been
+    # suppressed. Under the editorial model (docs/editorial-model-redesign.md)
+    # there is no approval gate; a signal is corpus-live on insert, and the only
+    # exclusion is `suppressed` (an editorial override, or AR1 machine noise).
     signals = supabase_client.fetch_all_rows_where(
         "signals",
-        "id,organization_id,category_id,evidence_grade,review_note,title,"
+        "id,organization_id,category_id,evidence_grade,title,"
         "organizations(canonical_name),categories(slug,name),"
         "documents(url,title,published_on,reference_number)",
-        {"organization_id": "not.is.null", "evidence_grade": "not.is.null"})
-    # Exclude rejected signals: a claim the reviewer already threw out should
-    # not seed an opportunity.
-    signals = [s for s in signals
-               if not (s.get("review_note") or "").lower().startswith("rejected")]
+        {"organization_id": "not.is.null", "evidence_grade": "not.is.null",
+         "suppressed": "is.false"})
 
     candidates = [c for c in cluster(signals) if should_propose(c)]
     stats["candidates"] = len(candidates)
