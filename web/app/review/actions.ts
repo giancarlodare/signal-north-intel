@@ -3,33 +3,29 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { reviewNotePayload } from "@/lib/reviewNote.mjs";
 
 // Approve/reject both mark the signal reviewed=true; the outcome and any note
 // are recorded in review_note. reviewed_by='human' records that a person
 // eyeballed it, distinct from the triage engine's 'triage@v1' auto-approvals.
+// The exact update payload comes from reviewNotePayload so every path (single
+// and bulk, approve and reject) writes identical fields.
 export async function approve(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   const supabase = createClient();
-  await supabase
-    .from("signals")
-    .update({ reviewed: true, review_note: "approved", reviewed_by: "human" })
-    .eq("id", id);
+  await supabase.from("signals").update(reviewNotePayload("approve")).eq("id", id);
   revalidatePath("/review");
 }
 
 export async function reject(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
-  const note = String(formData.get("note") ?? "").trim();
+  const note = String(formData.get("note") ?? "");
   const supabase = createClient();
   await supabase
     .from("signals")
-    .update({
-      reviewed: true,
-      review_note: note ? `rejected: ${note}` : "rejected",
-      reviewed_by: "human",
-    })
+    .update(reviewNotePayload("reject", note))
     .eq("id", id);
   revalidatePath("/review");
 }
@@ -51,25 +47,18 @@ export async function approveMany(formData: FormData) {
   const ids = parseIds(formData);
   if (ids.length === 0) return;
   const supabase = createClient();
-  await supabase
-    .from("signals")
-    .update({ reviewed: true, review_note: "approved", reviewed_by: "human" })
-    .in("id", ids);
+  await supabase.from("signals").update(reviewNotePayload("approve")).in("id", ids);
   revalidatePath("/review");
 }
 
 export async function rejectMany(formData: FormData) {
   const ids = parseIds(formData);
   if (ids.length === 0) return;
-  const note = String(formData.get("note") ?? "").trim();
+  const note = String(formData.get("note") ?? "");
   const supabase = createClient();
   await supabase
     .from("signals")
-    .update({
-      reviewed: true,
-      review_note: note ? `rejected: ${note}` : "rejected",
-      reviewed_by: "human",
-    })
+    .update(reviewNotePayload("reject", note))
     .in("id", ids);
   revalidatePath("/review");
 }

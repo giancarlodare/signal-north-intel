@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState, useTransition } from "react";
 import { approveMany, rejectMany } from "./actions";
 
 // A signal flattened on the server into exactly what the card needs, so the
@@ -31,6 +31,9 @@ const gradeLabel = (g: number | null) => RUNGS[g ?? 0] ?? "ungraded";
 // the checked set -- never to a whole filter blindly.
 export default function BulkReview({ signals }: { signals: ReviewSignal[] }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [note, setNote] = useState("");
+  const [pending, startTransition] = useTransition();
+  const formRef = useRef<HTMLFormElement>(null);
 
   const allSelected = signals.length > 0 && selected.size === signals.length;
   const toggle = (id: string) =>
@@ -43,12 +46,26 @@ export default function BulkReview({ signals }: { signals: ReviewSignal[] }) {
   const toggleAll = () =>
     setSelected(allSelected ? new Set() : new Set(signals.map((s) => s.id)));
 
+  // Run a bulk action on the checked rows, then clear the selection and the
+  // note so the completed action is visibly done (the note field used to keep
+  // its text, which read as "nothing happened"). The checked checkboxes + note
+  // are read from the live form, so what is written is exactly what is shown.
+  const run = (action: (fd: FormData) => Promise<void>) => {
+    if (!formRef.current || selected.size === 0) return;
+    const fd = new FormData(formRef.current);
+    startTransition(async () => {
+      await action(fd);
+      setSelected(new Set());
+      setNote("");
+    });
+  };
+
   if (signals.length === 0) {
     return <p className="empty">Nothing to review for this filter.</p>;
   }
 
   return (
-    <form className="bulk">
+    <form ref={formRef} className="bulk">
       <div className="selectall">
         <label className="checkrow">
           <input type="checkbox" checked={allSelected} onChange={toggleAll} />
@@ -104,27 +121,33 @@ export default function BulkReview({ signals }: { signals: ReviewSignal[] }) {
       {/* Sticky action bar: acts on the checked rows. Reject note is optional
           and applies to the whole batch. */}
       <div className="bulkbar">
-        <span className="count">{selected.size} selected</span>
+        <span className="count">
+          {selected.size > 0
+            ? `${selected.size} selected`
+            : "Select signals to act on"}
+        </span>
         <input
           className="note"
           name="note"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
           placeholder="Reject reason (optional, applies to batch)"
         />
         <button
           className="approve"
-          type="submit"
-          formAction={approveMany}
-          disabled={selected.size === 0}
+          type="button"
+          onClick={() => run(approveMany)}
+          disabled={selected.size === 0 || pending}
         >
-          Approve selected
+          {pending ? "Working…" : "Approve selected"}
         </button>
         <button
           className="reject"
-          type="submit"
-          formAction={rejectMany}
-          disabled={selected.size === 0}
+          type="button"
+          onClick={() => run(rejectMany)}
+          disabled={selected.size === 0 || pending}
         >
-          Reject selected
+          {pending ? "Working…" : "Reject selected"}
         </button>
       </div>
     </form>

@@ -43,7 +43,13 @@ type SearchParams = {
   grade?: string;
   materiality?: string;
   confidence?: string;
+  age?: string; // "fresh" | "stale" | "undated"
+  sort?: string; // "newest" | "oldest"
 };
+
+// Freshness cutoff: matches the Procurements recency threshold (#48). A signal
+// whose event date is older than this reads as stale.
+const STALE_MONTHS = 6;
 
 export default async function ReviewPage({
   searchParams,
@@ -85,10 +91,36 @@ export default async function ReviewPage({
   const matMin = Number(searchParams.materiality);
   if (matMin) query = query.gte("materiality", matMin);
 
-  const { data, error } = await query
-    .order("materiality", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(200);
+  // Event-date (freshness) filter: surface stale or undated signals as a group
+  // so they can be bulk-handled. The cutoff is on documents.published_on, the
+  // event date we already track (day/month precision).
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - STALE_MONTHS);
+  const cutoffISO = cutoff.toISOString().slice(0, 10);
+  if (searchParams.age === "undated") {
+    query = query.is("documents.published_on", null);
+  } else if (searchParams.age === "stale") {
+    query = query.lt("documents.published_on", cutoffISO);
+  } else if (searchParams.age === "fresh") {
+    query = query.gte("documents.published_on", cutoffISO);
+  }
+
+  // Sort: default is materiality (most important first); event-date sort lets
+  // the reviewer walk newest or oldest evidence. nullsFirst:false keeps undated
+  // signals out of the way when sorting by date.
+  if (searchParams.sort === "newest" || searchParams.sort === "oldest") {
+    query = query.order("published_on", {
+      referencedTable: "documents",
+      ascending: searchParams.sort === "oldest",
+      nullsFirst: false,
+    });
+  } else {
+    query = query
+      .order("materiality", { ascending: false })
+      .order("created_at", { ascending: false });
+  }
+
+  const { data, error } = await query.limit(200);
 
   type Org = { canonical_name: string | null };
   type Row = {
@@ -170,6 +202,17 @@ export default async function ReviewPage({
           {[1, 2, 3, 4, 5].map((m) => (
             <option key={m} value={m}>M{m}+</option>
           ))}
+        </select>
+        <select name="age" defaultValue={searchParams.age ?? ""}>
+          <option value="">Any event date</option>
+          <option value="fresh">Fresh (&lt; {STALE_MONTHS}mo)</option>
+          <option value="stale">Stale (&gt; {STALE_MONTHS}mo)</option>
+          <option value="undated">Undated</option>
+        </select>
+        <select name="sort" defaultValue={searchParams.sort ?? ""}>
+          <option value="">Sort: materiality</option>
+          <option value="newest">Sort: newest first</option>
+          <option value="oldest">Sort: oldest first</option>
         </select>
         <button className="btn" type="submit">Filter</button>
       </form>
