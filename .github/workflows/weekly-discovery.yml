@@ -91,15 +91,14 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python -m src.contracts_federal
 
-      # Review triage: auto-approve the clean structured-disclosure signals the
-      # collectors above just produced (federal contract + grant awards from
-      # search.open.canada.ca), stamping reviewed_by='triage@v1'. Everything
-      # else -- CanadaBuys, interpreted prose, lower confidence, unresolved org,
-      # high stakes -- is left for a human. Ordered AFTER the federal collectors
-      # (so their awards are classifiable this run) and BEFORE the proposer (so
-      # auto-approved awards are available to cluster). Touches only signal
-      # review state: never a prediction, never a procurement.
-      - name: Run review triage (auto-approve clean structured signals)
+      # Corpus hygiene: suppress AR1 noise (materiality 1 AND speculative AND no
+      # amount AND not defence-tagged) from the live corpus, stamping
+      # suppressed_by='triage@v1'. Under the editorial model there is no approval
+      # gate -- signals are corpus-live on insert, and this is the only automated
+      # write to review state. Ordered BEFORE the proposer so suppressed noise is
+      # excluded from clustering. Touches only suppression state: never a
+      # prediction, never a procurement. See docs/editorial-model-redesign.md.
+      - name: Run corpus-hygiene triage (suppress AR1 noise)
         if: steps.guard.outputs.should_run == 'true'
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
