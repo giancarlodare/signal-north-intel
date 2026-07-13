@@ -102,3 +102,15 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python -m src.procurement_proposer
+
+      # Reconcile predictions (propose-only): proposes 'correct' when public
+      # evidence reached a claim's predicted rung within its horizon, and
+      # 'expired' when a horizon has lapsed unsettled. A human confirms every
+      # outcome. Ordered last: it reads the signals and procurement links the
+      # steps above produced.
+      - name: Run prediction reconcile (propose-only)
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.reconcile
