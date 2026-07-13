@@ -26,14 +26,14 @@ def test_correct_when_predicted_rung_reached_in_window():
     pred = _pred(predicted_rung=4)
     sigs = [_sig(2, "2026-03-01"),          # too weak
             _sig(4, "2026-05-01", "d-win")]  # reaches in_market inside the window
-    assert rc.decide_outcome(pred, sigs, TODAY) == ("correct", "d-win")
+    assert rc.decide_outcome(pred, sigs, TODAY) == ("correct", "d-win", "2026-05-01")
 
 
 def test_correct_picks_earliest_settling_for_honest_lead_time():
     pred = _pred(predicted_rung=4)
     sigs = [_sig(5, "2026-06-01", "d-late"),
             _sig(4, "2026-04-01", "d-early")]
-    assert rc.decide_outcome(pred, sigs, TODAY) == ("correct", "d-early")
+    assert rc.decide_outcome(pred, sigs, TODAY) == ("correct", "d-early", "2026-04-01")
 
 
 def test_a_weaker_rung_never_settles_a_claim():
@@ -51,12 +51,12 @@ def test_evidence_outside_the_window_does_not_settle():
     sigs = [_sig(5, "2025-12-01"),          # before made_at
             _sig(5, "2026-10-15")]          # after horizon end
     # both out of window; horizon passed as of TODAY -> expired
-    assert rc.decide_outcome(pred, sigs, TODAY) == ("expired", None)
+    assert rc.decide_outcome(pred, sigs, TODAY) == ("expired", None, None)
 
 
 def test_expired_when_horizon_passed_with_no_settling_evidence():
     pred = _pred(horizon_ends_on="2026-10-01")
-    assert rc.decide_outcome(pred, [], TODAY) == ("expired", None)
+    assert rc.decide_outcome(pred, [], TODAY) == ("expired", None, None)
 
 
 def test_still_open_before_horizon_with_no_evidence():
@@ -67,7 +67,7 @@ def test_still_open_before_horizon_with_no_evidence():
 def test_expiry_is_never_auto_incorrect():
     """The auto-state for a lapsed claim is 'expired', never 'incorrect'
     (a human decides incorrect)."""
-    outcome, _ = rc.decide_outcome(_pred(horizon_ends_on="2026-10-01"), [], TODAY)
+    outcome, _, _ = rc.decide_outcome(_pred(horizon_ends_on="2026-10-01"), [], TODAY)
     assert outcome == "expired"
 
 
@@ -118,6 +118,8 @@ def test_run_proposes_correct_and_expired(monkeypatch):
     by_pred = {o["prediction_id"]: o for o in db.inserted}
     assert by_pred["settleable"]["outcome"] == "correct"
     assert by_pred["settleable"]["settling_document_id"] == "d-win"
+    # lead-time freeze: the settling event date is snapshotted at proposal
+    assert by_pred["settleable"]["settling_published_on"] == "2026-05-01"
     assert by_pred["settleable"]["status"] == "proposed"
     assert by_pred["lapsed"]["outcome"] == "expired"
 

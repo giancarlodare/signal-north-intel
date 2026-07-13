@@ -92,9 +92,31 @@ export async function confirmOutcome(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   const supabase = createClient();
+
+  // Reconcile freezes settling_published_on at proposal. Backstop: if an
+  // outcome has a settling document but no frozen date yet (e.g. one recorded
+  // by hand), snapshot it now, at confirmation, so lead-time is fixed before
+  // the outcome becomes terminal and can never move afterward.
+  const { data: o } = await supabase
+    .from("prediction_outcomes")
+    .select("settling_document_id, settling_published_on")
+    .eq("id", id)
+    .maybeSingle();
+  const patch: Record<string, unknown> = {
+    status: "confirmed",
+    confirmed_at: new Date().toISOString(),
+  };
+  if (o?.settling_document_id && !o.settling_published_on) {
+    const { data: doc } = await supabase
+      .from("documents")
+      .select("published_on")
+      .eq("id", o.settling_document_id)
+      .maybeSingle();
+    if (doc?.published_on) patch.settling_published_on = doc.published_on;
+  }
   await supabase
     .from("prediction_outcomes")
-    .update({ status: "confirmed", confirmed_at: new Date().toISOString() })
+    .update(patch)
     .eq("id", id)
     .eq("status", "proposed");
   revalidatePath("/predictions");
