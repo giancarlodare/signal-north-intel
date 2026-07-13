@@ -56,6 +56,9 @@ export default async function ProspectsPage({
         <Link className="link" href="/review">
           Signals
         </Link>
+        <Link className="link" href="/procurements">
+          Procurements
+        </Link>
         <Link className="link" href="/discovery">
           Discovery
         </Link>

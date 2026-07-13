@@ -110,6 +110,9 @@ export default async function DiscoveryPage() {
         <Link className="link" href="/review">
           Signals
         </Link>
+        <Link className="link" href="/procurements">
+          Procurements
+        </Link>
         <Link className="link" href="/prospects">
           Prospects
         </Link>
