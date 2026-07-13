@@ -3,3 +3,4 @@ python-dateutil>=2.9,<3
 feedparser>=6.0,<7
 anthropic>=0.69,<1
 pypdf>=5.0,<6
+opentimestamps>=0.4,<0.5
