@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { signOut } from "../review/actions";
+import { signOut } from "../auth-actions";
 import { CATEGORIES, STATUSES, TIERS, WAVES, label } from "./constants";
 
 export const dynamic = "force-dynamic";
@@ -53,8 +53,8 @@ export default async function ProspectsPage({
       <div className="topbar">
         <h1>Prospects</h1>
         <span className="count">{prospects.length}</span>
-        <Link className="link" href="/review">
-          Signals
+        <Link className="link" href="/corpus">
+          Corpus
         </Link>
         <Link className="link" href="/procurements">
           Procurements
