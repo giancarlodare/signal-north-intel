@@ -102,3 +102,26 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python -m src.procurement_proposer
+
+      # Reconcile predictions (propose-only): proposes 'correct' when public
+      # evidence reached a claim's predicted rung within its horizon, and
+      # 'expired' when a horizon has lapsed unsettled. A human confirms every
+      # outcome. Ordered last: it reads the signals and procurement links the
+      # steps above produced.
+      - name: Run prediction reconcile (propose-only)
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.reconcile
+
+      # OpenTimestamps anchoring: submit each un-anchored claim's hash to the
+      # public calendars so its existence-by-date is provable to a third party,
+      # independent of our own database and clock. Folded into the reconcile
+      # unit. A calendar outage just leaves a claim unanchored for next week.
+      - name: Anchor predictions (OpenTimestamps)
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.anchor
