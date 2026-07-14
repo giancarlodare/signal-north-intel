@@ -263,6 +263,33 @@ The generator runs weekly (same guard pattern as the other weekly jobs), after
 collection and the proposer, so the draft reflects the freshest corpus. A missed
 week is not an incident; the draft is regenerable and idempotent per `week_start`.
 
+### 7.4 Reader-facing date labels (DEFERRED: published format + subscriber portal)
+
+Requirement (operator, 2026-07-13). Not needed in the internal /brief editor.
+REQUIRED wherever a date is shown to a READER: the published brief format and the
+Wave 3 subscriber portal. This is a sibling of the "None beats a wrong date"
+honesty rule: a bare date is ambiguous, and a subscriber could misread an
+application deadline (future) as a past event.
+
+Every reader-facing date MUST carry its TYPE as a label, derived from
+(timing_path + doc_type), both of which the brief already stores (brief_items
+carries timing_path; the lead signal's document carries doc_type). Baseline map:
+
+  | doc_type                    | timing_path | label                     |
+  |-----------------------------|-------------|---------------------------|
+  | grant_program / grant_award | imminent    | Application deadline      |
+  | award_notice                | recent      | Contract awarded          |
+  | tender_notice               | imminent    | Tender closes             |
+  | tender_notice               | recent      | Tender expected           |
+  | board_minutes               | recent      | Board decision            |
+
+Combinations not yet specified (e.g. a recent grant, a news_release) get a label
+defined when this is built; until then the safe default is to show the label
+"Event date" rather than a bare date. Date PRECISION rules still apply (month-
+precision renders "Apr 2026", never a fabricated day).
+
+Tracked in docs/ROADMAP.md under the brief-output and Wave 3 subscriber items.
+
 ## 8. Safeguards lost, and the backstops (the tradeoff)
 
 Dropping manual signal approval loses four safeguards:
