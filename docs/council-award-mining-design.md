@@ -202,3 +202,57 @@ reconcile.
    recommendation enter as a grade-3 commitment signal?
 3. **Guard baseline:** set the loud-failure floor from the probe's measured
    award count, or run permanently in log-only mode until the corpus is larger?
+
+## 9. Probe findings (2026-07-14): validation ran, status changed
+
+Three read-only probes ran against live data before building anything. They
+overturned the section 0 premise and split the awarded rung by board. Nothing
+was written to Supabase.
+
+### 9.1 Peel Police Services Board minutes: NO procurement awards
+Census: 100 `board_minutes` documents, all Peel, zero TPSB. Of the 100, only
+2 had any procurement-context "award" passage, 0 cited a reference. The Peel
+documents we hold are **annual reports** (medals, scholarships, service awards,
+the odd grant received), not procurement-decision minutes. The premise that
+Peel police-board minutes carry contract-award resolutions is FALSE for the
+data we hold. Coverage flag: the Peel Police Services Board source is the wrong
+document class for the awarded rung and should be revisited in the coverage
+strategy.
+
+### 9.2 Method-B `?status=Awarded`: VALIDATED as Peel's awarded rung
+Replaying the captured, CSRF-authorized Search call with the status flipped (and
+paging preserved) returns HTTP 200 JSON of genuinely awarded bids, disjoint from
+the Open set, e.g. `"Title":"2017-695N - Provision of a Public Safety LTE
+Broadband Data System","Status":"Awarded"` with dates and a Vendor field. The
+reference format is identical to the Open tenders (`2017-695N`), so awarded rows
+hard-key to the in_market rung by reference. This is the clean, reconciling
+awarded rung for Peel. It supersedes minutes-mining for Peel.
+
+### 9.3 TPSB: access restored, real awards, but minute-keyed (not tender-keyed)
+The WAF 415 that parked TPSB on 2026-07-11 is GONE: plain requests (even the
+`SignalNorthCollector/1.0` UA) now gets HTTP 200 on robots.txt and the listing;
+88 agenda/minutes PDFs are reachable and extract cleanly. TPSB minutes DO carry
+real contract-award motions with vendor and value, e.g. "Approve a contract
+award to Olin Canada ULC for ammunition in the amount of $622,000", "contract
+award to The Manufacturers Life Insurance Company ... $52.1 Million". 7 of 8
+sampled PDFs had procurement-context awards; 6 had motions.
+
+BUT those awards are identified by a **board minute number** (`P2023-0428-7.0`),
+not a procurement RFP/tender reference, and TPSB has no in_market (tender) rung
+in our spine to reconcile against. So per section 6's own test, TPSB awards are
+**corpus-only** awarded signals (real, gradeable at the award floor, dedupable
+on the minute number, taggable) but NOT hard-key reconcilable. Rich content,
+wrong key for reconciliation.
+
+### 9.4 Status: miner PARKED; awarded rung pivots per board
+- **Peel awarded rung:** build on Method-B `?status=Awarded` (section 9.2).
+  Validation-first spike passed; ready to build on approval.
+- **TPSB:** unpark the `board_minutes` collector (flip `enabled` True; access is
+  restored) for coverage. A TPSB award-signal extractor is viable as a
+  corpus-only awarded feed keyed on the minute number, not as a reconciling
+  hard-keyed rung.
+- **This miner (as specified, hard-key via procurement reference):** PARKED. Its
+  reconciling premise holds for neither board we probed (Peel police: no awards;
+  TPSB: awards but no tender reference). Not killed: it is revivable for any
+  future board whose minutes cite a procurement reference (open question 1 in
+  section 8 governs the corpus-only variant).
