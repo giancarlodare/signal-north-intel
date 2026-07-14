@@ -208,6 +208,47 @@ outcomes, human confirmed). A new Predictions page in the app, next to Review,
 Prospects, and Discovery, carries the predict and reconcile actions. No delete
 anywhere, consistent with the rest of the app.
 
+### 5.7 Per-jurisdiction demand-arc backtest (calibration layer, Wave 2, post-award-history)
+
+A future calibration layer on top of the ledger. NOT built now. Prerequisite:
+sufficient AWARD history per jurisdiction, which begins flowing once the
+municipal tender/award collectors land (Peel via bids&tenders,
+`docs/peel-tenders-design.md`).
+
+What it does. Once award history exists, walk each AWARDED procurement BACKWARD
+along the procurement spine to its originating commitment/budget signal, and
+measure the lag at each rung transition:
+  * commitment -> in_market (a budgeted/approved need becomes an open tender),
+  * in_market -> awarded (an open tender becomes an award).
+Aggregate per jurisdiction to learn that jurisdiction's REAL demand rhythm:
+  * conversion RHYTHM: the measured lag distribution at each rung transition, and
+  * conversion RATE: which commitments actually became procurements versus
+    fizzled (the denominator matters as much as the lag).
+
+Two payoffs:
+  1. Ground prediction HORIZON DEFAULTS in each jurisdiction's measured history
+     instead of the current fixed per-rung guesses (`src/predictions.py`
+     `default_horizon_months`, and the app's `DEFAULT_HORIZON`). "Peel
+     commitment -> tender" would default to Peel's measured median lag, not a
+     global constant.
+  2. Surface a conversion-rate PRIOR on procurement candidates: "Peel
+     commitments of this type historically reach tender X% of the time in Y
+     months." A prior, shown to inform the human author, never an auto-claim.
+
+DESIGN IMPLICATION TO PRESERVE NOW (actionable today, not deferred). Walking the
+arc is only possible if the procurement spine's HARD-KEY wiring stays clean: the
+`procurement_id` hard key that links a tender document to its award
+(`documents.reference_number` carrying `procurement_id`, section 4), and the
+`procurement_signals` links from a procurement back to its commitment-stage
+signals. Every collector and the proposer must keep that linkage intact and
+unambiguous, because a broken or fuzzy tender-to-award link makes the backward
+walk impossible. This is the one part of the future feature that constrains work
+being done now: keep the hard key clean.
+
+Honesty rules still bind: lags are measured from frozen event dates
+(`published_on`), never collection dates; a jurisdiction with too little history
+shows no prior rather than a fabricated one ("None beats a wrong number").
+
 ## 6. Two-sided seam (designed, not built)
 
 The engine tables above are audience-neutral. Audience lives only in an export
