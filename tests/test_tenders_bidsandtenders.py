@@ -127,3 +127,49 @@ def test_build_payload_no_guid_falls_back_to_portal_url():
 def test_build_payload_unparseable_date_is_null():
     p = bt.build_payload(MUNI, "s", "tender_notice", _row(date="Ongoing"), KW)
     assert p["published_on"] is None and p["date_precision"] is None
+
+
+# --- Method-B awarded ---------------------------------------------------------
+def _awarded_json(ref="2017-695N", title=None, status="Awarded",
+                  closed="Mon Nov 27, 2017 12:00:00 PM"):
+    return {
+        "Id": "865bca1b-a51f-4f85-9721-71c22bb0079b",
+        "Title": title if title is not None else f"{ref} - Provision of a Public Safety LTE System",
+        "Scope": "Prequalification", "Status": status,
+        "Description": "Provision of a Public Safety LTE System",
+        "DateClosingDisplay": closed,
+        "VendorIsRegistered": "False",  # about the viewer, NOT the winning vendor
+    }
+
+
+def test_awarded_row_from_json_pulls_reference_from_title():
+    row = bt.awarded_row_from_json(_awarded_json())
+    assert row["ref"] == "2017-695N"                       # hard key from Title
+    assert row["title"].startswith("Provision of a Public Safety")
+    assert row["status"] == "Awarded"
+    assert row["guid"] == "865bca1b-a51f-4f85-9721-71c22bb0079b"
+
+
+def test_awarded_row_builds_award_notice_payload_on_hard_key():
+    row = bt.awarded_row_from_json(_awarded_json(ref="2017-711T"))
+    p = bt.build_payload(MUNI, "s", "award_notice", row, KW)
+    assert p["doc_type"] == "award_notice"
+    assert p["reference_number"] == "2017-711T"            # links to the tender
+    assert p["published_on"] == "2017-11-27"               # closing date (best available)
+    assert p["url"].endswith("/Tender/Preview/865bca1b-a51f-4f85-9721-71c22bb0079b")
+
+
+def test_awarded_row_untitled_ref_is_none():
+    # A row whose Title carries no reference is not a keyable awarded bid.
+    row = bt.awarded_row_from_json(_awarded_json(title="Notice to vendors"))
+    assert row["ref"] is None
+
+
+def test_status_query_url_swaps_status_and_paging_keeps_sort():
+    base = ("https://peelregion.bidsandtenders.ca/Module/Tenders/en/Tender/Search/"
+            "246c4240-574b-42fa-a0dd-0ab49d3f4f5a?status=Open&limit=25&start=0"
+            "&dir=ASC&from=&to=&sort=DateClosing+ASC,Id")
+    u = bt.status_query_url(base, "Awarded", 100, 200)
+    assert "status=Awarded" in u
+    assert "limit=100" in u and "start=200" in u
+    assert "sort=DateClosing" in u and "dir=ASC" in u     # other params preserved

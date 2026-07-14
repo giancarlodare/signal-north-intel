@@ -155,6 +155,39 @@ That does not replace the portal (it misses smaller awards and all the forward
 tender-open signal), but it is a cheaper partial path for reconciliation-grade
 award events and is worth extracting in parallel.
 
+## 12a. Awarded rung: Method B ADOPTED for Awarded only (built, validated 2026-07-14)
+
+The Open rung stays Method A (section 4). The AWARDED rung, by contrast, is now
+built on Method B, because the evidence for Awarded is the opposite of Open:
+
+- the JS tab-click never switches the grid to Awarded (it returns the Open rows
+  relabelled), so render-and-read cannot get Awarded at all;
+- a spike proved the page's own guarded call, replayed as
+  `POST .../Tender/Search/<moduleGUID>?status=Awarded`, returns HTTP 200 JSON of
+  genuinely awarded bids, a set disjoint from Open, each `Title` carrying the
+  same reference format (`2017-695N - ...`) that hard-keys to the tender.
+
+So the collector captures that guarded call as it auto-fires on load (its URL,
+CSRF token body and ajax header) and replays it for `?status=Awarded`, paging
+the awarded history into `award_notice` documents keyed on the bid reference.
+
+What the endpoint gives and does NOT give (honesty for the "None beats a wrong
+answer" rule): reference, title, status and closing date, YES; winning vendor,
+award value and a distinct award date, NO (those live on a per-bid results page
+and are a deferred enrichment). `published_on` is the closing date, the only
+timestamp the endpoint exposes, labelled as such, not invented as an award date.
+The reference number is all the awarded rung needs to reconcile against the
+tender it settles.
+
+Live dry-run 2026-07-14: Open 25 rows (Method A) + **Awarded 2762 rows**
+(Method B) parsed into `award_notice` payloads, references and closing dates
+correct, spanning 2017 through the prior day, 0 errors. Loud-failure guard: an
+empty awarded set raises (a live Peel portal has years of awards).
+
+This is the reconciling awarded rung; the section-12 board-minutes path remains
+the complementary source for boards whose awards are not on a bids&tenders
+portal (e.g. TPSB).
+
 ## 13. Open decisions for the operator
 
   1. Approve Method A (render-and-read) and the feasibility-spike-first build
