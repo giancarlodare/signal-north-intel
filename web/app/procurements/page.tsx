@@ -118,6 +118,7 @@ export default async function ProcurementsPage() {
       <div className="topbar">
         <h1>Procurements</h1>
         <span className="count">{proposed.length} proposed</span>
+        <Link className="link" href="/brief">Brief</Link>
         <Link className="link" href="/corpus">Corpus</Link>
         <Link className="link" href="/predictions">
           Predictions

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "../auth-actions";
+import { suppressSignal } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -137,6 +138,7 @@ export default async function CorpusPage({
       <div className="topbar">
         <h1>Corpus</h1>
         <span className="count">{rows.length} shown</span>
+        <Link className="link" href="/brief">Brief</Link>
         <Link className="link" href="/procurements">Procurements</Link>
         <Link className="link" href="/predictions">Predictions</Link>
         <Link className="link" href="/prospects">Prospects</Link>
@@ -225,6 +227,13 @@ export default async function CorpusPage({
                   </>
                 ) : null}
               </p>
+              {/* The one editorial write: hide a clearly-wrong signal. Reversible
+                  (row is kept, only excluded from the live corpus). */}
+              <form action={suppressSignal} className="field">
+                <input type="hidden" name="id" value={s.id} />
+                <input name="reason" placeholder="Suppress reason (optional)" />
+                <button className="reject" type="submit">Suppress</button>
+              </form>
             </article>
           );
         })}

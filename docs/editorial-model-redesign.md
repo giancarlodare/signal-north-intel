@@ -95,29 +95,40 @@ One-time, inside the Phase 1 migration:
 
     briefs
       id uuid pk
-      week_start date not null          -- Monday of the covered week
+      week_start date not null unique   -- Monday of the covered week; one brief/week
       status text not null default 'draft'   -- 'draft' | 'published'
       title text
       intro text
+      -- Threshold-tuning visibility (operator decision): how many timing-relevant
+      -- signals the M3/grade>=3 bar excluded this week, and by which gate.
+      excluded_below_threshold int not null default 0
+      exclusion_breakdown jsonb          -- {below_materiality: n, below_grade: n}
       created_at timestamptz default now()
-      published_at timestamptz          -- set at publish, frozen thereafter
-      unique (week_start)               -- one brief per week
+      published_at timestamptz           -- set once at publish, frozen thereafter
 
     brief_items
       id uuid pk
-      brief_id uuid references briefs(id)
-      signal_id uuid references signals(id)         -- nullable
-      procurement_id uuid references procurements(id) -- nullable (item may be a cluster)
-      included boolean not null default true         -- editor cut = false
-      rank int                                        -- editor ordering
-      headline_override text                          -- editor copy
+      brief_id uuid references briefs(id) on delete cascade
+      -- A cluster reuses the procurement spine where the signal is already
+      -- clustered, else groups by organization, else stands alone.
+      cluster_kind text not null         -- 'procurement' | 'organization' | 'signal'
+      cluster_ref uuid not null          -- procurement_id | organization_id | signal_id
+      lead_signal_id uuid references signals(id)  -- strongest/soonest member
+      timing_path text not null          -- 'recent' (Path A) | 'imminent' (Path B)
+      soonest_date date                  -- the driving published_on (ranking + why)
+      included boolean not null default true      -- editor cut = false
+      rank int                                     -- editor ordering
+      headline_override text                       -- editor copy
       editor_note text
       created_at timestamptz default now()
+      unique (brief_id, cluster_kind, cluster_ref)
 
 The generator writes a `draft` brief with `included=true` items; the editor flips
 inclusion, reorders, and adds copy; publishing freezes `status` and `published_at`.
 The published brief joins the prediction ledger as part of the provable,
-time-stamped track record.
+time-stamped track record. Clustering deliberately reuses the procurement spine
+(the proposer already clusters signals into procurements), so the brief reads as
+intelligence, not a row dump.
 
 ## 5. Pipeline and consumer changes
 
@@ -180,47 +191,64 @@ Page summary:
 
 ## 7. The Weekly Signal brief
 
-### 7.1 Selection: timing-aware, not only publication-fresh
+### 7.1 Selection: an event-date window around now (reviewed 2026-07-13)
 
-A signal earns a place in the brief if it clears the materiality/grade bar AND is
-timing-relevant this week by EITHER of two independent paths. Pure
-"event-date-this-week" selection would miss the most actionable items (an
-imminent grant deadline or an expected tender window on a signal collected weeks
-ago), so both paths qualify:
+KEY FINDING that drives selection: `documents.published_on` means "the event
+date," but that resolves differently by source. For awards, news, and board
+minutes it is a PAST date (when it happened). For grants it is the program
+DEADLINE (grants_ontario stores the deadline as published_on), typically FUTURE.
+And `expected_timing` (the extractor's tender/window field) is FREE TEXT
+("Q3 2025"), not a machine date. This works in our favour: a grant's imminent
+deadline is a future published_on, so a single window on published_on captures
+both "happened recently" and "deadline approaching," and it is backfill-safe (a
+2024 contract ingested this week has a 2024 published_on and does not flood the
+brief).
 
-  * Path A, freshly published: event date (documents.published_on) within the
-    covered week; OR
-  * Path B, imminent timing: the signal has a forward-looking date within a
-    lead window (default: within the next 30 days) that makes it a lead item now,
-    regardless of when it was collected. Sources of a forward date, in order:
-    a grant program's parsed deadline, and a signal's `expected_timing` (the
-    extractor's expected tender/award window). A grant closing in two weeks or a
-    tender expected next month is a lead item this week even if published a month
-    ago.
+Selection is therefore an event-date window around today:
 
-Common gates for both paths:
-  * materiality >= threshold (default M3, tunable);
-  * evidence_grade >= threshold (default commitment/3, tunable);
-  * `suppressed=false`.
+  * Path A, recent event: published_on in [today - 7 days, today].
+  * Path B, imminent event: published_on in (today, today + lead], where `lead`
+    is PER DOC_TYPE (operator decision): default 30 days, and 45 days for grants
+    (grant_program, grant_award) because applications need prep runway. Grant
+    deadlines, being future published_on, land here.
+  * Deliberately NO `created_at` "new to corpus" path. Tradeoff accepted: a
+    recently-published-but-slightly-old board decision we ingest late could be
+    missed. If briefs feel like they are missing surfaced board decisions, add a
+    NARROW board_minutes publication-date exception later (a documented future
+    enhancement, not built now).
+  * `expected_timing` is CONTEXT-ONLY on the item, never used for automatic
+    Path B selection (free text is not safely comparable to a window). Parsing it
+    into a real date is a flagged future enhancement.
 
-Cluster the selected signals (by procurement where linked, else by organization,
-else by theme), rank by salience (imminent-timing items lead, then grade, then
-materiality, then amount), and write a `draft` brief with `brief_items`. Imminent
-(Path B) items are tagged so the operator sees WHY each is included (published
-this week vs deadline/window approaching).
+Gates (`suppressed=false` always; the materiality/grade bar is PATH-SPECIFIC,
+operator decision 2026-07-13):
+  * Path A (recent, RETROSPECTIVE): full bar, materiality >= 3 AND grade >= 3.
+    A past event earns a place only if it was strong enough to matter, so
+    materiality gates it.
+  * Path B (imminent, PROSPECTIVE): relaxed bar, materiality >= 2 AND grade >= 2.
+    A closing-soon opportunity is actionable by virtue of TIMING, so timing gates
+    it and grade is secondary; the floor (2/2) keeps pure noise with a future
+    date out. This is why the one imminent grant a thin week surfaces is not
+    filtered away by a bar meant for retrospective strength.
 
-Threshold tuning visibility (operator decision, 2026-07-13): the generator MUST
-report, each week, the count of signals EXCLUDED because they fell below the
-materiality/grade bar (broken down by which gate they missed), so the operator
-can see what the bar is filtering out and tune M3/grade>=3 with evidence rather
-than blind. This exclusion report is written into the draft brief (or its run
-log) every week; it is not optional.
+Cluster the selected signals: by procurement where the signal is linked to an
+active, non-rejected procurement (reuses the proposer's clustering), else by
+organization, else standalone. Org-level clustering STAYS: it is what makes the
+brief read like intelligence rather than a row dump. Each cluster carries a
+`lead_signal_id` (strongest member), a `timing_path` (imminent if any member is
+future-dated, else recent), and a `soonest_date`. Rank imminent (Path B) clusters
+first by soonest date, then by grade, materiality, amount.
+
+Threshold tuning visibility (operator decision): the generator MUST report, each
+week, the count of TIMING-RELEVANT signals EXCLUDED because they fell below the
+materiality/grade bar, broken down by which gate they missed (below_materiality,
+below_grade). It is persisted on the brief row (excluded_below_threshold +
+exclusion_breakdown) and printed in the run log, so the bar can be tuned with
+evidence. Not optional.
 
 The generator writes nothing outside briefs/brief_items; it never confirms a
-procurement or authors a prediction. It needs read access to a forward date per
-signal (grant deadline / expected_timing); where a phase-3 implementation finds
-neither, the signal simply qualifies via Path A only (never a fabricated date,
-per the honesty rule).
+procurement, authors a prediction, or suppresses a signal. A brief is regenerated
+only while it is a `draft`; a `published` brief is frozen and never overwritten.
 
 ### 7.2 Edit and publish
 
