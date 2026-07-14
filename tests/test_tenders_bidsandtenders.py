@@ -173,3 +173,67 @@ def test_status_query_url_swaps_status_and_paging_keeps_sort():
     assert "status=Awarded" in u
     assert "limit=100" in u and "start=200" in u
     assert "sort=DateClosing" in u and "dir=ASC" in u     # other params preserved
+
+
+# --- awarded backfill resilience ---------------------------------------------
+import pytest  # noqa: E402
+
+
+def _awarded_rows(n):
+    return [{"Id": f"guid{i}", "Title": f"2020-{i:03d}T - Thing {i}", "Status": "Awarded",
+             "Description": "x", "DateClosingDisplay": "Mon Nov 27, 2017 12:00:00 PM"}
+            for i in range(n)]
+
+
+class _Resp:
+    def __init__(self, data, total):
+        self._data, self._total, self.status = data, total, 200
+
+    def json(self):
+        return {"data": self._data, "total": self._total}
+
+
+class _Page:
+    """Minimal Playwright-page stand-in: one awarded page, then empty."""
+    def __init__(self, rows):
+        self._rows, self.calls = rows, 0
+
+        class _Req:
+            def post(inner, url, headers=None, data=None, timeout=None):
+                self.calls += 1
+                return _Resp(self._rows, len(self._rows)) if self.calls == 1 \
+                    else _Resp([], len(self._rows))
+        self.request = _Req()
+
+
+_CAP = {"url": "https://x/Module/Tenders/en/Tender/Search/" + ("a" * 36)
+        + "?status=Open&limit=25&start=0", "headers": {}, "post_data": ""}
+
+
+def test_fetch_awarded_tolerates_transient_row_failures(monkeypatch):
+    monkeypatch.setattr(bt.supabase_client, "get_document_by_hash", lambda h: None)
+    n = {"i": 0}
+
+    def flaky_insert(payload):
+        n["i"] += 1
+        if n["i"] <= 5:
+            raise RuntimeError("transient blip")
+        return {}
+    monkeypatch.setattr(bt.supabase_client, "insert_document", flaky_insert)
+    stats = {"read": 0, "inserted": 0, "skipped_duplicate": 0, "errors": 0}
+    read = bt.fetch_awarded(_Page(_awarded_rows(30)), _CAP, MUNI, "s", KW, stats, dry_run=False)
+    assert read == 30              # every row attempted, none lost to an early abort
+    assert stats["errors"] == 5    # 5 transient failures tolerated
+    assert stats["inserted"] == 25 # the rest inserted
+
+
+def test_fetch_awarded_fails_loud_over_error_budget(monkeypatch):
+    monkeypatch.setattr(bt.supabase_client, "get_document_by_hash", lambda h: None)
+
+    def always_fail(payload):
+        raise RuntimeError("systemic")
+    monkeypatch.setattr(bt.supabase_client, "insert_document", always_fail)
+    stats = {"read": 0, "inserted": 0, "skipped_duplicate": 0, "errors": 0}
+    with pytest.raises(RuntimeError, match="error budget"):
+        bt.fetch_awarded(_Page(_awarded_rows(40)), _CAP, MUNI, "s", KW, stats, dry_run=False)
+    assert stats["errors"] > bt.AWARDED_ERROR_BUDGET

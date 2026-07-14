@@ -76,6 +76,7 @@ TAB_DOC_TYPE = [("Open", "tender_notice")]
 SEARCH_RE = re.compile(r"/Tender/Search/[0-9a-fA-F-]{36}")
 AWARDED_PAGE = 100          # rows per replayed page
 AWARDED_MAX = 3000          # safety cap on the paged awarded history
+AWARDED_ERROR_BUDGET = 25   # per-row failures tolerated before the run fails loudly
 
 MONTHS = {m: i for i, m in enumerate(
     ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], 1)}
@@ -326,17 +327,31 @@ def fetch_awarded(page, captured: dict, muni: dict, source_id, keywords,
             if row["ref"] is None:
                 continue  # no reference -> unkeyable, not a real awarded bid row
             read += 1
-            payload = build_payload(muni, source_id, "award_notice", row, keywords)
-            if supabase_client.get_document_by_hash(payload["content_hash"]):
-                stats["skipped_duplicate"] += 1
-                continue
-            if dry_run:
-                log.info("[dry-run] %-13s ref=%-10s closed=%s :: %s",
-                         "award_notice", row["ref"], payload["published_on"],
-                         (payload["title"] or "")[:66])
-            else:
-                supabase_client.insert_document(payload)
-            stats["inserted"] += 1
+            # Resilient per-row: the awarded backfill is ~thousands of sequential
+            # inserts; one transient DB/network blip must NOT abort the whole run
+            # (content_hash makes a re-run resume). A row failure is logged and
+            # counted; only a PILE of failures (systemic auth/endpoint/DB problem)
+            # exceeds the budget and fails loudly.
+            try:
+                payload = build_payload(muni, source_id, "award_notice", row, keywords)
+                if supabase_client.get_document_by_hash(payload["content_hash"]):
+                    stats["skipped_duplicate"] += 1
+                    continue
+                if dry_run:
+                    log.info("[dry-run] %-13s ref=%-10s closed=%s :: %s",
+                             "award_notice", row["ref"], payload["published_on"],
+                             (payload["title"] or "")[:66])
+                else:
+                    supabase_client.insert_document(payload)
+                stats["inserted"] += 1
+            except Exception:
+                stats["errors"] += 1
+                log.warning("[%s] awarded row failed (ref=%s); continuing",
+                            muni["org_key"], row.get("ref"))
+                if stats["errors"] > AWARDED_ERROR_BUDGET:
+                    raise RuntimeError(
+                        f"[{muni['org_key']}] awarded backfill exceeded the error budget "
+                        f"({stats['errors']} row failures): systemic, not transient. Aborting.")
         start += AWARDED_PAGE
         if start >= total:
             break
