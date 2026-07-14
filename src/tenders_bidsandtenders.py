@@ -144,25 +144,37 @@ def build_payload(muni: dict, source_id: str, doc_type: str, row: dict,
     }
 
 
-def read_grid(page, status_label: str) -> list:
-    """Click a status tab and read its rendered rows, header-driven. Returns a
-    list of {ref, title, status, date, guid, raw}. Playwright page in scope."""
+ROW_SEL = "table tr, .repeater-canvas tr, .repeater-list-items tr"
+# A populated grid has at least one data cell holding a bid-name <strong>.
+BID_CELL = "table td strong, .repeater-canvas td strong"
+
+
+def read_grid(page, status_label: str, is_default: bool) -> list:
+    """Read a status tab's rendered rows, header-driven. Returns a list of
+    {ref, title, status, date, guid, raw}. Playwright page in scope.
+
+    is_default: the Open tab is the view the portal loads on its own; clicking
+    it re-fetches and can leave the grid transiently empty (the 0-rows bug the
+    dry-run caught). So we click ONLY non-default tabs, and either way we WAIT
+    for real rows to populate (a bid-name cell) rather than a fixed sleep."""
+    if not is_default:
+        try:
+            page.get_by_role("link", name=status_label, exact=True).first.click(timeout=8000)
+        except Exception:
+            page.evaluate(
+                """(label) => { const el = [...document.querySelectorAll('a,button,li,span')]
+                     .find(e => (e.innerText||'').trim().toLowerCase() === label.toLowerCase());
+                     if (el) el.click(); }""", status_label)
+    # Wait for the guarded data call to actually populate the grid. An empty
+    # tab (a legitimately award-less municipality) just times out and returns [].
     try:
-        page.get_by_role("link", name=status_label, exact=True).first.click(timeout=8000)
-    except Exception:
-        # Some skins use a button/li; fall back to a JS click by exact text.
-        page.evaluate(
-            """(label) => { const el = [...document.querySelectorAll('a,button,li,span')]
-                 .find(e => (e.innerText||'').trim().toLowerCase() === label.toLowerCase());
-                 if (el) el.click(); }""", status_label)
-    page.wait_for_timeout(4000)
-    try:
-        page.wait_for_load_state("networkidle", timeout=8000)
+        page.wait_for_selector(BID_CELL, timeout=30000)
     except Exception:
         pass
+    page.wait_for_timeout(1500)
 
     grid = page.eval_on_selector_all(
-        "table tr",
+        ROW_SEL,
         "trs => trs.map(tr => [...tr.querySelectorAll('th,td')].map(c => (c.innerText||'').trim()))")
     # Bid GUID per reference: from each 'Register for this Bid - <ref> ...' link.
     links = page.eval_on_selector_all(
@@ -225,7 +237,7 @@ def collect(dry_run: bool = True) -> dict:
                 page.goto(url, wait_until="networkidle", timeout=60000)
                 page.wait_for_timeout(3000)
                 for label, doc_type in TAB_DOC_TYPE:
-                    rows = read_grid(page, label)
+                    rows = read_grid(page, label, is_default=(label == "Open"))
                     log.info("[%s] %s: %d rows", muni["org_key"], label, len(rows))
                     # LOUD-FAILURE GUARD (Open only; Awarded may legitimately be empty).
                     if label == "Open" and not rows:
