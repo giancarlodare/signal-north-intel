@@ -296,3 +296,35 @@ collection is never paused to build the ledger.
 5. **Procurement identity.** The hardest problem (section 4). Recommendation:
    propose candidate procurements from clustered signals, human merge or split
    in the app, no autonomous merging. Same discipline as org resolution.
+
+## Addendum (2026-07-14): duplicate claims and the double-submit guard
+
+A double-click on Freeze produced two identical immutable predictions (same
+procurement, rung, horizon, seconds apart). Both would reconcile and the
+scorecard would double-count one call, corrupting the hit-rate. Since a
+prediction is immutable and never deleted, the fix cannot touch the claim rows.
+
+**Mechanism (append-only, immutability preserved).** A new
+`prediction_supersessions` table records that one claim supersedes another
+(reason `duplicate`, `correction`, or `withdrawn`). The `prediction_scorecard`
+view excludes any prediction that appears as superseded, so the pair counts as
+ONE call while BOTH rows stay visible in the ledger. This keeps outcomes about
+subject reality and supersessions about claim validity, cleanly separated. The
+table is append-only (trigger-enforced, like outcomes and anchors). The specific
+double-submit is fixed by a one-off data migration that marks the later 19:03:40
+re-submit as a duplicate of the canonical 19:03:33 claim.
+
+**Guard, layered.**
+1. The Freeze button is debounced: a client `useFormStatus` pending state
+   disables it while the server action runs, so a double-click cannot fire the
+   action twice (the direct cause).
+2. `authorPrediction` refuses to insert when a non-superseded claim already
+   exists for the same procurement, predicted rung, and horizon with its horizon
+   still open, catching retries, two tabs, and the read-then-insert race the
+   debounce does not cover. A superseded existing claim does not block, so a
+   correction can be re-filed.
+
+A same-day DB unique index was considered as an atomic backstop but rejected: it
+cannot coexist with the deliberately-retained duplicate rows, and "not
+superseded" cannot be expressed in a partial-index predicate (it lives in
+another table). The application guard plus the debounce cover the real cases.

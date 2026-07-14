@@ -80,6 +80,32 @@ export async function authorPrediction(formData: FormData) {
   // A claim cannot exist without public evidence (the provenance rule).
   if (evidenceSignalIds.length === 0) return;
 
+  // Guard against a duplicate LIVE claim (a double-submit, a retry, two tabs):
+  // refuse if a non-superseded claim already exists for this procurement at the
+  // same rung and horizon with its horizon still open. The Freeze button's
+  // pending-state debounce stops the double-CLICK; this is the authoritative
+  // backstop for retries and races. A superseded existing claim does NOT block
+  // (that is the re-file-after-correction path). Two queries rather than an
+  // embed: prediction_supersessions has two FKs to predictions, so a one-to-many
+  // embed would be ambiguous.
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: matches } = await supabase
+    .from("predictions")
+    .select("id")
+    .eq("subject_procurement_id", procurementId)
+    .eq("predicted_rung", predictedRung)
+    .eq("horizon_months", horizonMonths)
+    .gte("horizon_ends_on", today);
+  const matchIds = (matches ?? []).map((m) => m.id as string);
+  if (matchIds.length > 0) {
+    const { data: superseded } = await supabase
+      .from("prediction_supersessions")
+      .select("prediction_id")
+      .in("prediction_id", matchIds);
+    const supersededIds = new Set((superseded ?? []).map((s) => s.prediction_id as string));
+    if (matchIds.some((id) => !supersededIds.has(id))) return; // live equivalent exists
+  }
+
   // horizon_ends_on from today; made_at and claim_hash are set by the DB.
   const ends = new Date();
   ends.setMonth(ends.getMonth() + horizonMonths);
