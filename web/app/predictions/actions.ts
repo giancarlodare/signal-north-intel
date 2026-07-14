@@ -36,13 +36,23 @@ export async function authorPrediction(formData: FormData) {
 
   const supabase = createClient();
 
-  // The claim's subject must be a real (confirmed) opportunity.
+  // The claim's subject must be a real opportunity: a proposed or confirmed
+  // procurement (never rejected or merged). Confirmation is FOLDED INTO
+  // authoring (Phase 4): there is no standalone confirm step, so a proposed
+  // subject is confirmed here as part of freezing the claim.
   const { data: proc } = await supabase
     .from("procurements")
     .select("id, status")
     .eq("id", procurementId)
     .maybeSingle();
-  if (!proc || proc.status !== "confirmed") return;
+  if (!proc || (proc.status !== "proposed" && proc.status !== "confirmed")) return;
+  if (proc.status === "proposed") {
+    await supabase
+      .from("procurements")
+      .update({ status: "confirmed", reviewed_at: new Date().toISOString() })
+      .eq("id", procurementId)
+      .eq("status", "proposed"); // idempotent; only a proposed subject is confirmed
+  }
 
   // Freeze the evidence AS IT IS NOW: the procurement's active linked signals.
   const { data: links } = await supabase

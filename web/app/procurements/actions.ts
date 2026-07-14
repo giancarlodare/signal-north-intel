@@ -3,24 +3,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
-// Confirm / reject / merge a proposed procurement. Deliberate buttons, never a
+// Reject / merge / edit a proposed procurement. Deliberate buttons, never a
 // delete: rejection and merge are non-destructive status changes, matching the
-// review, prospects, and discovery pages. The proposer (service_role) never
-// confirms its own proposals; only these actions do.
+// prospects and discovery pages. There is NO standalone confirm action: Phase 4
+// folds confirmation into prediction authoring (see ../predictions/actions
+// authorPrediction), so a procurement is confirmed exactly when a claim is
+// frozen on it.
 
 const STAGES = [1, 2, 3, 4, 5];
-
-export async function confirmProcurement(formData: FormData) {
-  const id = String(formData.get("id") ?? "");
-  if (!id) return;
-  const supabase = createClient();
-  await supabase
-    .from("procurements")
-    .update({ status: "confirmed", reviewed_at: new Date().toISOString() })
-    .eq("id", id)
-    .eq("status", "proposed");
-  revalidatePath("/procurements");
-}
 
 export async function rejectProcurement(formData: FormData) {
   const id = String(formData.get("id") ?? "");
