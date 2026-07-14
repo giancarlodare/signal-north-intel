@@ -22,10 +22,12 @@ hit-rate product.
 
 Mapping to the existing spine (no schema change): an open bid is a
 `tender_notice` (in_market, grade 4) whose CLOSING date is a future event
-(Path B imminent in the brief); an awarded bid is an `award_notice` (awarded,
-grade 5) that settles reconciliation. The bid reference number (e.g. 2026-104P)
-is written to `documents.reference_number`, the hard key the procurement
-proposer clusters on and the link the demand-arc backtest walks.
+(Path B imminent in the brief). The bid reference number (e.g. 2026-104P) is
+written to `documents.reference_number`, the hard key the procurement proposer
+clusters on and the link the demand-arc backtest walks. The awarded rung is NOT
+taken from the portal here: the tab-click does not switch the grid to Awarded
+(see TAB_DOC_TYPE), so awards come from the parallel board-minutes mining, not
+from mislabelled open bids.
 
 Coverage multiplier: parameterized by {org_key, subdomain}. Peel is the first
 row; every other *.bidsandtenders.ca municipality is a config row, no new code.
@@ -54,10 +56,22 @@ MUNICIPALITIES = [
 REAL_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
            "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36")
 
-# Status tab label -> doc_type. Open bids are the forward signal; Awarded settles
-# reconciliation. (Closed and Unofficial Results are deliberately not collected:
-# closed-no-award is not a demand event, and unofficial results are preliminary.)
-TAB_DOC_TYPE = [("Open", "tender_notice"), ("Awarded", "award_notice")]
+# Status tab label -> doc_type.
+#
+# OPEN ONLY, deliberately. A live dry-run proved Open extraction (45 grid rows ->
+# 25 real Peel bids, correct references and closing dates). It ALSO proved that
+# the JS tab-click does NOT switch the grid to Awarded: the "Awarded" read
+# returned the identical Open rows, all still status "Open". Recording those as
+# award_notice would fabricate grade-5 awards from open bids, the exact
+# "None beats a wrong answer" violation we refuse to make on the awarded rung.
+#
+# So the portal contributes the forward (in_market) rung only. The awarded rung
+# is covered by the parallel Peel board-minutes award mining (no fragile
+# tab-switch) and, later, a proven Awarded tab-switch (needs the tab-bar DOM,
+# tracked in docs/peel-tenders-design.md) or the Method-B endpoint with an
+# explicit ?status=Awarded. Re-enable by adding ("Awarded", "award_notice") here
+# once the switch is verified to actually repaint the grid.
+TAB_DOC_TYPE = [("Open", "tender_notice")]
 
 MONTHS = {m: i for i, m in enumerate(
     ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], 1)}
@@ -231,6 +245,12 @@ def read_grid(page, status_label: str, is_default: bool) -> list:
         ref, title = parse_bid_name(name)
         if not title or "bid name" in name.lower():
             continue  # skip the header echo / empty spacer rows
+        if ref is None:
+            # bids&tenders assigns every bid a reference number (e.g. 2026-104P);
+            # the grid's trailing pager and page-size controls read as ref-less
+            # rows ('<', page numbers). A ref-less row is not a bid, and would be
+            # unkeyable for the spine anyway, so drop it rather than pollute.
+            continue
         out.append({
             "ref": ref, "title": title,
             "status": _col(idx, r, "bid status") or status_label,
