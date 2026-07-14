@@ -75,14 +75,13 @@ BOARDS = [
             "TPSB",
         ],
         "source_id_env": "TPSB_SOURCE_ID",
-        # PARKED 2026-07-11: tpsb.ca's WAF returns 415 to this client
-        # SITE-WIDE — robots.txt AND the listing page — regardless of
-        # User-Agent, even though robots.txt (verified in-browser) allows all
-        # crawling. Per the operator's call: park rather than fight the WAF.
-        # Unparking options: contact the board office about collector access,
-        # or revisit if the WAF policy changes. Flip enabled to True to retry.
-        "enabled": False,
-        "parked_reason": "tpsb.ca WAF 415s all collector requests (2026-07-11)",
+        # UNPARKED 2026-07-14: the WAF block that parked this on 2026-07-11 has
+        # lifted. Re-probed from a runner: plain requests with this client's UA
+        # ('SignalNorthCollector/1.0') now returns HTTP 200 on robots.txt AND the
+        # listing (147KB), and all 88 agenda/minutes PDFs fetch and extract
+        # cleanly. (Earlier the WAF 415'd the client site-wide regardless of UA.)
+        # If the 415 returns, re-park by flipping enabled to False.
+        "enabled": True,
         # Verified in-browser 2026-07-10 (the earlier /meetings guess 404s).
         # Structure: year headings, then meeting dates, some with links.
         "listing_urls": ["https://tpsb.ca/home/current-and-past-meetings/"],
