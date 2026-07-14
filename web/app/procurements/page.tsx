@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { signOut } from "../auth-actions";
 import { editProcurement, mergeProcurement, rejectProcurement } from "./actions";
 import { authorPrediction } from "../predictions/actions";
+import { SubmitButton } from "./submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -226,7 +227,9 @@ export default async function ProcurementsPage() {
                        defaultValue={DEFAULT_HORIZON[stage] ?? 9} />
                 <label>Rationale</label>
                 <input name="rationale" placeholder="Why, based on the evidence" />
-                <button className="approve" type="submit">Freeze prediction</button>
+                <SubmitButton className="approve" pendingLabel="Freezing…">
+                  Freeze prediction
+                </SubmitButton>
               </form>
             ) : (
               <p className="sub">
