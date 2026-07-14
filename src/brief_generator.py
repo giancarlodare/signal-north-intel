@@ -186,8 +186,33 @@ def run(dry_run: bool = True, today: date | None = None, force: bool = False) ->
     proc_by_signal = _procurement_by_signal()
     clusters = cluster(included, proc_by_signal)
 
+    # Out-of-window diagnostic: where the corpus falls relative to the window, so
+    # a thin brief is explainable (backfilled awards have old event dates; grants
+    # are often undated) and the window can be judged against reality.
+    diag = Counter()
+    in_window_doctypes = Counter()
+    lo = today - timedelta(days=RECENT_BACK_DAYS)
+    for s in signals:
+        doc = _one(s.get("documents")) or {}
+        p = _parse_date(doc.get("published_on"))
+        path = timing_path(doc.get("published_on"), today, doc.get("doc_type"))
+        if path:
+            diag[path] += 1
+            in_window_doctypes[doc.get("doc_type") or "unknown"] += 1
+        elif p is None:
+            diag["out_undated"] += 1
+        elif p < lo:
+            diag["out_past"] += 1
+        else:
+            diag["out_future_beyond_lead"] += 1
+
     log.info("Brief %s for week_start=%s (today=%s)",
              "dry-run" if dry_run else "APPLY", week_start, today)
+    log.info("  window: recent %s .. %s, imminent to +%d/+%d days (grants %d)",
+             lo, today, DEFAULT_LEAD_DAYS, DEFAULT_LEAD_DAYS,
+             LEAD_DAYS_BY_DOCTYPE.get("grant_program", DEFAULT_LEAD_DAYS))
+    log.info("  disposition of %d live signals: %s", len(signals), dict(diag))
+    log.info("  in-window by doc_type: %s", dict(in_window_doctypes))
     log.info("  scanned %d live signals; %d in-window+above-bar, "
              "%d in-window-below-bar (%s); %d clusters",
              len(signals), len(included), excluded, breakdown or "{}", len(clusters))
