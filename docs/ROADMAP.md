@@ -83,6 +83,15 @@ Corollaries for the implementer:
 - The review page already leads each card with the event date (`tag.event`),
   so the reviewer sees what the brief reader would see.
 
+**Reader-facing date TYPE labels (operator, 2026-07-13) — DEFERRED to the
+published brief format + Wave 3 subscriber portal, NOT the internal editor.**
+Every date shown to a reader must carry its type as a label derived from
+(timing_path + doc_type): "Application deadline" (imminent grant), "Contract
+awarded" (award_notice), "Tender closes/expected" (tender_notice), "Board
+decision" (board_minutes). A bare date is ambiguous (a subscriber could misread
+a deadline as a past event). Full spec + baseline map in
+docs/editorial-model-redesign.md section 7.4.
+
 ## Parked / waiting
 
 - **TPSB board minutes** — parked in `src/board_minutes.py`: tpsb.ca's WAF
