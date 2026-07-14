@@ -1,0 +1,70 @@
+name: Daily municipal tenders (bids&tenders)
+
+# The bids&tenders collector (Method A: headless render-and-read) runs in its
+# OWN workflow because it needs Chromium, which is too heavy to install on the
+# light daily collector. Isolating it here also lets the coverage multiplier
+# grow to a job matrix across municipalities later without touching the other
+# collectors.
+#
+# Same dual-UTC + guard pattern as daily-collect (both crons fire, the guard
+# keeps whichever lands at 6am Eastern). Offset to :47 so it does not contend
+# with the :17 main collector. workflow_dispatch bypasses the guard.
+#
+# LOUD FAILURE BY DESIGN: the collector RAISES on an empty Open grid (gated or
+# broken), so a silent-empty run turns the whole job RED in Actions rather than
+# quietly recording nothing. There is deliberately no healthcheck ping to
+# suppress; a red run IS the alert.
+
+on:
+  schedule:
+    - cron: "47 10 * * *"  # 6:47am EDT (UTC-4) fallback
+    - cron: "47 11 * * *"  # 6:47am EST (UTC-5) fallback
+  workflow_dispatch: {}
+
+concurrency:
+  group: daily-tenders
+  cancel-in-progress: false
+
+jobs:
+  tenders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check whether it's actually 6am Eastern right now
+        id: guard
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          hour=$(TZ="America/Toronto" date +%H)
+          if [ "$hour" = "06" ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping: it's ${hour}:00 in America/Toronto, not 06:00."
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.guard.outputs.should_run == 'true'
+
+      - uses: actions/setup-python@v5
+        if: steps.guard.outputs.should_run == 'true'
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        if: steps.guard.outputs.should_run == 'true'
+        run: pip install -r requirements.txt
+
+      - name: Install Playwright + Chromium
+        if: steps.guard.outputs.should_run == 'true'
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Run bids&tenders collector
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.tenders_bidsandtenders
