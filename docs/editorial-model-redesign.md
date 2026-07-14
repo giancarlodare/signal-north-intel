@@ -220,10 +220,16 @@ Selection is therefore an event-date window around today:
     Path B selection (free text is not safely comparable to a window). Parsing it
     into a real date is a flagged future enhancement.
 
-Common gates (both paths):
-  * `suppressed=false`;
-  * materiality >= threshold (default M3, tunable);
-  * evidence_grade >= threshold (default commitment/3, tunable).
+Gates (`suppressed=false` always; the materiality/grade bar is PATH-SPECIFIC,
+operator decision 2026-07-13):
+  * Path A (recent, RETROSPECTIVE): full bar, materiality >= 3 AND grade >= 3.
+    A past event earns a place only if it was strong enough to matter, so
+    materiality gates it.
+  * Path B (imminent, PROSPECTIVE): relaxed bar, materiality >= 2 AND grade >= 2.
+    A closing-soon opportunity is actionable by virtue of TIMING, so timing gates
+    it and grade is secondary; the floor (2/2) keeps pure noise with a future
+    date out. This is why the one imminent grant a thin week surfaces is not
+    filtered away by a bar meant for retrospective strength.
 
 Cluster the selected signals: by procurement where the signal is linked to an
 active, non-rejected procurement (reuses the proposer's clustering), else by

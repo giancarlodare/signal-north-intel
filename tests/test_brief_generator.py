@@ -51,18 +51,45 @@ def test_undated_is_out_of_window():
     assert bg.timing_path(None, TODAY, "grant_program") is None
 
 
-# --- select: threshold gate + exclusion tally --------------------------------
-def test_select_partitions_and_counts_exclusions():
+# --- select: PATH-SPECIFIC threshold gate + exclusion tally ------------------
+def test_recent_path_uses_full_bar():
     signals = [
-        _sig("keep", "2026-07-14", materiality=3, grade=3),        # in window, above bar
+        _sig("keep", "2026-07-14", materiality=3, grade=3),        # above full bar
         _sig("weakmat", "2026-07-14", materiality=2, grade=3),     # below materiality
         _sig("weakgrade", "2026-07-14", materiality=3, grade=2),   # below grade
-        _sig("old", "2026-01-01", materiality=5, grade=5),         # out of window -> ignored
+        _sig("old", "2026-01-01", materiality=5, grade=5),         # out of window
     ]
     included, excluded, breakdown = bg.select(signals, TODAY)
     assert [s["id"] for s, _ in included] == ["keep"]
-    assert excluded == 2                                            # old is not counted
+    assert excluded == 2                                            # old not counted
     assert breakdown == {"below_materiality": 1, "below_grade": 1}
+
+
+def test_imminent_path_uses_relaxed_bar():
+    # Path B (imminent): grade>=2 AND materiality>=2. A grant deadline in +40d.
+    signals = [
+        _sig("g2m2", "2026-08-24", doc_type="grant_program", materiality=2, grade=2),  # in
+        _sig("g1", "2026-08-24", doc_type="grant_program", materiality=3, grade=1),    # below floor
+        _sig("m1", "2026-08-24", doc_type="grant_program", materiality=1, grade=3),    # below floor
+    ]
+    included, excluded, breakdown = bg.select(signals, TODAY)
+    assert [s["id"] for s, _ in included] == ["g2m2"]     # relaxed bar admits 2/2
+    assert excluded == 2
+    assert breakdown == {"below_grade": 1, "below_materiality": 1}
+
+
+def test_imminent_grade2_would_fail_the_recent_bar():
+    # The point of B: a 2/2 signal is admitted when imminent, excluded when
+    # recent (same signal, different event date).
+    imminent = _sig("x", "2026-08-24", doc_type="grant_program", materiality=2, grade=2)
+    recent = _sig("x", "2026-07-14", doc_type="grant_program", materiality=2, grade=2)
+    assert len(bg.select([imminent], TODAY)[0]) == 1
+    assert len(bg.select([recent], TODAY)[0]) == 0
+
+
+def test_bar_for_paths():
+    assert bg.bar_for("recent") == (3, 3)
+    assert bg.bar_for("imminent") == (2, 2)
 
 
 # --- cluster: procurement > organization > standalone ------------------------

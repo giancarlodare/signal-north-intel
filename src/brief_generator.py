@@ -13,7 +13,11 @@ future DEADLINE for grants):
     doc_type -- default 30 days, 45 for grants (prep runway). Grant deadlines,
     being future published_on, land here.
   * No created_at path (backfill-safe); expected_timing is context-only.
-Common gates: suppressed=false, materiality>=3, evidence_grade>=3.
+The materiality/grade bar is PATH-SPECIFIC: Path A (recent, retrospective) uses
+the full bar (materiality>=3 AND grade>=3, so only past events strong enough to
+matter appear); Path B (imminent, prospective) uses a relaxed floor
+(materiality>=2 AND grade>=2), because a closing-soon opportunity is actionable
+by timing and grade is secondary. suppressed=false always.
 
     python -m src.brief_generator --dry-run   # select/cluster/report, write nothing
     python -m src.brief_generator --apply      # write the week's draft brief
@@ -32,8 +36,22 @@ RECENT_BACK_DAYS = 7
 DEFAULT_LEAD_DAYS = 30
 LEAD_DAYS_BY_DOCTYPE = {"grant_program": 45, "grant_award": 45}
 MAX_LEAD_DAYS = max([DEFAULT_LEAD_DAYS, *LEAD_DAYS_BY_DOCTYPE.values()])
-MIN_MATERIALITY = 3
-MIN_GRADE = 3
+# Path-specific bar. Path A (recent) is RETROSPECTIVE: a past event earns a place
+# only if it was strong enough to matter, so materiality gates it (full bar).
+# Path B (imminent) is PROSPECTIVE: a closing-soon opportunity is actionable by
+# virtue of timing, so timing gates it and grade is secondary (relaxed floor,
+# kept above pure noise).
+RECENT_MIN_MATERIALITY = 3
+RECENT_MIN_GRADE = 3
+IMMINENT_MIN_MATERIALITY = 2
+IMMINENT_MIN_GRADE = 2
+
+
+def bar_for(path) -> tuple:
+    """(min_materiality, min_grade) for a timing path."""
+    if path == "imminent":
+        return IMMINENT_MIN_MATERIALITY, IMMINENT_MIN_GRADE
+    return RECENT_MIN_MATERIALITY, RECENT_MIN_GRADE
 
 
 def _one(v):
@@ -87,15 +105,16 @@ def select(signals, today: date):
         path = timing_path(doc.get("published_on"), today, doc.get("doc_type"))
         if path is None:
             continue           # out of the timing window entirely
+        min_mat, min_grade = bar_for(path)
         mat = s.get("materiality") or 0
         grade = s.get("evidence_grade") or 0
-        if mat >= MIN_MATERIALITY and grade >= MIN_GRADE:
+        if mat >= min_mat and grade >= min_grade:
             included.append((s, path))
         else:
             excluded += 1
-            if mat < MIN_MATERIALITY:
+            if mat < min_mat:
                 breakdown["below_materiality"] += 1
-            if grade < MIN_GRADE:
+            if grade < min_grade:
                 breakdown["below_grade"] += 1
     return included, excluded, dict(breakdown)
 
