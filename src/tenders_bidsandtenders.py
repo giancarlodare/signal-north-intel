@@ -9,25 +9,28 @@ feasibility spike established:
     dead (empty) grid. This is the silent-empty failure mode, so it is guarded
     against loudly (see LOUD-FAILURE GUARD below);
   * with a real UA the OPEN grid auto-loads on page render (67 live Peel rows in
-    the spike, counted before any interaction); switching to another status tab
-    (Awarded) requires a JS exact-text CLICK to fire its data call. The guarded
-    endpoint is POST /Module/Tenders/en/Tender/Search/<moduleGUID>?status=<Status>,
-    kept documented as a future Method-B fast-path if CI cost bites, NOT used now.
+    the spike, counted before any interaction). The awarded rung comes from the
+    same guarded data call, POST /Module/Tenders/en/Tender/Search/<moduleGUID>
+    ?status=Awarded (Method B): a spike proved it returns HTTP 200 JSON of
+    genuinely awarded bids (disjoint from Open), so we capture that call on load
+    and replay it. The JS tab-click does NOT switch the grid to Awarded (it
+    returns the Open rows relabelled), so the grid is used for Open only.
 
-LOUD-FAILURE GUARD: a municipality's OPEN tab returning zero rows is treated as
-an error (raise), never a silent no-op, because a live bids&tenders portal
-essentially always has open bids and zero rows means we were gated (bad UA,
-blocked, markup change). Silent-empty is the failure we most need to avoid for a
-hit-rate product.
+LOUD-FAILURE GUARDS: a municipality's OPEN grid returning zero rows, OR the
+awarded replay returning zero rows, is treated as an error (raise), never a
+silent no-op. A live bids&tenders portal essentially always has open bids and
+years of awarded history, so zero means we were gated or the endpoint changed.
+Silent-empty is the failure we most need to avoid for a hit-rate product.
 
 Mapping to the existing spine (no schema change): an open bid is a
 `tender_notice` (in_market, grade 4) whose CLOSING date is a future event
-(Path B imminent in the brief). The bid reference number (e.g. 2026-104P) is
-written to `documents.reference_number`, the hard key the procurement proposer
-clusters on and the link the demand-arc backtest walks. The awarded rung is NOT
-taken from the portal here: the tab-click does not switch the grid to Awarded
-(see TAB_DOC_TYPE), so awards come from the parallel board-minutes mining, not
-from mislabelled open bids.
+(Path B imminent in the brief); an awarded bid is an `award_notice` (awarded,
+grade 5). Both write the bid reference number (e.g. 2026-104P) to
+`documents.reference_number`, the hard key the procurement proposer clusters on
+and the link the demand-arc backtest walks, so an awarded doc reconciles against
+the tender it settles. The awarded JSON exposes reference, title, status and
+closing date but NOT the winning vendor or value (a deferred per-bid enrichment);
+the reference is all the awarded rung needs to reconcile.
 
 Coverage multiplier: parameterized by {org_key, subdomain}. Peel is the first
 row; every other *.bidsandtenders.ca municipality is a config row, no new code.
@@ -39,6 +42,7 @@ import argparse
 import logging
 import re
 import sys
+from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 
 from . import config, supabase_client
 from .filters import Keywords, evaluate, load_keywords
@@ -56,22 +60,22 @@ MUNICIPALITIES = [
 REAL_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
            "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36")
 
-# Status tab label -> doc_type.
-#
-# OPEN ONLY, deliberately. A live dry-run proved Open extraction (45 grid rows ->
-# 25 real Peel bids, correct references and closing dates). It ALSO proved that
-# the JS tab-click does NOT switch the grid to Awarded: the "Awarded" read
-# returned the identical Open rows, all still status "Open". Recording those as
-# award_notice would fabricate grade-5 awards from open bids, the exact
-# "None beats a wrong answer" violation we refuse to make on the awarded rung.
-#
-# So the portal contributes the forward (in_market) rung only. The awarded rung
-# is covered by the parallel Peel board-minutes award mining (no fragile
-# tab-switch) and, later, a proven Awarded tab-switch (needs the tab-bar DOM,
-# tracked in docs/peel-tenders-design.md) or the Method-B endpoint with an
-# explicit ?status=Awarded. Re-enable by adding ("Awarded", "award_notice") here
-# once the switch is verified to actually repaint the grid.
+# The Open (in_market) rung is read from the rendered grid (Method A). The JS
+# tab-click does NOT switch the grid to Awarded (a live run proved it returned
+# the Open rows relabelled), so Awarded is NOT taken from the grid.
 TAB_DOC_TYPE = [("Open", "tender_notice")]
+
+# The Awarded (awarded) rung uses Method B: replay the page's own guarded data
+# call with ?status=Awarded. A validation spike proved this returns HTTP 200 JSON
+# of genuinely awarded bids (a set disjoint from Open), each Title carrying the
+# same reference format (e.g. '2017-695N - ...') that hard-keys to the tender.
+# The endpoint exposes the reference, title, status and closing date, but NOT the
+# winning vendor or award value (those live on a per-bid results page and are a
+# deferred enrichment); the reference number is all the awarded rung needs to
+# reconcile. Paged, bounded, deduped on the reference.
+SEARCH_RE = re.compile(r"/Tender/Search/[0-9a-fA-F-]{36}")
+AWARDED_PAGE = 100          # rows per replayed page
+AWARDED_MAX = 3000          # safety cap on the paged awarded history
 
 MONTHS = {m: i for i, m in enumerate(
     ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], 1)}
@@ -265,10 +269,90 @@ def read_grid(page, status_label: str, is_default: bool) -> list:
     return out
 
 
+def status_query_url(base: str, status: str, limit: int, start: int) -> str:
+    """Rewrite the captured Open Search URL for a different status/page, keeping
+    every other query param (sort/dir/from/to) so the awarded query stays bounded
+    and ordered the same way the app orders it."""
+    parts = urlsplit(base)
+    q = dict(parse_qsl(parts.query, keep_blank_values=True))
+    q["status"] = status
+    q["limit"] = str(limit)
+    q["start"] = str(start)
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(q), parts.fragment))
+
+
+def awarded_row_from_json(jr: dict) -> dict:
+    """One awarded Search-JSON row -> the row shape build_payload expects. The
+    reference comes from Title (the hard key); the date is the closing date, the
+    only timestamp this endpoint exposes (there is no distinct award date, so we
+    do not invent one). Vendor/value are not in this payload by design."""
+    ref, title = parse_bid_name(jr.get("Title") or "")
+    return {
+        "ref": ref,
+        "title": title or (jr.get("Description") or "").strip(),
+        "status": jr.get("Status") or "Awarded",
+        "date": jr.get("DateClosingDisplay") or "",
+        "guid": jr.get("Id"),
+        "raw": " | ".join(x for x in (jr.get("Title"), jr.get("Scope"),
+                                      jr.get("Status")) if x),
+    }
+
+
+def fetch_awarded(page, captured: dict, muni: dict, source_id, keywords,
+                  stats: dict, dry_run: bool) -> int:
+    """Method B: replay the page's guarded Search call with ?status=Awarded,
+    paging through the awarded history and emitting award_notice documents keyed
+    on the bid reference. Returns the number of awarded rows read.
+
+    LOUD-FAILURE GUARD: a live Peel portal has years of awarded bids, so zero
+    awarded rows means the token capture or endpoint broke, not a quiet truth."""
+    base = captured["url"]
+    headers = {k: v for k, v in captured["headers"].items() if not k.startswith(":")}
+    post_data = captured.get("post_data") or ""
+    read = 0
+    start = 0
+    while start < AWARDED_MAX:
+        url = status_query_url(base, "Awarded", AWARDED_PAGE, start)
+        resp = page.request.post(url, headers=headers, data=post_data, timeout=45000)
+        if resp.status != 200:
+            raise RuntimeError(f"[{muni['org_key']}] awarded endpoint HTTP {resp.status}")
+        doc = resp.json()
+        data = doc.get("data") or []
+        total = doc.get("total") or 0
+        if not data:
+            break
+        for jr in data:
+            row = awarded_row_from_json(jr)
+            if row["ref"] is None:
+                continue  # no reference -> unkeyable, not a real awarded bid row
+            read += 1
+            payload = build_payload(muni, source_id, "award_notice", row, keywords)
+            if supabase_client.get_document_by_hash(payload["content_hash"]):
+                stats["skipped_duplicate"] += 1
+                continue
+            if dry_run:
+                log.info("[dry-run] %-13s ref=%-10s closed=%s :: %s",
+                         "award_notice", row["ref"], payload["published_on"],
+                         (payload["title"] or "")[:66])
+            else:
+                supabase_client.insert_document(payload)
+            stats["inserted"] += 1
+        start += AWARDED_PAGE
+        if start >= total:
+            break
+    if read == 0:
+        raise RuntimeError(
+            f"[{muni['org_key']}] AWARDED endpoint returned 0 rows: token capture "
+            f"or endpoint changed. Refusing to record silence.")
+    stats["read"] += read
+    return read
+
+
 def collect(dry_run: bool = True) -> dict:
-    """Render each municipality's portal with a real UA and read its Open
-    (tender_notice) and Awarded (award_notice) grids. LOUD-FAILURE GUARD: an
-    empty Open grid raises."""
+    """Render each municipality's portal with a real UA. Read the Open grid
+    (tender_notice, Method A) and replay the awarded data call (award_notice,
+    Method B). LOUD-FAILURE GUARDS: an empty Open grid or empty Awarded set
+    raises."""
     from playwright.sync_api import sync_playwright  # lazy: heavy optional dep
 
     keywords = load_keywords()
@@ -286,6 +370,20 @@ def collect(dry_run: bool = True) -> dict:
                     f"no sources row for {url}; apply the bids&tenders sources seed first")
             page = browser.new_context(user_agent=REAL_UA,
                                         viewport={"width": 1400, "height": 900}).new_page()
+            # Capture the page's own guarded Search call (Method B needs its URL,
+            # CSRF token body and headers) as it auto-fires on load.
+            captured: dict = {}
+
+            def _grab(req, _c=captured):
+                if SEARCH_RE.search(req.url) and req.method == "POST" and "url" not in _c:
+                    _c["url"] = req.url
+                    try:
+                        _c["headers"] = req.all_headers()
+                    except Exception:
+                        _c["headers"] = dict(req.headers)
+                    _c["post_data"] = req.post_data or ""
+
+            page.on("request", _grab)
             try:
                 page.goto(url, wait_until="networkidle", timeout=60000)
                 page.wait_for_timeout(3000)
@@ -310,6 +408,15 @@ def collect(dry_run: bool = True) -> dict:
                         else:
                             supabase_client.insert_document(payload)
                         stats["inserted"] += 1
+
+                # Awarded rung (Method B): replay the captured guarded call.
+                if "url" not in captured:
+                    raise RuntimeError(
+                        f"[{muni['org_key']}] never captured the Search call on load; "
+                        f"cannot replay the awarded endpoint. Refusing to record silence.")
+                n_awd = fetch_awarded(page, captured, muni, source_id, keywords,
+                                      stats, dry_run)
+                log.info("[%s] Awarded: %d rows", muni["org_key"], n_awd)
             except Exception:
                 log.exception("[%s] collection error", muni["org_key"])
                 stats["errors"] += 1
