@@ -1,14 +1,12 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "../auth-actions";
-import { authorPrediction, confirmOutcome } from "./actions";
+import { confirmOutcome } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 const RUNGS = ["ungraded", "chatter", "intent", "commitment", "in_market", "awarded"];
 const rung = (s: number | null) => RUNGS[s ?? 0] ?? "ungraded";
-// Default horizon by the subject's current rung (mirrors src/predictions).
-const DEFAULT_HORIZON: Record<number, number> = { 1: 18, 2: 12, 3: 9, 4: 4, 5: 3 };
 
 type Org = { canonical_name: string | null };
 type Proc = {
@@ -45,35 +43,20 @@ function one<T>(v: T | T[] | null): T | null {
 export default async function PredictionsPage() {
   const supabase = createClient();
 
-  const [{ data: procData }, { data: predData }, { data: scoreData }] =
-    await Promise.all([
-      // candidate subjects: confirmed opportunities at commitment or in_market
-      supabase
-        .from("procurements")
-        .select("id, title, current_stage, organizations(canonical_name)")
-        .eq("status", "confirmed")
-        .in("current_stage", [3, 4])
-        .order("current_stage", { ascending: false })
-        .limit(100),
-      // seller-facing predictions (company-level gated ones are excluded)
-      supabase
-        .from("predictions")
-        .select(
-          "id, made_at, subject_procurement_id, predicted_rung, horizon_ends_on, rationale, claim_hash, evidence_signal_ids, procurements(id, title, current_stage, organizations(canonical_name)), prediction_outcomes(id, outcome, status, settling_document_id, resolved_on), prediction_anchors(anchor_type)"
-        )
-        .eq("gated", false)
-        .order("made_at", { ascending: false })
-        .limit(100),
-      supabase.from("prediction_scorecard").select("outcome, lead_days"),
-    ]);
+  const [{ data: predData }, { data: scoreData }] = await Promise.all([
+    // seller-facing predictions (company-level gated ones are excluded)
+    supabase
+      .from("predictions")
+      .select(
+        "id, made_at, subject_procurement_id, predicted_rung, horizon_ends_on, rationale, claim_hash, evidence_signal_ids, procurements(id, title, current_stage, organizations(canonical_name)), prediction_outcomes(id, outcome, status, settling_document_id, resolved_on), prediction_anchors(anchor_type)"
+      )
+      .eq("gated", false)
+      .order("made_at", { ascending: false })
+      .limit(100),
+    supabase.from("prediction_scorecard").select("outcome, lead_days"),
+  ]);
 
   const predictions = (predData ?? []) as unknown as Prediction[];
-  const predictedProcIds = new Set(
-    predictions.map((p) => p.subject_procurement_id).filter(Boolean)
-  );
-  const candidates = ((procData ?? []) as unknown as Proc[]).filter(
-    (p) => !predictedProcIds.has(p.id)
-  );
 
   // Scorecard: correct rate and median-ish lead time over confirmed outcomes.
   const scored = (scoreData ?? []) as { outcome: string; lead_days: number | null }[];
@@ -114,59 +97,13 @@ export default async function PredictionsPage() {
         </p>
       </article>
 
-      {/* Author a claim */}
-      <div className="topbar" style={{ marginTop: 8 }}>
-        <h1 style={{ fontSize: 15 }}>Log a prediction</h1>
-        <span className="count">{candidates.length} candidates</span>
-      </div>
-      {candidates.length === 0 ? (
-        <p className="empty">
-          No candidate opportunities. Confirm a procurement at commitment or
-          in_market on the Procurements page first.
-        </p>
-      ) : null}
-      {candidates.map((c) => {
-        const stage = c.current_stage ?? 3;
-        const buyer = one(c.organizations)?.canonical_name ?? "Unresolved buyer";
-        const rungOptions = [];
-        for (let r = stage + 1; r <= 5; r++) rungOptions.push(r);
-        const defaultRung = Math.min(stage + 1, 5);
-        return (
-          <article key={c.id} className="card">
-            <div className="meta">
-              <span className="tag grade g-mid">{rung(stage)}</span>
-            </div>
-            <div className="title">{c.title}</div>
-            <p className="sub">{buyer}</p>
-            <form action={authorPrediction}>
-              <input type="hidden" name="procurement_id" value={c.id} />
-              <div className="field">
-                <label>Predicted to reach</label>
-                <select name="predicted_rung" defaultValue={String(defaultRung)}>
-                  {rungOptions.map((r) => (
-                    <option key={r} value={r}>{RUNGS[r]}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
-                <label>Within (months)</label>
-                <input
-                  name="horizon_months"
-                  type="number"
-                  min={1}
-                  max={60}
-                  defaultValue={DEFAULT_HORIZON[stage] ?? 9}
-                />
-              </div>
-              <div className="field">
-                <label>Rationale</label>
-                <input name="rationale" placeholder="Why, based on the evidence" />
-              </div>
-              <button className="approve" type="submit">Freeze prediction</button>
-            </form>
-          </article>
-        );
-      })}
+      {/* Authoring lives on the Procurements candidate feed (evidence recency
+          is shown there); this page is the ledger. */}
+      <p className="sub">
+        Author claims on the{" "}
+        <Link className="link" href="/procurements">Procurements</Link> candidate
+        feed, where evidence recency is shown. This page is the track record.
+      </p>
 
       {/* Open + settled claims */}
       <div className="topbar" style={{ marginTop: 8 }}>

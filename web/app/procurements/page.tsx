@@ -1,18 +1,16 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "../auth-actions";
-import {
-  confirmProcurement,
-  editProcurement,
-  mergeProcurement,
-  rejectProcurement,
-} from "./actions";
+import { editProcurement, mergeProcurement, rejectProcurement } from "./actions";
+import { authorPrediction } from "../predictions/actions";
 
 export const dynamic = "force-dynamic";
 
 // Demand-strength rungs, indexed by stage (mirrors src/taxonomy.RUNGS).
 const RUNGS = ["ungraded", "chatter", "intent", "commitment", "in_market", "awarded"];
 const rung = (s: number | null) => RUNGS[s ?? 0] ?? "ungraded";
+// Default horizon by the subject's current rung (mirrors src/predictions).
+const DEFAULT_HORIZON: Record<number, number> = { 1: 18, 2: 12, 3: 9, 4: 4, 5: 3 };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
                 "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -96,28 +94,35 @@ function RecencyTags({ r }: { r: Recency }) {
 
 export default async function ProcurementsPage() {
   const supabase = createClient();
-  const { data, error } = await supabase
-    .from("procurements")
-    .select(
-      "id, title, scope, reference_number, current_stage, status, buyer_organization_id, organizations(canonical_name), procurement_signals(active, signals(id, title, evidence_grade, organizations(canonical_name), documents(url, published_on, date_precision)))"
-    )
-    .in("status", ["proposed", "confirmed"])
-    .order("current_stage", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(100);
+  const [{ data, error }, { data: predRows }] = await Promise.all([
+    supabase
+      .from("procurements")
+      .select(
+        "id, title, scope, reference_number, current_stage, status, buyer_organization_id, organizations(canonical_name), procurement_signals(active, signals(id, title, evidence_grade, organizations(canonical_name), documents(url, published_on, date_precision)))"
+      )
+      .in("status", ["proposed", "confirmed"])
+      .order("current_stage", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(100),
+    supabase.from("predictions").select("subject_procurement_id"),
+  ]);
 
   const rows = (data ?? []) as unknown as Proc[];
-  const proposed = rows.filter((p) => p.status === "proposed");
-  const confirmed = rows.filter((p) => p.status === "confirmed");
   // Merge targets: every other open procurement.
   const targets = rows.map((p) => ({ id: p.id, title: p.title }));
   const cutoff = staleCutoff();
+  // How many claims already ride each procurement (so we can show it, not block).
+  const claimCount = new Map<string, number>();
+  for (const r of (predRows ?? []) as { subject_procurement_id: string | null }[]) {
+    if (r.subject_procurement_id)
+      claimCount.set(r.subject_procurement_id, (claimCount.get(r.subject_procurement_id) ?? 0) + 1);
+  }
 
   return (
     <main className="page">
       <div className="topbar">
         <h1>Procurements</h1>
-        <span className="count">{proposed.length} proposed</span>
+        <span className="count">{rows.length} candidates</span>
         <Link className="link" href="/brief">Brief</Link>
         <Link className="link" href="/corpus">Corpus</Link>
         <Link className="link" href="/predictions">
@@ -130,23 +135,37 @@ export default async function ProcurementsPage() {
         </form>
       </div>
 
+      <p className="sub">
+        The prediction candidate feed. Author a claim on any opportunity at
+        commitment or in_market; authoring confirms it (no separate confirm step).
+        Evidence recency is shown so a stale cluster is never predicted on blind.
+      </p>
+
       {error ? <p className="err">Could not load procurements: {error.message}</p> : null}
-      {!error && proposed.length === 0 ? (
-        <p className="empty">No procurement candidates to review.</p>
+      {!error && rows.length === 0 ? (
+        <p className="empty">No open procurement candidates.</p>
       ) : null}
 
-      {proposed.map((p) => {
+      {rows.map((p) => {
         const buyer = one(p.organizations)?.canonical_name ?? "Unresolved buyer";
         const stage = p.current_stage ?? 1;
         const gClass = stage >= 4 ? "g-strong" : stage === 3 ? "g-mid" : "g-weak";
         const sigLinks = (p.procurement_signals ?? []).filter((l) => l.active);
         const r = recency(sigLinks, cutoff);
+        const claims = claimCount.get(p.id) ?? 0;
+        // Authorable = can predict a rung above the current stage (commitment or
+        // in_market). At awarded there is nothing above to predict.
+        const rungOptions: number[] = [];
+        for (let rr = stage + 1; rr <= 5; rr++) rungOptions.push(rr);
+        const authorable = stage >= 3 && rungOptions.length > 0;
         return (
           <article key={p.id} className="card">
             <div className="meta">
               <span className={"tag grade " + gClass}>{rung(stage)}</span>
+              <span className={"tag " + (p.status === "confirmed" ? "ok" : "")}>{p.status}</span>
               <span className="tag">{sigLinks.length} signals</span>
               <RecencyTags r={r} />
+              {claims > 0 ? <span className="tag ok">{claims} claim{claims > 1 ? "s" : ""}</span> : null}
               {p.reference_number ? <span className="tag">ref {p.reference_number}</span> : null}
             </div>
             <div className="title">{p.title}</div>
@@ -164,10 +183,9 @@ export default async function ProcurementsPage() {
                   const doc = one(s.documents);
                   const url = doc?.url ?? null;
                   const when = eventDate(doc);
-                  // The signal's own source org. On a merged procurement the
-                  // survivor's buyer is one org, but each evidence signal keeps
-                  // its own attribution here, so a board signal and a service
-                  // signal stay distinguishable and provenance is never lost.
+                  // Each evidence signal keeps its own source attribution, so a
+                  // board signal and a service signal stay distinguishable and
+                  // provenance is never lost even on a merged procurement.
                   const srcOrg = one(s.organizations)?.canonical_name ?? null;
                   return (
                     <li key={s.id}>
@@ -184,6 +202,39 @@ export default async function ProcurementsPage() {
                 })}
               </ul>
             </details>
+
+            {r.stale && authorable ? (
+              <p className="sub warntext">
+                Newest evidence is over {STALE_MONTHS} months old. Confirm the
+                opportunity is still live before predicting on it.
+              </p>
+            ) : null}
+
+            {/* Author a prediction (folds in confirmation). Merge and edit stay
+                available at authoring time; there is no standalone confirm. */}
+            {authorable ? (
+              <form action={authorPrediction} className="field">
+                <input type="hidden" name="procurement_id" value={p.id} />
+                <label>Predict this reaches</label>
+                <select name="predicted_rung" defaultValue={String(Math.min(stage + 1, 5))}>
+                  {rungOptions.map((rr) => (
+                    <option key={rr} value={rr}>{RUNGS[rr]}</option>
+                  ))}
+                </select>
+                <label>Within (months)</label>
+                <input name="horizon_months" type="number" min={1} max={60}
+                       defaultValue={DEFAULT_HORIZON[stage] ?? 9} />
+                <label>Rationale</label>
+                <input name="rationale" placeholder="Why, based on the evidence" />
+                <button className="approve" type="submit">Freeze prediction</button>
+              </form>
+            ) : (
+              <p className="sub">
+                {stage >= 5
+                  ? "Awarded: nothing above to predict."
+                  : "Below commitment: not yet a prediction candidate."}
+              </p>
+            )}
 
             {/* Edit reviewer-owned fields: title, scope, stage. */}
             <form action={editProcurement} className="field">
@@ -202,17 +253,18 @@ export default async function ProcurementsPage() {
             </form>
 
             <div className="row">
-              <form action={confirmProcurement} style={{ display: "flex", flex: 1 }}>
-                <input type="hidden" name="id" value={p.id} />
-                <button className="approve" type="submit">Confirm</button>
-              </form>
-              <form action={rejectProcurement} style={{ display: "flex", flex: 1 }}>
-                <input type="hidden" name="id" value={p.id} />
-                <button className="reject" type="submit">Reject</button>
-              </form>
+              {/* Reject dismisses a junk cluster (proposed only). No confirm
+                  button: confirmation happens by authoring a prediction. */}
+              {p.status === "proposed" ? (
+                <form action={rejectProcurement} style={{ display: "flex", flex: 1 }}>
+                  <input type="hidden" name="id" value={p.id} />
+                  <button className="reject" type="submit">Reject</button>
+                </form>
+              ) : null}
             </div>
 
-            {/* Merge into another procurement (non-destructive). */}
+            {/* Merge into another procurement (non-destructive), preserved at
+                authoring time. */}
             {targets.length > 1 ? (
               <form action={mergeProcurement} className="field">
                 <input type="hidden" name="id" value={p.id} />
@@ -231,39 +283,6 @@ export default async function ProcurementsPage() {
           </article>
         );
       })}
-
-      {confirmed.length > 0 ? (
-        <>
-          <div className="topbar" style={{ marginTop: 8 }}>
-            <h1 style={{ fontSize: 15 }}>Confirmed</h1>
-            <span className="count">{confirmed.length}</span>
-          </div>
-          {confirmed.map((p) => {
-            const buyer = one(p.organizations)?.canonical_name ?? "Unresolved buyer";
-            const stage = p.current_stage ?? 1;
-            const gClass = stage >= 4 ? "g-strong" : stage === 3 ? "g-mid" : "g-weak";
-            const sigLinks = (p.procurement_signals ?? []).filter((l) => l.active);
-            const r = recency(sigLinks, cutoff);
-            return (
-              <article key={p.id} className="card">
-                <div className="meta">
-                  <span className={"tag grade " + gClass}>{rung(stage)}</span>
-                  <span className="tag ok">confirmed</span>
-                  <RecencyTags r={r} />
-                </div>
-                <div className="title">{p.title}</div>
-                <p className="sub">{buyer}{p.scope ? ` · ${p.scope}` : ""}</p>
-                {r.stale ? (
-                  <p className="sub warntext">
-                    Newest evidence is over {STALE_MONTHS} months old. Confirm the
-                    opportunity is still live before predicting on it.
-                  </p>
-                ) : null}
-              </article>
-            );
-          })}
-        </>
-      ) : null}
     </main>
   );
 }
