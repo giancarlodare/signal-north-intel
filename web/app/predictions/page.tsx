@@ -94,6 +94,7 @@ export default async function PredictionsPage() {
       <div className="topbar">
         <h1>Predictions</h1>
         <span className="count">{predictions.length} claims</span>
+        <Link className="link" href="/brief">Brief</Link>
         <Link className="link" href="/corpus">Corpus</Link>
         <Link className="link" href="/procurements">Procurements</Link>
         <Link className="link" href="/prospects">Prospects</Link>

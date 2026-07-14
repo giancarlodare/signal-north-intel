@@ -139,3 +139,16 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python -m src.anchor
+
+      # Weekly Signal brief: build this week's DRAFT from the freshest corpus
+      # (recent events + imminent deadlines, strong-grade/high-materiality), for
+      # the operator to edit and publish at /brief. Ordered last: it reads the
+      # corpus, suppressions, and procurement clusters all the steps above have
+      # settled. Propose-only (writes only briefs/brief_items) and create-if-
+      # absent (never overwrites an existing draft the operator may be editing).
+      - name: Generate Weekly Signal draft brief
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.brief_generator --apply

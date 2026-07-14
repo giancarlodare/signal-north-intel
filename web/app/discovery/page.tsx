@@ -107,6 +107,7 @@ export default async function DiscoveryPage() {
         <span className="count">
           {sources.length + entities.length} proposed
         </span>
+        <Link className="link" href="/brief">Brief</Link>
         <Link className="link" href="/corpus">
           Corpus
         </Link>

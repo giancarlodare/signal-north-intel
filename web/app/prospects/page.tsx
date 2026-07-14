@@ -53,6 +53,7 @@ export default async function ProspectsPage({
       <div className="topbar">
         <h1>Prospects</h1>
         <span className="count">{prospects.length}</span>
+        <Link className="link" href="/brief">Brief</Link>
         <Link className="link" href="/corpus">
           Corpus
         </Link>
