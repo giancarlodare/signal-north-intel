@@ -8,10 +8,11 @@ feasibility spike established:
   * a REAL browser User-Agent is REQUIRED: the HeadlessChrome UA is served a
     dead (empty) grid. This is the silent-empty failure mode, so it is guarded
     against loudly (see LOUD-FAILURE GUARD below);
-  * the open-bids grid renders once loaded with a real UA (67 live Peel rows in
-    the spike); the guarded data endpoint is
-    POST /Module/Tenders/en/Tender/Search/<moduleGUID>?status=<Status>, kept
-    documented as a future Method-B fast-path if CI cost bites, NOT used now.
+  * with a real UA the OPEN grid auto-loads on page render (67 live Peel rows in
+    the spike, counted before any interaction); switching to another status tab
+    (Awarded) requires a JS exact-text CLICK to fire its data call. The guarded
+    endpoint is POST /Module/Tenders/en/Tender/Search/<moduleGUID>?status=<Status>,
+    kept documented as a future Method-B fast-path if CI cost bites, NOT used now.
 
 LOUD-FAILURE GUARD: a municipality's OPEN tab returning zero rows is treated as
 an error (raise), never a silent no-op, because a live bids&tenders portal
@@ -96,12 +97,25 @@ def parse_event_date(text: str):
     return f"{int(m.group(3)):04d}-{mon:02d}-{int(m.group(2)):02d}", "day"
 
 
+def dedupe_phrase(text: str) -> str:
+    """Collapse a cleanly-doubled cell to a single copy. The fuelux repeater
+    nests a `.repeater-list-heading` div inside each header cell, so the th's
+    innerText is 'Bid Name Bid Name'; some data cells double the same way. When
+    the string is exactly X + ' ' + X, return X; otherwise leave it untouched
+    (never risk mangling a genuinely repetitive value)."""
+    s = " ".join((text or "").split())
+    n = len(s)
+    if n and n % 2 == 1 and s[n // 2] == " " and s[: n // 2] == s[n // 2 + 1:]:
+        return s[: n // 2]
+    return s
+
+
 def map_columns(header_cells):
     """Header text -> column index, so extraction is driven by the grid's own
     headers (robust across municipalities and the Open vs Awarded views)."""
     idx = {}
     for i, c in enumerate(header_cells):
-        key = " ".join((c or "").split()).lower()
+        key = dedupe_phrase(c).lower()
         if key:
             idx[key] = i
     return idx
@@ -110,6 +124,8 @@ def map_columns(header_cells):
 def _col(idx: dict, row: list, *names):
     for n in names:
         j = idx.get(n)
+        if j is None:  # tolerate header drift: fall back to a substring match
+            j = next((v for k, v in idx.items() if n in k), None)
         if j is not None and j < len(row):
             return row[j]
     return ""
@@ -144,38 +160,52 @@ def build_payload(muni: dict, source_id: str, doc_type: str, row: dict,
     }
 
 
-ROW_SEL = "table tr, .repeater-canvas tr, .repeater-list-items tr"
-# A populated grid has at least one data cell holding a bid-name <strong>.
-BID_CELL = "table td strong, .repeater-canvas td strong"
+# Broad row selector (fuelux repeater + plain table). A CSS selector list
+# dedupes elements, so a <tr> matched by several clauses is read once.
+ROW_SEL = ".repeater-canvas tr, .repeater-list-items tr, table tr, tbody tr"
+
+# The default (Open) grid auto-loads on page render with a real UA (67 live Peel
+# rows in the spike, counted BEFORE any click). The other status tabs are
+# <li>/<a> JS handlers that fire the guarded Tender/Search call only on click;
+# a plain JS exact-text click works where Playwright's get_by_role timed out.
+_CLICK_TAB_JS = """(label) => {
+  const norm = s => (s || '').replace(/\\s+/g, ' ').trim().toLowerCase();
+  const el = [...document.querySelectorAll('a, li, button, span')]
+    .find(e => norm(e.innerText) === label.toLowerCase());
+  if (el) { el.click(); return true; }
+  return false;
+}"""
+
+# A populated grid has at least one row whose text carries a bid reference like
+# 2026-104P. Waiting on this (not on a guessed td/strong structure) is what makes
+# the read robust to the platform's exact cell markup.
+_HAS_BID_ROW_JS = """(sel) => {
+  const re = /\\b\\d{4}-\\d{2,5}[A-Za-z]{0,3}\\b/;
+  return [...document.querySelectorAll(sel)].some(tr => re.test(tr.innerText || ''));
+}"""
 
 
 def read_grid(page, status_label: str, is_default: bool) -> list:
-    """Read a status tab's rendered rows, header-driven. Returns a list of
-    {ref, title, status, date, guid, raw}. Playwright page in scope.
-
-    is_default: the Open tab is the view the portal loads on its own; clicking
-    it re-fetches and can leave the grid transiently empty (the 0-rows bug the
-    dry-run caught). So we click ONLY non-default tabs, and either way we WAIT
-    for real rows to populate (a bid-name cell) rather than a fixed sleep."""
-    if not is_default:
+    """Read one status grid, header-driven. The default (Open) grid auto-loads,
+    so it is read without clicking (clicking the active tab races/clears it);
+    any other tab is clicked to fire its guarded data call. Returns a list of
+    {ref, title, status, date, guid, raw}. An empty tab (a legitimately
+    award-less municipality) times out on the wait and returns []."""
+    if is_default:
+        # Just wait for the auto-loaded rows to actually paint.
         try:
-            page.get_by_role("link", name=status_label, exact=True).first.click(timeout=8000)
+            page.wait_for_function(_HAS_BID_ROW_JS, arg=ROW_SEL, timeout=30000)
         except Exception:
-            page.evaluate(
-                """(label) => { const el = [...document.querySelectorAll('a,button,li,span')]
-                     .find(e => (e.innerText||'').trim().toLowerCase() === label.toLowerCase());
-                     if (el) el.click(); }""", status_label)
-    # Wait for the guarded data call to actually populate the grid. An empty
-    # tab (a legitimately award-less municipality) just times out and returns [].
-    try:
-        page.wait_for_selector(BID_CELL, timeout=30000)
-    except Exception:
-        pass
-    page.wait_for_timeout(1500)
+            pass
+        page.wait_for_timeout(1000)
+    else:
+        page.evaluate(_CLICK_TAB_JS, status_label)
+        page.wait_for_timeout(4500)  # let the guarded Search call repaint the grid
 
     grid = page.eval_on_selector_all(
         ROW_SEL,
         "trs => trs.map(tr => [...tr.querySelectorAll('th,td')].map(c => (c.innerText||'').trim()))")
+    grid = [[dedupe_phrase(c) for c in row] for row in grid]
     # Bid GUID per reference: from each 'Register for this Bid - <ref> ...' link.
     links = page.eval_on_selector_all(
         "a[href*='/Tender/Terms/']",
@@ -189,18 +219,18 @@ def read_grid(page, status_label: str, is_default: bool) -> list:
 
     header = next((r for r in grid if any("bid name" in (c or "").lower() for c in r)), None)
     if not header:
+        log.warning("[read_grid %s] no 'bid name' header in %d grid rows; first=%r",
+                    status_label, len(grid), grid[:2])
         return []
     idx = map_columns(header)
     out = []
     for r in grid:
-        if len(r) < len(header) or r is header:
+        if r is header or len(r) < 2:
             continue
         name = _col(idx, r, "bid name")
         ref, title = parse_bid_name(name)
-        if not name or (ref is None and "bid name" in " ".join(r).lower()):
-            continue  # skip the header echo / empty
-        if not title:
-            continue
+        if not title or "bid name" in name.lower():
+            continue  # skip the header echo / empty spacer rows
         out.append({
             "ref": ref, "title": title,
             "status": _col(idx, r, "bid status") or status_label,
@@ -209,6 +239,9 @@ def read_grid(page, status_label: str, is_default: bool) -> list:
             "guid": guid_by_ref.get(ref),
             "raw": " | ".join(c for c in r if c),
         })
+    if not out:
+        log.warning("[read_grid %s] header found but 0 data rows parsed; grid rows=%d",
+                    status_label, len(grid))
     return out
 
 
@@ -237,7 +270,7 @@ def collect(dry_run: bool = True) -> dict:
                 page.goto(url, wait_until="networkidle", timeout=60000)
                 page.wait_for_timeout(3000)
                 for label, doc_type in TAB_DOC_TYPE:
-                    rows = read_grid(page, label, is_default=(label == "Open"))
+                    rows = read_grid(page, label, is_default=(doc_type == "tender_notice"))
                     log.info("[%s] %s: %d rows", muni["org_key"], label, len(rows))
                     # LOUD-FAILURE GUARD (Open only; Awarded may legitimately be empty).
                     if label == "Open" and not rows:

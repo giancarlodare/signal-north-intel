@@ -43,6 +43,19 @@ def test_parse_event_date_unparseable_is_none():
     assert bt.parse_event_date("") == (None, None)
 
 
+# --- doubled-cell dedupe -----------------------------------------------------
+def test_dedupe_phrase_collapses_fuelux_doubled_header():
+    # The repeater nests a heading div, so each header cell's innerText doubles.
+    assert bt.dedupe_phrase("Bid Name Bid Name") == "Bid Name"
+    assert bt.dedupe_phrase("Bid Closing Date Bid Closing Date") == "Bid Closing Date"
+
+
+def test_dedupe_phrase_leaves_non_doubled_untouched():
+    assert bt.dedupe_phrase("2026-104P - Flow Meters") == "2026-104P - Flow Meters"
+    assert bt.dedupe_phrase("Open") == "Open"
+    assert bt.dedupe_phrase("") == ""
+
+
 # --- header-driven column mapping --------------------------------------------
 def test_map_columns_and_col_lookup():
     idx = bt.map_columns(["Bid Name", "Bid Status", "Bid Closing Date", "Days Left"])
@@ -51,6 +64,25 @@ def test_map_columns_and_col_lookup():
     assert bt._col(idx, row, "bid closing date") == "Wed Jul 15, 2026 12:00:00 PM (EDT)"
     # falls through name alternatives (awarded view uses a different header)
     assert bt._col(idx, row, "award date", "bid closing date") == "Wed Jul 15, 2026 12:00:00 PM (EDT)"
+
+
+def test_map_columns_handles_doubled_headers():
+    # The exact failure that produced 0 rows: doubled header text broke lookup.
+    idx = bt.map_columns(["Bid Name Bid Name", "Bid Status Bid Status",
+                          "Bid Closing Date Bid Closing Date", "Days Left Days Left"])
+    row = ["2026-104P - Flow Meters", "Open", "Wed Jul 15, 2026 12:00:00 PM (EDT)", "0"]
+    assert bt._col(idx, row, "bid name") == "2026-104P - Flow Meters"
+    assert bt._col(idx, row, "bid status") == "Open"
+    assert bt._col(idx, row, "bid closing date") == "Wed Jul 15, 2026 12:00:00 PM (EDT)"
+
+
+def test_col_substring_fallback_tolerates_header_drift():
+    idx = bt.map_columns(["Bid Name", "Status", "Awarded Date"])
+    row = ["2026-104P - Flow Meters", "Awarded", "Mon Jun 30, 2026"]
+    # 'award date' is not an exact header, but 'award date' is a substring miss;
+    # 'awarded date' resolves, and the fallback finds 'status' inside itself.
+    assert bt._col(idx, row, "awarded date") == "Mon Jun 30, 2026"
+    assert bt._col(idx, row, "bid status", "status") == "Awarded"
 
 
 # --- build_payload -----------------------------------------------------------
