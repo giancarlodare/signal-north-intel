@@ -92,6 +92,33 @@ decision" (board_minutes). A bare date is ambiguous (a subscriber could misread
 a deadline as a past event). Full spec + baseline map in
 docs/editorial-model-redesign.md section 7.4.
 
+## Per-jurisdiction demand-arc backtest (calibration layer, Wave 2 / post-award-history)
+
+**Banked 2026-07-13. Not now.** A calibration layer that learns each
+jurisdiction's real demand rhythm from its own award history. Prerequisite:
+sufficient AWARD history per jurisdiction, which starts flowing once the
+municipal award collectors land (Peel via bids&tenders,
+`docs/peel-tenders-design.md`).
+
+Mechanism: walk each AWARDED procurement backward along the procurement spine to
+its originating commitment/budget signal; measure the lag at each rung
+transition (commitment -> in_market, in_market -> awarded); aggregate per
+jurisdiction into a conversion RHYTHM (lag distribution) and conversion RATE
+(which commitments became procurements vs fizzled).
+
+Two payoffs: (1) ground prediction horizon defaults in each jurisdiction's
+MEASURED history instead of the fixed per-rung guesses
+(`src/predictions.py:default_horizon_months`, app `DEFAULT_HORIZON`); (2) surface
+a conversion-rate PRIOR on procurement candidates ("Peel commitments of this
+type historically reach tender X% of the time in Y months"), shown to inform the
+human author, never an auto-claim.
+
+**Design implication to preserve NOW:** the procurement spine's hard-key wiring
+(`procurement_id` linking tender to award; `procurement_signals` back to
+commitment signals) is what makes walking the arc possible. Keep that linkage
+clean in every collector and the proposer. Full spec:
+`docs/prediction-ledger-design.md` section 5.7.
+
 ## Parked / waiting
 
 - **TPSB board minutes** — parked in `src/board_minutes.py`: tpsb.ca's WAF
