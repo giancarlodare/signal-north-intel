@@ -62,13 +62,16 @@ export async function publishBrief(formData: FormData) {
   revalidatePath("/brief");
 }
 
+export type SendState = { ok: boolean; message: string };
+
 // Email a PUBLISHED brief to the operator via Resend. Publish freezes the
-// content; Send is a deliberate second step so the brief is reviewed in its
-// published form first. Idempotent: refuses if `sent_at` is already set, so a
-// double-click or re-open cannot double-send. Returns { ok, error } for the UI.
-export async function sendBriefEmail(formData: FormData): Promise<void> {
+// content; Send is a deliberate second step. Idempotent: refuses if `sent_at`
+// is already set. Returns a typed result for EVERY path so a dead click can
+// never look like a working one (the button surfaces the exact reason). Shaped
+// for useFormState: (prevState, formData).
+export async function sendBriefEmail(_prev: SendState | null, formData: FormData): Promise<SendState> {
   const id = String(formData.get("id") ?? "");
-  if (!id) return;
+  if (!id) return { ok: false, message: "No brief id." };
   const supabase = createClient();
 
   const { data: b } = await supabase
@@ -76,36 +79,42 @@ export async function sendBriefEmail(formData: FormData): Promise<void> {
     .select("id, week_start, status, sent_at")
     .eq("id", id)
     .maybeSingle();
-  if (!b || b.status !== "published" || b.sent_at) return; // not sendable / already sent
+  if (!b) return { ok: false, message: "Brief not found." };
+  if (b.status !== "published") return { ok: false, message: "Publish the brief before sending." };
+  if (b.sent_at) return { ok: false, message: `Already emailed on ${String(b.sent_at).slice(0, 10)}.` };
 
   const view = await buildBriefView(supabase, b.week_start);
-  if (!view) return;
+  if (!view) return { ok: false, message: "Could not assemble the brief view." };
 
   const key = process.env.RESEND_API_KEY;
   if (!key) {
-    console.error("sendBriefEmail: RESEND_API_KEY is not set");
-    return;
+    return { ok: false, message: "RESEND_API_KEY is not set on the server. Set it in the Vercel env, then redeploy." };
   }
-  const resp = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "content-type": "application/json" },
-    body: JSON.stringify({
-      from: SENDER,
-      to: [RECIPIENT],
-      subject: `${view.masthead}: week of ${view.weekLabel}`,
-      html: renderBrief(view),
-      text: renderBriefText(view),
-    }),
-  });
+
+  let resp: Response;
+  try {
+    resp = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "content-type": "application/json" },
+      body: JSON.stringify({
+        from: SENDER,
+        to: [RECIPIENT],
+        subject: `${view.masthead}: week of ${view.weekLabel}`,
+        html: renderBrief(view),
+        text: renderBriefText(view),
+      }),
+    });
+  } catch (e) {
+    return { ok: false, message: `Network error calling Resend: ${String(e).slice(0, 140)}` };
+  }
   if (!resp.ok) {
-    console.error("sendBriefEmail: Resend returned", resp.status, await resp.text());
-    return;
+    const body = await resp.text().catch(() => "");
+    return { ok: false, message: `Resend rejected the send (HTTP ${resp.status}): ${body.slice(0, 180)}` };
   }
-  // Stamp the send only after Resend accepted it; guard against a race.
-  await supabase
-    .from("briefs")
-    .update({ sent_at: new Date().toISOString() })
-    .eq("id", id)
-    .is("sent_at", null);
+
+  // Stamp the send only after Resend accepted it; guard the race.
+  await supabase.from("briefs").update({ sent_at: new Date().toISOString() })
+    .eq("id", id).is("sent_at", null);
   revalidatePath("/brief");
+  return { ok: true, message: `Emailed to ${RECIPIENT}.` };
 }

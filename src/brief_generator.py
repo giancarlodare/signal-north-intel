@@ -28,7 +28,7 @@ import sys
 from collections import Counter, defaultdict
 from datetime import date, timedelta
 
-from . import supabase_client
+from . import brief_copy, supabase_client
 
 log = logging.getLogger(__name__)
 
@@ -162,6 +162,7 @@ def cluster(included, proc_by_signal):
             "materiality": lead.get("materiality") or 0,
             "amount": float(lead.get("amount_max_cad") or 0),
             "org": (_one(lead.get("organizations")) or {}).get("canonical_name"),
+            "doc_type": (_one(lead.get("documents")) or {}).get("doc_type"),
         })
 
     # Rank: imminent clusters first, by soonest date; then by salience.
@@ -188,6 +189,23 @@ def _procurement_by_signal():
         if proc.get("status") in ("proposed", "confirmed"):
             out[l["signal_id"]] = l["procurement_id"]
     return out
+
+
+def _peel_recent_award_count() -> int | None:
+    """Sum of municipal (Region of Peel) award notices over the last four
+    quarters, for the one honest scale fact The Read may cite. Returns None if
+    the exhibit view is unavailable, so a missing number is never faked as zero."""
+    try:
+        rows = supabase_client.fetch_rows_where(
+            "award_volume_by_quarter", "quarter_start,awards",
+            {"jurisdiction": "eq.municipal", "order": "quarter_start.desc"},
+            limit=4)
+    except Exception as e:  # the view may be absent in a given environment
+        log.warning("  peel award count unavailable: %s", e)
+        return None
+    if not rows:
+        return None
+    return sum(int(r.get("awards") or 0) for r in rows)
 
 
 def run(dry_run: bool = True, today: date | None = None, force: bool = False) -> dict:
@@ -268,15 +286,25 @@ def _apply(week_start, clusters, excluded, breakdown, force) -> dict:
                  "force does not overwrite (no destructive delete); delete manually.")
         return {"brief": 0, "items": 0}
 
+    # Draft copy the operator sharpens: The Read (one paragraph) as the brief
+    # intro, and a per-item vendor read as each item's editor_note. Deterministic
+    # from what we hold, never fabricated; the draft is the scaffold, the edits
+    # are the value.
+    peel_recent = _peel_recent_award_count()
+    intro = brief_copy.draft_the_read(clusters, peel_recent)
     brief = supabase_client.insert_row("briefs", {
         "week_start": str(week_start),
         "status": "draft",
+        "intro": intro,
         "excluded_below_threshold": excluded,
         "exclusion_breakdown": breakdown,
     })
     bid = brief["id"]
     n = 0
     for c in clusters:
+        note = brief_copy.draft_item_note(
+            doc_type=c.get("doc_type"), timing_path=c["timing_path"],
+            buyer=c.get("org"), title=c.get("lead_title"), amount_cad=c.get("amount"))
         supabase_client.insert_row("brief_items", {
             "brief_id": bid,
             "cluster_kind": c["cluster_kind"],
@@ -286,6 +314,7 @@ def _apply(week_start, clusters, excluded, breakdown, force) -> dict:
             "soonest_date": str(c["soonest_date"]) if c["soonest_date"] else None,
             "included": True,
             "rank": c["rank"],
+            "editor_note": note,
         })
         n += 1
     log.info("  wrote draft brief %s with %d items", bid, n)
