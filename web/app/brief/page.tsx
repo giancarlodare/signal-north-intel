@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "../auth-actions";
-import { setBriefMeta, saveItem, publishBrief } from "./actions";
+import { setBriefMeta, saveItem, publishBrief, sendBriefEmail } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +37,7 @@ type Brief = {
   excluded_below_threshold: number;
   exclusion_breakdown: Record<string, number> | null;
   published_at: string | null;
+  sent_at: string | null;
 };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -57,7 +58,7 @@ export default async function BriefPage() {
   const supabase = createClient();
   const { data: briefs } = await supabase
     .from("briefs")
-    .select("id, week_start, status, title, intro, excluded_below_threshold, exclusion_breakdown, published_at")
+    .select("id, week_start, status, title, intro, excluded_below_threshold, exclusion_breakdown, published_at, sent_at")
     .order("week_start", { ascending: false })
     .limit(1);
   const brief = (briefs?.[0] ?? null) as Brief | null;
@@ -199,7 +200,21 @@ export default async function BriefPage() {
               <input type="hidden" name="id" value={brief.id} />
               <button className="approve" type="submit">Publish brief</button>
             </form>
-          ) : null}
+          ) : (
+            <div className="meta" style={{ marginTop: 12 }}>
+              <a className="btn" href={`/brief/${brief.week_start}`} target="_blank" rel="noreferrer">
+                View published
+              </a>
+              {brief.sent_at ? (
+                <span className="tag ok">emailed {brief.sent_at.slice(0, 10)}</span>
+              ) : (
+                <form action={sendBriefEmail}>
+                  <input type="hidden" name="id" value={brief.id} />
+                  <button className="approve" type="submit">Send to me</button>
+                </form>
+              )}
+            </div>
+          )}
         </>
       )}
     </main>

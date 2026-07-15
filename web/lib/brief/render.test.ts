@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { renderBrief, formatCad, type BriefView, type RenderItem } from "./render.ts";
+import { renderBrief, renderBriefText, formatCad, type BriefView, type RenderItem } from "./render.ts";
 
 function item(over: Partial<RenderItem> = {}): RenderItem {
   return {
@@ -93,4 +93,19 @@ test("formatCad is compact and drops non-positive amounts", () => {
   assert.equal(formatCad(622_000), "$622K");
   assert.equal(formatCad(0), null);
   assert.equal(formatCad(null), null);
+});
+
+test("plain-text alternative carries the same structure, no em dashes", () => {
+  const txt = renderBriefText(view());
+  assert.ok(!txt.includes("—"), "no em dash in the text part");
+  assert.ok(txt.includes("THE READ"));
+  assert.ok(txt.includes("Tender closes 24 Jul 2026"), "type-labeled date in text");
+  assert.ok(txt.includes("Source: https://peelregion.bidsandtenders.ca/x"));
+  assert.ok(txt.includes("Peel municipal contract awards by quarter".toUpperCase()));
+});
+
+test("plain-text states a quiet week honestly", () => {
+  const txt = renderBriefText(view({ lead: null, supporting: [] }));
+  assert.ok(txt.includes("quiet week"));
+  assert.ok(txt.includes("do not manufacture items"));
 });

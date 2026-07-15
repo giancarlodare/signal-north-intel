@@ -189,9 +189,52 @@ export function renderBrief(view: BriefView): string {
     + `font-family:${SANS};font-size:11px;line-height:1.6;color:${MUTE};">`
     + `${esc(view.methodNote)}${esc(held)}</div>`);
 
-  const body = parts.join("");
-  const preheader = view.theRead ? esc(view.theRead).slice(0, 140) : `${esc(view.masthead)}`;
+  return renderShell(view, parts.join(""));
+}
 
+// Plain-text alternative part, from the same data, so a client that prefers
+// text (or a screen reader) gets an ordered, labeled document, not raw HTML.
+export function renderBriefText(view: BriefView): string {
+  const L: string[] = [view.masthead.toUpperCase(), `Week of ${view.weekLabel}`, ""];
+  const itemText = (it: RenderItem): string => {
+    const win = actionWindow(it.doc.doc_type, it.timing_path, it.doc.published_on, it.doc.date_precision);
+    const bits = [it.buyer, formatCad(it.amountCad)].filter(Boolean).join("  |  ");
+    const lines: string[] = [];
+    if (win) lines.push(win);
+    lines.push(it.headline);
+    if (bits) lines.push(bits);
+    if (it.vendorSoWhat) lines.push(it.vendorSoWhat);
+    if (it.doc.url) lines.push(`Source: ${it.doc.url}`);
+    return lines.join("\n");
+  };
+  if (view.theRead) L.push("THE READ", view.theRead, "");
+  if (view.lead) L.push("LEAD", itemText(view.lead), "");
+  if (view.supporting.length > 0) {
+    L.push(view.lead ? "ALSO THIS WEEK" : "THIS WEEK");
+    for (const it of view.supporting) L.push(itemText(it), "");
+  } else if (!view.lead) {
+    L.push("THIS WEEK",
+      "A quiet week for new signals. The standing exhibits carry the through-line; "
+      + "we do not manufacture items to fill space.", "");
+  }
+  for (const ex of view.exhibits) {
+    L.push(ex.title.toUpperCase(), ex.basis);
+    for (const r of ex.rows) {
+      const v = ex.format === "cad" ? (formatCad(r.value) ?? "0") : String(r.value);
+      L.push(`  ${r.label}: ${v}${r.note ? ` (${r.note})` : ""}`);
+    }
+    L.push("");
+  }
+  const held = view.reviewedHeldCount > 0
+    ? ` ${view.reviewedHeldCount} further item${view.reviewedHeldCount === 1 ? "" : "s"} `
+      + "reviewed this week were held below our materiality bar."
+    : "";
+  L.push(view.methodNote + held);
+  return L.join("\n");
+}
+
+function renderShell(view: BriefView, body: string): string {
+  const preheader = view.theRead ? esc(view.theRead).slice(0, 140) : esc(view.masthead);
   return `<!doctype html><html lang="en"><head><meta charset="utf-8">`
     + `<meta name="viewport" content="width=device-width, initial-scale=1">`
     + `<meta name="color-scheme" content="light only">`
