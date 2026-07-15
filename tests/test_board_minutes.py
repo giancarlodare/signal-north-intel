@@ -93,6 +93,16 @@ def test_find_document_links_keeps_minutes_and_agendas_only():
     assert urls.count("https://board.example.ca/docs/minutes-2026-06-25.pdf") == 1  # deduped
 
 
+def test_find_document_links_skips_office_binaries():
+    # A same-host .docx named "minutes" would otherwise qualify and then decode
+    # to NUL-laden text that Postgres rejects (the TPSB daily-collect failure).
+    html = ('<a href="/uploads/Public_Minutes_Mar_4.docx">Read the Minutes</a>'
+            '<a href="/uploads/Public_Minutes_Mar_4.pdf">Read the Minutes (PDF)</a>')
+    urls = [u for u, *_ in bm.find_document_links(html, "https://board.example.ca/meetings")]
+    assert "https://board.example.ca/uploads/Public_Minutes_Mar_4.docx" not in urls
+    assert "https://board.example.ca/uploads/Public_Minutes_Mar_4.pdf" in urls
+
+
 def test_html_to_text_strips_scripts_and_collapses_whitespace():
     html = "<html><script>var x=1;</script><body><h1>Board</h1>\n<p>met  on   June 25</p></body></html>"
     assert bm.html_to_text(html) == "Board met on June 25"
