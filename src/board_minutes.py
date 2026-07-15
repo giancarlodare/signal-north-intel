@@ -63,6 +63,12 @@ MAX_EXPANDED_PAGES = 20                 # cap on section-expanded listing pages
 # A link is a candidate document if its text or URL mentions minutes/agenda.
 DOC_LINK_RE = re.compile(r"minutes|agenda", re.IGNORECASE)
 
+# Office binaries the body pipeline cannot parse (pypdf reads PDFs, html_to_text
+# reads HTML). Decoding a .docx (a ZIP archive) as text keeps embedded NUL bytes,
+# which Postgres rejects (22P05), so such a link is skipped at discovery. Their
+# content is normally published as a PDF too.
+BINARY_DOC_EXT = (".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt", ".zip")
+
 BOARDS = [
     {
         # sources.name is matched case/whitespace-insensitively against these
@@ -324,6 +330,8 @@ def find_document_links(html: str, base_url: str,
         parsed = urlparse(url)
         if parsed.scheme not in ("http", "https"):
             continue
+        if parsed.path.lower().endswith(BINARY_DOC_EXT):
+            continue  # office binaries: unparseable, and decode to NUL-laden text
         named = bool(DOC_LINK_RE.search(text) or DOC_LINK_RE.search(url))
         extra = parsed.netloc == base_host and any(
             p.search(parsed.path) for p in (extra_url_patterns or []))
@@ -537,6 +545,9 @@ def collect_board(board: dict, source_id: str, fetcher: PoliteFetcher,
                 body = pdf_to_text(data)
             else:
                 body = html_to_text(data.decode(resp.encoding or "utf-8", errors="replace"))
+            # Postgres text cannot hold a NUL byte (22P05); strip it defensively so
+            # no extracted body can ever crash the insert, whatever its source.
+            body = body.replace("\x00", "")
 
             title = link_text or urlparse(url).path.rsplit("/", 1)[-1]
             title = f"{board['name']} — {title}"[:500]
