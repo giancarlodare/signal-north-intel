@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "../auth-actions";
-import { setBriefMeta, saveItem, publishBrief, sendBriefEmail } from "./actions";
+import { setBriefMeta, saveItem, publishBrief } from "./actions";
+import { SendButton } from "./send-button";
 
 export const dynamic = "force-dynamic";
 
@@ -208,10 +209,7 @@ export default async function BriefPage() {
               {brief.sent_at ? (
                 <span className="tag ok">emailed {brief.sent_at.slice(0, 10)}</span>
               ) : (
-                <form action={sendBriefEmail}>
-                  <input type="hidden" name="id" value={brief.id} />
-                  <button className="approve" type="submit">Send to me</button>
-                </form>
+                <SendButton briefId={brief.id} />
               )}
             </div>
           )}
