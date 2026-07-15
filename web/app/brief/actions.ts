@@ -88,7 +88,28 @@ export async function sendBriefEmail(_prev: SendState | null, formData: FormData
 
   const key = process.env.RESEND_API_KEY;
   if (!key) {
-    return { ok: false, message: "RESEND_API_KEY is not set on the server. Set it in the Vercel env, then redeploy." };
+    // TEMP DIAGNOSTIC: tell the operator WHY the key is invisible without ever
+    // printing it. Reports the runtime (env access differs on Edge), which
+    // Vercel environment this deployment is (a Production-only var is absent
+    // from Preview/branch deploys), whether the var is present at all, and the
+    // NAMES of any RESEND-ish keys the server can see (to catch a typo/rename).
+    const runtime = process.env.NEXT_RUNTIME ?? "unknown";
+    const vercelEnv = process.env.VERCEL_ENV ?? "not-on-vercel";
+    const raw = process.env.RESEND_API_KEY;
+    const present = typeof raw === "string";
+    const len = present ? raw.length : 0;
+    const resendKeys = Object.keys(process.env).filter((k) => /resend/i.test(k));
+    return {
+      ok: false,
+      message:
+        "RESEND_API_KEY is not visible to the server. " +
+        `[diag runtime=${runtime}, VERCEL_ENV=${vercelEnv}, ` +
+        `present=${present}, length=${len}, ` +
+        `resend-named keys=${resendKeys.length ? resendKeys.join("|") : "none"}] ` +
+        "If VERCEL_ENV is preview, the key was set only for Production and this " +
+        "is a branch/preview deploy: add it to the Preview scope (or merge to " +
+        "the Production branch) and redeploy.",
+    };
   }
 
   let resp: Response;
