@@ -233,8 +233,15 @@ def extract_signals(doc: dict, source_name: str, model: str) -> tuple:
 
 
 def run_extraction(batch_size: int = 20, model: str = DEFAULT_MODEL, dry_run: bool = False,
-                   doc_type: str | None = None) -> dict:
+                   doc_type: str | None = None, doc_types: list | None = None,
+                   newest_first: bool = False) -> dict:
     """Process up to batch_size captured documents.
+
+    doc_types (a list) scopes the run to several types at once; the daily forward
+    path passes tender_notice/news_release/grant_program so the token budget goes
+    to signal a brief can act on, leaving the award backlog to a separate pass.
+    newest_first orders by event date descending, so a capped run drains the
+    freshest documents first (a closing-soon tender before a month-old one).
 
     dry_run=True still calls Claude and resolves orgs (so you can verify the API
     integration, the extraction@v1 stamp, and resolution), but writes NOTHING:
@@ -252,7 +259,11 @@ def run_extraction(batch_size: int = 20, model: str = DEFAULT_MODEL, dry_run: bo
         key_fields=("slug", "name"),
     )
 
-    docs = supabase_client.get_documents_by_status("captured", batch_size, doc_type=doc_type)
+    # nullslast: undated documents sort after dated ones, so a capped forward run
+    # never spends its budget on undated backlog ahead of a dated, closing-soon doc.
+    order = "published_on.desc.nullslast" if newest_first else None
+    docs = supabase_client.get_documents_by_status(
+        "captured", batch_size, doc_type=doc_type, doc_types=doc_types, order=order)
     if not docs:
         log.info("No captured documents to process")
         return stats
@@ -310,9 +321,19 @@ if __name__ == "__main__":
                         help="only process documents of this doc_type (e.g. board_minutes) — "
                              "lets rich-bodied types run without burning tokens on the "
                              "title-only backlog")
+    parser.add_argument("--doc-types", default=None,
+                        help="comma-separated doc_types to process this run (e.g. "
+                             "tender_notice,news_release,grant_program): the daily "
+                             "forward-signal path")
+    parser.add_argument("--newest-first", action="store_true",
+                        help="process the freshest event dates first, so a capped run "
+                             "drains closing-soon documents ahead of stale ones")
     args = parser.parse_args()
+
+    doc_types = [t.strip() for t in args.doc_types.split(",") if t.strip()] if args.doc_types else None
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     result = run_extraction(batch_size=args.limit, model=args.model, dry_run=args.dry_run,
-                            doc_type=args.doc_type)
+                            doc_type=args.doc_type, doc_types=doc_types,
+                            newest_first=args.newest_first)
     sys.exit(0 if result["errors"] == 0 else 1)

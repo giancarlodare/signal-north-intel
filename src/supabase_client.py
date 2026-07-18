@@ -132,10 +132,20 @@ def insert_contract_award(payload: dict) -> dict:
 
 def get_documents_by_status(status: str, limit: int,
                             select: str = "id,title,doc_type,url,published_on,source_id,content",
-                            doc_type: str | None = None) -> list:
+                            doc_type: str | None = None,
+                            doc_types: list | None = None,
+                            order: str | None = None) -> list:
+    """Fetch captured/extracted/failed documents. Pass `doc_type` for one type or
+    `doc_types` for several (PostgREST `in.(...)`); `order` is a PostgREST order
+    clause (e.g. "published_on.desc.nullslast") to control which documents a
+    capped run processes first."""
     params = {"select": select, "status": f"eq.{status}", "limit": limit}
     if doc_type:
         params["doc_type"] = f"eq.{doc_type}"
+    elif doc_types:
+        params["doc_type"] = f"in.({','.join(doc_types)})"
+    if order:
+        params["order"] = order
     resp = _request("GET", "documents", headers=_headers(), params=params)
     return resp.json()
 

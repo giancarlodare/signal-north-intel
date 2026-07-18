@@ -108,3 +108,30 @@ jobs:
           else
             echo "HEALTHCHECK_URL not set; skipping ping."
           fi
+
+      # Signal extraction (FORWARD types only): turn freshly collected
+      # tender_notice / news_release / grant_program DOCUMENTS into graded
+      # SIGNALS, newest event date first, capped at 50/run. This is the step
+      # that lets the weekly brief populate (the brief selects on signals, not
+      # documents, and these are the only types that carry closing-soon signal a
+      # subscriber can act on. The award/board-minutes backlog drains on a
+      # separate lower-priority pass (extract-backfill.yml), so this run's token
+      # budget is never spent on reconciliation fuel. Haiku 4.5 for cost
+      # (structured field extraction is well within its range).
+      #
+      # Placed AFTER the healthcheck ping ON PURPOSE: extraction depends on the
+      # Anthropic API, an external dependency. A transient LLM outage should NOT
+      # suppress the dead-man's-switch ping (collection already succeeded) or page
+      # the operator at 6am. It still fails the job, so a real problem shows RED
+      # in Actions -- loud, but not a page.
+      - name: Extract forward-signal documents into signals
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          EXTRACTION_MODEL: claude-haiku-4-5
+        run: >
+          python -m src.signal_extractor
+          --doc-types tender_notice,news_release,grant_program
+          --newest-first --limit 50
