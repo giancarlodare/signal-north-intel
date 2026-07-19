@@ -103,6 +103,29 @@ def test_item_note_falls_back_without_buyer_or_title():
     assert note and "—" not in note
 
 
+def test_recent_tender_gets_a_tender_aware_note():
+    # A recent tender must not fall through to the generic default; a Peel tender
+    # date is the close date, so a recent one has just closed and the read is the
+    # award/recompete, not a bid opportunity.
+    note = bc.draft_item_note(doc_type="tender_notice", timing_path="recent",
+                              buyer="Region of Peel", title="Watermain construction")
+    assert note.startswith("Region of Peel")
+    assert "closed bids" in note.lower()
+    assert "recompete" in note.lower()
+    # the generic default phrasing must not appear
+    assert "party to watch" not in note.lower()
+
+
+def test_note_does_not_restate_the_title():
+    # The headline renders separately, so the note never echoes the title. This
+    # is what prevents the doubled subject when the title embeds the buyer.
+    note = bc.draft_item_note(doc_type="tender_notice", timing_path="imminent",
+                              buyer="Region of Peel",
+                              title="Region of Peel tenders LTC cleaning supplies")
+    assert "Region of Peel tenders LTC cleaning supplies" not in note
+    assert note.count("Region of Peel") == 1  # buyer named once; title not echoed
+
+
 # --- The Read: item mix + optional corpus scale fact ---------------------------
 def test_the_read_empty_week_fallback():
     read = bc.draft_the_read([])
