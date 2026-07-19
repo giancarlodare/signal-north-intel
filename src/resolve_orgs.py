@@ -34,16 +34,20 @@ from .signal_extractor import build_resolver
 log = logging.getLogger(__name__)
 
 # (canonical_name, aliases, org_type candidates tried in order, jurisdiction, province)
-# The audit of unresolved_org_name across the live corpus ranked these highest.
-# org_type is metadata (the resolver keys on name + aliases), but the column is a
-# constrained enum: the confirmed-valid labels are federal_department,
-# provincial_ministry, association, corrections, etc. There is no municipal
-# government label in use, so Region of Peel tries "municipality" then falls back.
+# The audit of unresolved_org_name across the live corpus ranked these: every
+# entry here appeared at least twice as a raw buyer name. org_type is metadata
+# (the resolver keys on name + aliases), but the column is a NOT NULL enum;
+# confirmed-accepted labels: municipality, federal_department, federal_agency,
+# provincial_ministry, association, corrections, crown_corp, police_service,
+# police_board, border_agency. Deliberately NOT seeded: "Government of Canada"
+# (too generic to be a buyer), "CanadaBuys" (a portal, not a buyer), CORCAN and
+# individual CSC institutions (operator call whether to alias them to CSC), and
+# Alberta Health Services (no confidently-correct org_type label in use).
 ORG_SEED = [
     ("Region of Peel",
      ["Peel Region", "Regional Municipality of Peel",
       "The Regional Municipality of Peel"],
-     ["municipality", "municipal_government"], "municipal", "ON"),
+     ["municipality"], "municipal", "ON"),
     ("Department of Justice Canada",
      ["Department of Justice Canada", "Justice Canada", "Department of Justice"],
      ["federal_department"], "federal", None),
@@ -62,45 +66,85 @@ ORG_SEED = [
     ("Correctional Service of Canada",
      ["Correctional Services Canada", "Correctional Service Canada", "CSC"],
      ["corrections"], "federal", None),
+    ("Agriculture and Agri-Food Canada",
+     ["Agriculture and Agri-Food", "AAFC", "Agriculture and Agri-Food Canada"],
+     ["federal_department"], "federal", None),
+    ("Ministry of Citizenship and Multiculturalism",
+     ["Ministry of Citizenship and Multiculturalism"],
+     ["provincial_ministry"], "provincial", "ON"),
+    ("Ministry of Children, Community and Social Services",
+     ["Ministry of Children, Community and Social Services", "MCCSS",
+      "Ministry of Children, Community and Social Services - Office of Women Issues"],
+     ["provincial_ministry"], "provincial", "ON"),
+    ("Treasury Board of Canada Secretariat",
+     ["Treasury Board Secretariat", "TBS", "Treasury Board of Canada Secretariat"],
+     ["federal_agency"], "federal", None),
+    ("Ministry of Transportation",
+     ["Ministry of Transportation", "Ministry of Transportation (Ontario)", "MTO"],
+     ["provincial_ministry"], "provincial", "ON"),
+    ("Ministry of Natural Resources and Forestry",
+     ["Ministry of Natural Resources and Forestry", "Ministry of Natural Resources",
+      "MNRF"],
+     ["provincial_ministry"], "provincial", "ON"),
+    ("City of Ottawa",
+     ["City of Ottawa"],
+     ["municipality"], "municipal", "ON"),
+    ("Parks Canada",
+     ["Parks Canada", "Parks Canada Agency"],
+     ["federal_agency"], "federal", None),
+    ("Innovation, Science and Economic Development Canada",
+     ["ISED", "Innovation, Science and Economic Development",
+      "Innovation, Science and Economic Development Canada"],
+     ["federal_department"], "federal", None),
 ]
+
+
+def _fetch_org(canonical) -> dict | None:
+    """Exact-match lookup by canonical_name. eq (not a quoted ilike pattern):
+    PostgREST treats a double-quoted like/ilike value literally, so the quoted
+    form silently never matches and an existing row looks absent."""
+    rows = supabase_client.fetch_rows_where(
+        "organizations", "id,canonical_name,aliases",
+        {"canonical_name": f"eq.{canonical}"}, limit=1)
+    return rows[0] if rows else None
 
 
 def _ensure_org(canonical, aliases, org_type_candidates, jurisdiction, province,
                 dry_run=False) -> str | None:
     """Return the org id, inserting it if absent or merging aliases if present.
-    Insert tries each org_type candidate until the enum accepts one (then a NULL
-    org_type), so an unknown municipal label can never block the seed."""
-    quoted = canonical.replace('"', "")
-    existing = supabase_client.fetch_rows_where(
-        "organizations", "id,canonical_name,aliases",
-        {"canonical_name": f'ilike."{quoted}"'}, limit=1)
-    if existing:
-        o = existing[0]
-        merged = sorted(set((o.get("aliases") or []) + aliases))
-        if set(merged) != set(o.get("aliases") or []):
-            if dry_run:
-                log.info("  [dry-run] would merge aliases into %r", canonical)
-            else:
-                supabase_client.update_row("organizations", o["id"], {"aliases": merged})
-                log.info("  merged aliases into existing org %r", canonical)
-        return o["id"]
+    A 23505 unique-key rejection on insert means the row exists after all (or a
+    concurrent writer won); it is re-fetched and treated as existing, so the
+    alias merge still lands."""
+    existing = _fetch_org(canonical)
+    if existing is None:
+        if dry_run:
+            log.info("  [dry-run] would insert org %r", canonical)
+            return None
+        for ot in org_type_candidates:
+            payload = {"canonical_name": canonical, "aliases": sorted(set(aliases)),
+                       "org_type": ot, "jurisdiction": jurisdiction, "province": province}
+            try:
+                row = supabase_client.insert_row("organizations", payload)
+                log.info("  inserted org %r (org_type=%s)", canonical, ot)
+                return row["id"]
+            except supabase_client.SupabaseError as e:
+                msg = str(e)
+                if "23505" in msg:  # duplicate canonical_name: row exists, merge below
+                    existing = _fetch_org(canonical)
+                    break
+                log.warning("  insert %r org_type=%s rejected: %s", canonical, ot, msg[:100])
+        if existing is None:
+            log.error("  could NOT insert org %r with any candidate org_type", canonical)
+            return None
 
-    if dry_run:
-        log.info("  [dry-run] would insert org %r", canonical)
-        return None
-    for ot in [*org_type_candidates, None]:
-        payload = {"canonical_name": canonical, "aliases": sorted(set(aliases)),
-                   "jurisdiction": jurisdiction, "province": province}
-        if ot is not None:
-            payload["org_type"] = ot
-        try:
-            row = supabase_client.insert_row("organizations", payload)
-            log.info("  inserted org %r (org_type=%s)", canonical, ot)
-            return row["id"]
-        except supabase_client.SupabaseError as e:
-            log.warning("  insert %r org_type=%s rejected: %s", canonical, ot, str(e)[:100])
-    log.error("  could NOT insert org %r with any candidate org_type", canonical)
-    return None
+    merged = sorted(set((existing.get("aliases") or []) + aliases))
+    if set(merged) != set(existing.get("aliases") or []):
+        if dry_run:
+            log.info("  [dry-run] would merge aliases into %r", canonical)
+        else:
+            supabase_client.update_row("organizations", existing["id"], {"aliases": merged})
+            log.info("  merged aliases into existing org %r", canonical)
+    return existing["id"]
 
 
 def run(dry_run: bool = False) -> dict:

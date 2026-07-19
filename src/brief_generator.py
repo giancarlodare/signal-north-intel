@@ -123,13 +123,23 @@ def cluster(included, proc_by_signal):
     """Group included (signal, path) pairs into clusters:
       procurement (if the signal links an active non-rejected procurement),
       else organization, else standalone signal.
+    EXCEPT deadline-bearing action items (tender_notice, grant_program), which
+    never org-cluster: the close date IS the story, and collapsing a high-volume
+    buyer's tenders (Peel posts 15+ a week) into one item would show one headline
+    and one date, hiding every other action window, which violates the
+    timing-first principle. Org clustering is for UPSTREAM signal where the story
+    is demand forming (board minutes, budget lines, news: intent/commitment
+    rungs) and several same-org signals usually ARE one story. An action item
+    that links a procurement still groups there.
     Returns a list of cluster dicts, ranked (imminent first, then salience)."""
+    STANDALONE_DOC_TYPES = ("tender_notice", "grant_program")
     groups = defaultdict(list)   # (kind, ref) -> [(signal, path)]
     for s, path in included:
         pid = proc_by_signal.get(s["id"])
+        doc = _one(s.get("documents")) or {}
         if pid:
             key = ("procurement", pid)
-        elif s.get("organization_id"):
+        elif s.get("organization_id") and doc.get("doc_type") not in STANDALONE_DOC_TYPES:
             key = ("organization", s["organization_id"])
         else:
             key = ("signal", s["id"])

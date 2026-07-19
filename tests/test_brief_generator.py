@@ -111,6 +111,9 @@ def test_clustering_prefers_procurement_then_org_then_standalone():
 
 
 def test_imminent_clusters_rank_before_recent_and_by_soonest():
+    # grants are standalone action items now, so their cluster_ref is the
+    # signal id; the recent award still org-clusters. Ranking is unchanged:
+    # imminent first, by soonest deadline, then the recent story.
     included = [
         (_sig("recent", "2026-07-14", org="o1"), "recent"),
         (_sig("soon", "2026-08-20", doc_type="grant_program", org="o2"), "imminent"),
@@ -118,9 +121,9 @@ def test_imminent_clusters_rank_before_recent_and_by_soonest():
     ]
     clusters = bg.cluster(included, proc_by_signal={})
     ranks = {c["cluster_ref"]: c["rank"] for c in clusters}
-    assert ranks["o3"] == 1   # sooner imminent first
-    assert ranks["o2"] == 2   # then the later imminent
-    assert ranks["o1"] == 3   # recent last
+    assert ranks["sooner"] == 1   # nearest deadline first
+    assert ranks["soon"] == 2     # then the later imminent
+    assert ranks["o1"] == 3       # recent story last
 
 
 # --- regen_decision: the force / published-brief safety invariant -------------
@@ -142,6 +145,29 @@ def test_regen_replaces_only_a_draft_under_force():
 def test_regen_refuses_to_touch_a_published_brief_even_with_force():
     # the invariant: force NEVER deletes a published brief
     assert bg.regen_decision("published", force=True) == "refuse"
+
+
+def test_action_items_never_org_cluster():
+    # Deadline-bearing action items (tenders, grant programs) stay separate
+    # items even for the same buyer: the close date IS the story. Upstream
+    # signals (board minutes) still group into one org story, and an action
+    # item linked to a procurement still joins that procurement cluster.
+    included = [
+        (_sig("t1", "2026-08-01", doc_type="tender_notice", org="peel"), "imminent"),
+        (_sig("t2", "2026-08-05", doc_type="tender_notice", org="peel"), "imminent"),
+        (_sig("g1", "2026-08-20", doc_type="grant_program", org="peel"), "imminent"),
+        (_sig("n1", "2026-07-14", doc_type="board_minutes", org="peel"), "recent"),
+        (_sig("n2", "2026-07-14", doc_type="board_minutes", org="peel"), "recent"),
+        (_sig("t3", "2026-08-06", doc_type="tender_notice", org="peel"), "imminent"),
+    ]
+    clusters = bg.cluster(included, proc_by_signal={"t3": "proc9"})
+    kinds = sorted((c["cluster_kind"], str(c["cluster_ref"])) for c in clusters)
+    assert kinds == [("organization", "peel"),   # the two board_minutes as one story
+                     ("procurement", "proc9"),   # t3 follows its procurement link
+                     ("signal", "g1"),           # grant standalone, own deadline
+                     ("signal", "t1"), ("signal", "t2")]  # tenders standalone
+    org_cluster = next(c for c in clusters if c["cluster_kind"] == "organization")
+    assert org_cluster["members"] == 2
 
 
 def test_cluster_lead_is_strongest_member():

@@ -43,6 +43,12 @@ def test_alias_set_resolves_the_real_buyer_variants():
         "Ministry of Solicitor General": "Ministry of the Solicitor General",  # variant
         "Canadian Interagency Forest Fire Centre (CIFFC)": "Canadian Interagency Forest Fire Centre",
         "Correctional Services Canada": "Correctional Service of Canada",       # "s" variant
+        "Agriculture and Agri-Food": "Agriculture and Agri-Food Canada",        # truncated form
+        "Treasury Board Secretariat": "Treasury Board of Canada Secretariat",
+        "Ministry of Natural Resources": "Ministry of Natural Resources and Forestry",
+        "Ministry of Children, Community and Social Services - Office of Women Issues":
+            "Ministry of Children, Community and Social Services",
+        "ISED": "Innovation, Science and Economic Development Canada",
     }
     canonical_by_id = {o["id"]: o["canonical_name"] for o in fake_orgs}
     for raw, expected in cases.items():
