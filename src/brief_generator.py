@@ -266,25 +266,57 @@ def run(dry_run: bool = True, today: date | None = None, force: bool = False) ->
     if not dry_run:
         written = _apply(week_start, clusters, excluded, breakdown, force)
 
-    return {"week_start": str(week_start), "scanned": len(signals),
-            "included": len(included), "excluded_below_threshold": excluded,
-            "exclusion_breakdown": breakdown, "clusters": len(clusters),
-            **{"wrote_" + k: v for k, v in written.items()}}
+    result = {"week_start": str(week_start), "scanned": len(signals),
+              "included": len(included), "excluded_below_threshold": excluded,
+              "exclusion_breakdown": breakdown, "clusters": len(clusters),
+              "wrote_brief": written.get("brief", 0), "wrote_items": written.get("items", 0)}
+    if written.get("refused_published"):
+        result["refused_published"] = True
+    return result
+
+
+def regen_decision(existing_status, force: bool) -> str:
+    """What _apply does about an existing brief for the week. Pure, so the
+    safety-critical invariant (force NEVER deletes a published brief) is
+    unit-testable without a database:
+      'create'  -- no brief exists, write a fresh draft
+      'skip'    -- one exists and force is off: leave it (protect operator edits)
+      'replace' -- a DRAFT exists and force is on: delete it and rebuild
+      'refuse'  -- a PUBLISHED brief exists: frozen, force will not touch it
+    """
+    if existing_status is None:
+        return "create"
+    if not force:
+        return "skip"
+    return "replace" if existing_status == "draft" else "refuse"
 
 
 def _apply(week_start, clusters, excluded, breakdown, force) -> dict:
-    """Create the week's draft brief if absent. A published brief is frozen; an
-    existing draft is left alone (editor edits protected) unless force -- and
-    force still only warns, since there is no destructive delete helper."""
+    """Create the week's draft brief. Create-if-absent by default; with force,
+    regenerate ONLY a draft (delete + rebuild). A published brief is frozen and
+    is never deleted: force refuses it and asks the operator to unpublish first."""
     existing = supabase_client.fetch_rows_where(
         "briefs", "id,status", {"week_start": f"eq.{week_start}"}, limit=1)
-    if existing:
-        b = existing[0]
-        log.info("  brief for %s already exists (status=%s); leaving it. %s",
-                 week_start, b.get("status"),
-                 "Delete it to regenerate." if not force else
-                 "force does not overwrite (no destructive delete); delete manually.")
+    status = existing[0].get("status") if existing else None
+    decision = regen_decision(status, force)
+
+    if decision == "skip":
+        log.info("  brief for %s already exists (status=%s); leaving it. "
+                 "Pass --force to regenerate a draft.", week_start, status)
         return {"brief": 0, "items": 0}
+    if decision == "refuse":
+        log.error("  refusing to regenerate the %s brief for %s: --force only "
+                  "replaces a DRAFT. Unpublish it at /brief first, then rerun.",
+                  status, week_start)
+        return {"brief": 0, "items": 0, "refused_published": True}
+    if decision == "replace":
+        bid = existing[0]["id"]
+        log.warning("  --force: deleting existing DRAFT brief %s for %s and "
+                    "regenerating.", bid, week_start)
+        # status=eq.draft guard: if it was published between the read above and
+        # this delete, the delete no-ops rather than destroying a published brief.
+        supabase_client.delete_rows(
+            "briefs", {"id": f"eq.{bid}", "status": "eq.draft"})
 
     # Draft copy the operator sharpens: The Read (one paragraph) as the brief
     # intro, and a per-item vendor read as each item's editor_note. Deterministic
@@ -329,8 +361,11 @@ if __name__ == "__main__":
     group.add_argument("--apply", action="store_true",
                        help="write the week's draft brief")
     parser.add_argument("--force", action="store_true",
-                        help="(reserved) regenerate even if a draft exists")
+                        help="regenerate a DRAFT brief (delete + rebuild); "
+                             "refuses if the week's brief is published")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    run(dry_run=not args.apply, force=args.force)
-    sys.exit(0)
+    result = run(dry_run=not args.apply, force=args.force)
+    # Exit non-zero when a force run refused a published brief, so a manual
+    # regenerate run goes RED in Actions instead of quietly doing nothing.
+    sys.exit(2 if result.get("refused_published") else 0)

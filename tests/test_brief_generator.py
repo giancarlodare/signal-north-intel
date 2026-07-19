@@ -123,6 +123,27 @@ def test_imminent_clusters_rank_before_recent_and_by_soonest():
     assert ranks["o1"] == 3   # recent last
 
 
+# --- regen_decision: the force / published-brief safety invariant -------------
+def test_regen_creates_when_no_brief_exists():
+    assert bg.regen_decision(None, force=False) == "create"
+    assert bg.regen_decision(None, force=True) == "create"
+
+
+def test_regen_skips_existing_without_force():
+    # create-if-absent: an existing brief is left alone (operator edits protected)
+    assert bg.regen_decision("draft", force=False) == "skip"
+    assert bg.regen_decision("published", force=False) == "skip"
+
+
+def test_regen_replaces_only_a_draft_under_force():
+    assert bg.regen_decision("draft", force=True) == "replace"
+
+
+def test_regen_refuses_to_touch_a_published_brief_even_with_force():
+    # the invariant: force NEVER deletes a published brief
+    assert bg.regen_decision("published", force=True) == "refuse"
+
+
 def test_cluster_lead_is_strongest_member():
     included = [
         (_sig("weak", "2026-07-14", org="o1", grade=3, materiality=3), "recent"),

@@ -241,6 +241,14 @@ def update_row(table: str, row_id: str, payload: dict) -> None:
     )
 
 
+def delete_rows(table: str, filters: dict) -> None:
+    """Delete rows matching PostgREST filters, e.g. {"id": "eq.<uuid>"}. Requires
+    at least one filter so a bare DELETE can never wipe a whole table."""
+    if not filters:
+        raise SupabaseError("delete_rows requires at least one filter (refusing a table-wide delete)")
+    _request("DELETE", table, headers=_headers(), params=filters)
+
+
 def _dumps(payload: dict) -> bytes:
     import json
 

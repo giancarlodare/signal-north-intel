@@ -1,0 +1,45 @@
+name: Regenerate Weekly Signal brief (manual)
+
+# Runs ONLY the brief generator. No collectors, no discovery, no proposer, no
+# reconcile: it reads the corpus as-is and rebuilds this week's DRAFT so a
+# generator change (new draft copy, ranking, exhibit) takes effect without
+# waiting for Sunday or re-running the whole weekly pipeline.
+#
+# Non-destructive by contract. Default run is create-if-absent: any existing
+# brief is left untouched. force=true regenerates ONLY a draft (delete +
+# rebuild); if the week's brief is PUBLISHED the generator refuses, exits 2,
+# and this run goes RED so a brief you have edited and sent can never be
+# silently destroyed. Unpublish it at /brief first if you truly want to rebuild.
+
+on:
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Force regenerate this week's brief (DRAFT only; refuses and fails if it is published)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: regenerate-brief
+  cancel-in-progress: false
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # The generator is deterministic (no LLM), so only the Supabase creds are
+      # needed. --force is passed through only when the input is checked.
+      - name: Regenerate brief (brief generator only)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.brief_generator --apply ${{ inputs.force && '--force' || '' }}
