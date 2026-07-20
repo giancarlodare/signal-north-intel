@@ -78,11 +78,40 @@ For each sampled signal:
    first-class disagreement category (the scorer no longer even finds the
    signal), not a silent drop.
 
+## What counts as agreement
+
+**Headline number: exact match, per field.** Within-one materiality is
+reported as a secondary number, never the headline. Reasoning:
+
+- The grade boundaries ARE the product. materiality>=3 admits a recent event
+  to the brief, materiality>=4 passes the relevance lens, and signal_type
+  fixes the evidence grade the reader sees. A scorer that is "close" on the
+  number but on the other side of a boundary produces a different brief; an
+  agreement definition that forgives ±1 would grade that failure as success
+  and hide exactly the drift the audit exists to catch.
+- Within-one is still diagnostic, so it is kept as the secondary rate: a high
+  within-one rate with a sagging exact rate means calibration wobble at the
+  boundaries (re-anchor the rubric wording in the prompt); a low within-one
+  rate means category error (the scorer is reading the documents differently,
+  a bigger problem). The two numbers together say WHICH failure is happening;
+  either alone cannot.
+- `signal_type` and `confidence` are enums with no distance metric: exact
+  match only. Derived evidence_grade equality is reported alongside
+  signal_type so a type flip that happens to preserve the grade is visible
+  as such.
+
+**Boundary-crossing count.** Because the boundaries are the product, the
+report also counts, within the materiality disagreements, how many CROSS a
+decision boundary in force (the 3 brief bar, the 4 lens bar): a 4 to 3 flip
+changes the draft; a 5 to 4 flip changes nothing a reader sees. Same
+disagreement distance, different product impact; the report says which is
+which so adjudication can start with the flips that alter the brief.
+
 ## Comparison and report
 
-Per matched pair, three comparisons: `materiality` (exact and within ±1),
-`signal_type` (exact; derived evidence_grade equality reported alongside),
-`confidence` (exact).
+Per matched pair, three comparisons: `materiality` (exact headline, within
+±1 secondary, boundary-crossing flagged), `signal_type` (exact; derived
+evidence_grade equality reported alongside), `confidence` (exact).
 
 The report contains, in order:
 
