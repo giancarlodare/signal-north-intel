@@ -237,3 +237,30 @@ def test_fetch_awarded_fails_loud_over_error_budget(monkeypatch):
     with pytest.raises(RuntimeError, match="error budget"):
         bt.fetch_awarded(_Page(_awarded_rows(40)), _CAP, MUNI, "s", KW, stats, dry_run=False)
     assert stats["errors"] > bt.AWARDED_ERROR_BUDGET
+
+
+# --- Big 12 tier 1 (docs/big12-tier1-design.md) -------------------------------
+def test_tier1_config_rows_are_enabled_and_drps_is_not():
+    keys = [m["org_key"] for m in bt.MUNICIPALITIES]
+    assert keys == ["peel", "york", "london", "durham", "yrp"]
+    assert "drps" not in keys                      # HELD on provenance
+    subs = [m["subdomain"] for m in bt.MUNICIPALITIES]
+    assert len(set(subs)) == len(subs)             # unique tenants
+    assert all(m.get("name") for m in bt.MUNICIPALITIES)
+
+
+def test_build_payload_writes_buyer_name_from_config():
+    muni = {"org_key": "york", "subdomain": "york", "name": "York Region"}
+    row = {"ref": "2026-104P", "title": "Body armour supply", "guid": "g1",
+           "date": "Wed Jul 29, 2026 12:00:00 PM (EDT)", "status": "Open",
+           "raw": "2026-104P - Body armour supply"}
+    payload = bt.build_payload(muni, "src1", "tender_notice", row, bt.load_keywords())
+    assert payload["buyer_name"] == "York Region"
+    assert payload["reference_number"] == "2026-104P"
+
+
+def test_tier1_buyer_names_resolve_via_org_seed():
+    from src.resolve_orgs import ORG_SEED
+    seeded = {canonical for canonical, *_ in ORG_SEED}
+    for muni in bt.MUNICIPALITIES:
+        assert muni["name"] in seeded, f"{muni['name']} missing from ORG_SEED"

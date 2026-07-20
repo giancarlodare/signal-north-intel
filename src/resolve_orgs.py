@@ -48,6 +48,23 @@ ORG_SEED = [
      ["Peel Region", "Regional Municipality of Peel",
       "The Regional Municipality of Peel"],
      ["municipality"], "municipal", "ON"),
+    # Big 12 tier 1 buyers (docs/big12-tier1-design.md): the bids&tenders
+    # config rows write these exact names to documents.buyer_name, and the
+    # extractor's raw org strings must resolve to them.
+    ("York Region",
+     ["Regional Municipality of York", "The Regional Municipality of York",
+      "Region of York"],
+     ["municipality"], "municipal", "ON"),
+    ("City of London",
+     ["London", "The Corporation of the City of London"],
+     ["municipality"], "municipal", "ON"),
+    ("Region of Durham",
+     ["Durham Region", "Regional Municipality of Durham",
+      "The Regional Municipality of Durham"],
+     ["municipality"], "municipal", "ON"),
+    ("York Regional Police",
+     ["YRP", "York Regional Police Service"],
+     ["police_service"], "municipal", "ON"),
     ("Department of Justice Canada",
      ["Department of Justice Canada", "Justice Canada", "Department of Justice"],
      ["federal_department"], "federal", None),

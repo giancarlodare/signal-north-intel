@@ -51,8 +51,21 @@ from .hashing import content_hash
 log = logging.getLogger(__name__)
 
 # {org_key, subdomain, name}. Add a row per municipality; no code change.
+# Tier 1 (docs/big12-tier1-design.md, approved 2026-07-20): every enabled row
+# passed the publisher-linked provenance check, official page recorded in the
+# design doc. `name` doubles as documents.buyer_name (the buyer is structural
+# on these portals) and must match a resolve_orgs ORG_SEED canonical name.
 MUNICIPALITIES = [
     {"org_key": "peel", "subdomain": "peelregion", "name": "Region of Peel"},
+    {"org_key": "york", "subdomain": "york", "name": "York Region"},
+    {"org_key": "london", "subdomain": "london", "name": "City of London"},
+    {"org_key": "durham", "subdomain": "durham", "name": "Region of Durham"},
+    {"org_key": "yrp", "subdomain": "yrp", "name": "York Regional Police"},
+    # HELD on provenance (design rule: publisher-linked, no exceptions).
+    # drps.ca/about-us/procurement-services/ does not link the tenant one hop
+    # from the homepage (crawled 2026-07-20). Uncomment only after the DRPS
+    # site verifiably links drps.bidsandtenders.ca.
+    # {"org_key": "drps", "subdomain": "drps", "name": "Durham Regional Police Service"},
 ]
 
 # A real desktop Chrome UA. The headless UA is gated to an empty grid, so this
@@ -176,6 +189,9 @@ def build_payload(muni: dict, source_id: str, doc_type: str, row: dict,
         "content_hash": chash,
         "content": body[:MAX_STORED_CHARS] or None,
         "defence_relevant": result.defence_relevant,
+        # The buyer is structural on a municipal portal: store it
+        # deterministically rather than leaving extraction to infer it.
+        "buyer_name": muni.get("name"),
     }
 
 
@@ -373,7 +389,9 @@ def collect(dry_run: bool = True) -> dict:
     keywords = load_keywords()
     sources = supabase_client.fetch_rows("sources", "id,url")
     src_by_url = {(s.get("url") or "").rstrip("/"): s["id"] for s in sources}
-    stats = {"read": 0, "inserted": 0, "skipped_duplicate": 0, "errors": 0}
+    stats = {"read": 0, "inserted": 0, "skipped_duplicate": 0, "errors": 0,
+             "per_portal": {}}
+    failed_portals: list[str] = []
 
     with sync_playwright() as p:
         browser = p.chromium.launch()
@@ -399,6 +417,8 @@ def collect(dry_run: bool = True) -> dict:
                     _c["post_data"] = req.post_data or ""
 
             page.on("request", _grab)
+            val = {"open_rows": 0, "ref_parsed": 0, "date_parsed": 0, "awarded_rows": 0}
+            stats["per_portal"][muni["org_key"]] = val
             try:
                 page.goto(url, wait_until="networkidle", timeout=60000)
                 page.wait_for_timeout(3000)
@@ -413,6 +433,10 @@ def collect(dry_run: bool = True) -> dict:
                     for row in rows:
                         stats["read"] += 1
                         payload = build_payload(muni, source_id, doc_type, row, keywords)
+                        if label == "Open":
+                            val["open_rows"] += 1
+                            val["ref_parsed"] += 1 if payload["reference_number"] else 0
+                            val["date_parsed"] += 1 if payload["published_on"] else 0
                         if supabase_client.get_document_by_hash(payload["content_hash"]):
                             stats["skipped_duplicate"] += 1
                             continue
@@ -432,15 +456,32 @@ def collect(dry_run: bool = True) -> dict:
                 n_awd = fetch_awarded(page, captured, muni, source_id, keywords,
                                       stats, dry_run)
                 log.info("[%s] Awarded: %d rows", muni["org_key"], n_awd)
+                val["awarded_rows"] = n_awd
+                # The per-portal validation line the enablement bar reads
+                # (docs/big12-tier1-design.md: >=90% parsed ref+date, live
+                # awarded replay).
+                o = val["open_rows"] or 1
+                log.info("VALIDATION [%s]: open=%d ref_parsed=%d (%d%%) "
+                         "date_parsed=%d (%d%%) awarded=%d",
+                         muni["org_key"], val["open_rows"], val["ref_parsed"],
+                         round(100 * val["ref_parsed"] / o), val["date_parsed"],
+                         round(100 * val["date_parsed"] / o), val["awarded_rows"])
             except Exception:
+                # Per-portal isolation (tier-1 design): one gated portal must
+                # not blind the rest. Record it, keep going, and fail the run
+                # at the END so the day still goes red naming the portal.
                 log.exception("[%s] collection error", muni["org_key"])
                 stats["errors"] += 1
-                if not dry_run:
-                    raise  # fail loudly: a broken run must not look like a quiet one
+                failed_portals.append(muni["org_key"])
             finally:
                 page.close()
         browser.close()
     log.info("bids&tenders: %s", stats)
+    if failed_portals and not dry_run:
+        raise RuntimeError(
+            f"bids&tenders: {len(failed_portals)} portal(s) failed "
+            f"({', '.join(failed_portals)}); the others were collected. "
+            f"See the per-portal errors above.")
     return stats
 
 
