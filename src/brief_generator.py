@@ -135,23 +135,35 @@ def cluster(included, proc_by_signal):
     """Group included (signal, path) pairs into clusters:
       procurement (if the signal links an active non-rejected procurement),
       else organization, else standalone signal.
-    EXCEPT deadline-bearing action items (tender_notice, grant_program), which
-    never org-cluster: the close date IS the story, and collapsing a high-volume
-    buyer's tenders (Peel posts 15+ a week) into one item would show one headline
-    and one date, hiding every other action window, which violates the
-    timing-first principle. Org clustering is for UPSTREAM signal where the story
-    is demand forming (board minutes, budget lines, news: intent/commitment
-    rungs) and several same-org signals usually ARE one story. An action item
-    that links a procurement still groups there.
+    EXCEPT deadline-bearing action items, which never org-cluster: the close
+    date IS the story, and collapsing a high-volume buyer's tenders (Peel posts
+    15+ a week) into one item would show one headline and one date, hiding every
+    other action window, which violates the timing-first principle. Org
+    clustering is for UPSTREAM signal where the story is demand forming (board
+    minutes, budget lines, news: intent/commitment rungs) and several same-org
+    signals usually ARE one story. An action item that links a procurement still
+    groups there.
+    The grant nuance (operator, 2026-07-20): tenders are standalone PER SIGNAL
+    because each tender is a separate bid, but grant_program signals from the
+    SAME source document cluster as ONE item -- same document means same
+    program, same deadline, same application; the extractor splits a program's
+    eligibility streams into per-stream signals, and rendering those as
+    separate brief items showed one program twice. The streams are enumerated
+    inside the single item's note instead (stream_titles).
     Returns a list of cluster dicts, ranked (imminent first, then salience)."""
-    STANDALONE_DOC_TYPES = ("tender_notice", "grant_program")
     groups = defaultdict(list)   # (kind, ref) -> [(signal, path)]
     for s, path in included:
         pid = proc_by_signal.get(s["id"])
         doc = _one(s.get("documents")) or {}
+        doc_type = doc.get("doc_type")
         if pid:
             key = ("procurement", pid)
-        elif s.get("organization_id") and doc.get("doc_type") not in STANDALONE_DOC_TYPES:
+        elif doc_type == "grant_program":
+            # One document = one program = one action. Falls back to the signal
+            # id if document_id is somehow absent (degrades to standalone,
+            # never to a wrong merge).
+            key = ("document", s.get("document_id") or s["id"])
+        elif s.get("organization_id") and doc_type != "tender_notice":
             key = ("organization", s["organization_id"])
         else:
             key = ("signal", s["id"])
@@ -192,6 +204,11 @@ def cluster(included, proc_by_signal):
             "amount": float(lead.get("amount_max_cad") or 0),
             "org": (_one(lead.get("organizations")) or {}).get("canonical_name"),
             "doc_type": (_one(lead.get("documents")) or {}).get("doc_type"),
+            # For a document cluster (grant program), the per-stream signal
+            # titles: enumerated in the item note, since the streams share one
+            # deadline and one application and are not separate items.
+            "stream_titles": [s.get("title") for s in sigs if s.get("title")]
+                             if kind == "document" and len(sigs) > 1 else None,
         })
 
     # Rank: imminent clusters first, by soonest date; then by salience.
@@ -294,6 +311,7 @@ def run(dry_run: bool = True, today: date | None = None, force: bool = False) ->
         "signals",
         "id,signal_type,confidence,materiality,evidence_grade,amount_max_cad,"
         "expected_timing,organization_id,title,organizations(canonical_name),"
+        "document_id,"
         "documents!inner(doc_type,published_on,date_precision,url,defence_relevant)",
         {"suppressed": "is.false"})
 
@@ -435,7 +453,8 @@ def _apply(week_start, clusters, excluded, breakdown, force) -> dict:
     for c in clusters:
         note = brief_copy.draft_item_note(
             doc_type=c.get("doc_type"), timing_path=c["timing_path"],
-            buyer=c.get("org"), title=c.get("lead_title"), amount_cad=c.get("amount"))
+            buyer=c.get("org"), title=c.get("lead_title"), amount_cad=c.get("amount"),
+            streams=c.get("stream_titles"))
         supabase_client.insert_row("brief_items", {
             "brief_id": bid,
             "cluster_kind": c["cluster_kind"],

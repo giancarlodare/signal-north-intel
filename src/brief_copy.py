@@ -54,7 +54,8 @@ def plausible_field(title: str) -> str | None:
 
 
 def draft_item_note(*, doc_type: str | None, timing_path: str | None,
-                    buyer: str | None, title: str | None, amount_cad=None) -> str:
+                    buyer: str | None, title: str | None, amount_cad=None,
+                    streams: list | None = None) -> str:
     """A 2 to 3 sentence vendor read for one item. Structurally true, keyed on
     the document type and timing, with the amount and plausible field added only
     when we have them."""
@@ -88,9 +89,21 @@ def draft_item_note(*, doc_type: str | None, timing_path: str | None,
         s.append("The award is settled, so for a challenger the value is the recompete: note "
                  "the buyer and the category and be positioned before the next cycle opens.")
     elif doc_type in ("grant_program", "grant_award"):
-        s.append(f"{who} is accepting applications.")
-        s.append("Eligibility is fixed by the program rules, so confirm fit before committing "
-                 "proposal effort; the deadline is firm and does not move.")
+        if streams and len(streams) > 1:
+            # One program, several eligibility streams (clustered from one
+            # source document): one deadline, one application, so the streams
+            # are enumerated here rather than shown as separate items.
+            shown = [t.strip() for t in streams[:5] if t and t.strip()]
+            extra = len(streams) - len(shown)
+            listed = "; ".join(shown) + (f"; and {extra} more" if extra > 0 else "")
+            s.append(f"{who} is accepting applications under one program spanning "
+                     f"{len(streams)} eligibility streams: {listed}.")
+            s.append("One deadline and one application process cover every stream, so "
+                     "confirm which stream fits before committing proposal effort.")
+        else:
+            s.append(f"{who} is accepting applications.")
+            s.append("Eligibility is fixed by the program rules, so confirm fit before committing "
+                     "proposal effort; the deadline is firm and does not move.")
     elif doc_type == "board_minutes":
         s.append(f"{who} has taken a board decision here.")
         s.append("A board approval is the commitment that precedes a tender, so engage the "
