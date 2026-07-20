@@ -12,14 +12,15 @@ TODAY = date(2026, 7, 15)  # a Wednesday
 
 
 def _sig(sid, published_on, doc_type="award_notice", materiality=3, grade=3,
-         org=None, amount=None, title="t"):
+         org=None, amount=None, title="t", defence=False):
     return {"id": sid, "signal_type": "contract_award", "confidence": "confirmed",
             "materiality": materiality, "evidence_grade": grade,
             "amount_max_cad": amount, "expected_timing": None,
             "organization_id": org, "title": title,
             "organizations": {"canonical_name": org and f"Org {org}"},
             "documents": {"doc_type": doc_type, "published_on": published_on,
-                          "date_precision": "day", "url": "http://x"}}
+                          "date_precision": "day", "url": "http://x",
+                          "defence_relevant": defence}}
 
 
 # --- timing_path: the event-date window around today --------------------------
@@ -179,3 +180,44 @@ def test_cluster_lead_is_strongest_member():
     assert len(clusters) == 1
     assert clusters[0]["lead_signal_id"] == "strong"
     assert clusters[0]["members"] == 2
+
+
+# --- relevance lens: draft-only starting selection ----------------------------
+def test_lens_defaults_defence_in_and_holds_small_non_defence():
+    included = [
+        (_sig("d1", "2026-07-14", materiality=3, defence=True), "recent"),
+        (_sig("big", "2026-07-14", materiality=4), "recent"),
+        (_sig("small", "2026-07-14", materiality=3), "recent"),
+    ]
+    clusters = bg.cluster(included, proc_by_signal={})
+    held = bg.apply_lens(clusters)
+    by_id = {c["lead_signal_id"]: c for c in clusters}
+    assert by_id["d1"]["included"] is True       # defence tag, any materiality
+    assert by_id["big"]["included"] is True      # non-defence at the lens bar
+    assert by_id["small"]["included"] is False   # held, recoverable in editor
+    assert held == 1
+    # Held clusters keep their rank: the lens sets the starting selection only.
+    assert by_id["small"]["rank"] > 0
+
+
+def test_lens_uses_strongest_member_materiality_not_the_lead():
+    # The lead is picked grade-first, so a non-lead member can carry the
+    # cluster's highest materiality; the lens must see it.
+    included = [
+        (_sig("lead", "2026-07-14", org="o1", grade=5, materiality=3), "recent"),
+        (_sig("member", "2026-07-14", org="o1", grade=3, materiality=4), "recent"),
+    ]
+    clusters = bg.cluster(included, proc_by_signal={})
+    assert len(clusters) == 1
+    assert bg.apply_lens(clusters) == 0
+    assert clusters[0]["included"] is True
+
+
+def test_lens_defence_tag_on_any_member_spares_the_cluster():
+    included = [
+        (_sig("a", "2026-07-14", org="o1", grade=4, materiality=3), "recent"),
+        (_sig("b", "2026-07-14", org="o1", grade=3, materiality=3, defence=True), "recent"),
+    ]
+    clusters = bg.cluster(included, proc_by_signal={})
+    assert bg.apply_lens(clusters) == 0
+    assert clusters[0]["included"] is True

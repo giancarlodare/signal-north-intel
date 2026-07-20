@@ -19,6 +19,14 @@ matter appear); Path B (imminent, prospective) uses a relaxed floor
 (materiality>=2 AND grade>=2), because a closing-soon opportunity is actionable
 by timing and grade is secondary. suppressed=false always.
 
+Relevance lens (operator, 2026-07-20, DRAFT-ONLY): the draft defaults to
+defence-relevant items plus non-defence items at materiality >= 4. Everything
+else above the bar is still written to the draft but with included=false, and
+the held count is stored beside the below-bar count, so the operator can pull
+any held item back in the editor with one toggle. The corpus stays keep-all:
+the lens never suppresses, deletes, or drops a signal; it only sets the draft's
+starting selection.
+
     python -m src.brief_generator --dry-run   # select/cluster/report, write nothing
     python -m src.brief_generator --apply      # write the week's draft brief
 """
@@ -45,6 +53,10 @@ RECENT_MIN_MATERIALITY = 3
 RECENT_MIN_GRADE = 3
 IMMINENT_MIN_MATERIALITY = 2
 IMMINENT_MIN_GRADE = 2
+# Relevance lens: a non-defence cluster needs this materiality (on its
+# strongest member) to default into the draft. Defence-relevant always defaults
+# in. Draft-only; the editor can pull any held item back.
+LENS_MIN_MATERIALITY = 4
 
 
 def bar_for(path) -> tuple:
@@ -170,6 +182,13 @@ def cluster(included, proc_by_signal):
             "soonest_date": soonest, "members": len(sigs),
             "grade": lead.get("evidence_grade") or 0,
             "materiality": lead.get("materiality") or 0,
+            # Lens inputs. max_materiality spans MEMBERS (the lead is picked
+            # grade-first, so a non-lead member can carry the cluster's highest
+            # materiality); defence_relevant is the document tag on any member.
+            "max_materiality": max((s.get("materiality") or 0) for s in sigs),
+            "defence_relevant": any(
+                bool((_one(s.get("documents")) or {}).get("defence_relevant"))
+                for s in sigs),
             "amount": float(lead.get("amount_max_cad") or 0),
             "org": (_one(lead.get("organizations")) or {}).get("canonical_name"),
             "doc_type": (_one(lead.get("documents")) or {}).get("doc_type"),
@@ -185,6 +204,23 @@ def cluster(included, proc_by_signal):
     for i, c in enumerate(clusters, 1):
         c["rank"] = i
     return clusters
+
+
+def apply_lens(clusters) -> int:
+    """The relevance lens over ranked clusters (draft-only; corpus keep-all).
+    A cluster defaults into the draft when any member is defence_relevant or its
+    strongest member's materiality >= LENS_MIN_MATERIALITY. Held clusters keep
+    their rank and are written with included=false so the editor can pull them
+    back with one toggle -- the lens sets the STARTING selection, nothing more.
+    Pure: sets c["included"] on every cluster and returns the held count."""
+    held = 0
+    for c in clusters:
+        keep = bool(c.get("defence_relevant")) \
+            or (c.get("max_materiality") or 0) >= LENS_MIN_MATERIALITY
+        c["included"] = keep
+        if not keep:
+            held += 1
+    return held
 
 
 def _procurement_by_signal():
@@ -226,12 +262,13 @@ def run(dry_run: bool = True, today: date | None = None, force: bool = False) ->
         "signals",
         "id,signal_type,confidence,materiality,evidence_grade,amount_max_cad,"
         "expected_timing,organization_id,title,organizations(canonical_name),"
-        "documents!inner(doc_type,published_on,date_precision,url)",
+        "documents!inner(doc_type,published_on,date_precision,url,defence_relevant)",
         {"suppressed": "is.false"})
 
     included, excluded, breakdown = select(signals, today)
     proc_by_signal = _procurement_by_signal()
     clusters = cluster(included, proc_by_signal)
+    lens_held = apply_lens(clusters)
 
     # Out-of-window diagnostic: where the corpus falls relative to the window, so
     # a thin brief is explainable (backfilled awards have old event dates; grants
@@ -265,6 +302,10 @@ def run(dry_run: bool = True, today: date | None = None, force: bool = False) ->
              len(signals), len(included), excluded, breakdown or "{}", len(clusters))
     kinds = Counter(c["cluster_kind"] for c in clusters)
     log.info("  clusters by kind: %s", dict(kinds))
+    log.info("  relevance lens: %d of %d clusters default in; %d held "
+             "(non-defence, materiality < %d), written included=false for the "
+             "editor to pull back", len(clusters) - lens_held, len(clusters),
+             lens_held, LENS_MIN_MATERIALITY)
     log.info("  %-8s %-10s %-11s %-6s %5s  %s", "rank", "kind", "timing", "grade", "mat", "lead")
     for c in clusters[:25]:
         log.info("  #%-7d %-10s %-11s g%-5d %5d  %s [%s, soonest %s, %d sig]",
@@ -279,6 +320,7 @@ def run(dry_run: bool = True, today: date | None = None, force: bool = False) ->
     result = {"week_start": str(week_start), "scanned": len(signals),
               "included": len(included), "excluded_below_threshold": excluded,
               "exclusion_breakdown": breakdown, "clusters": len(clusters),
+              "held_by_relevance_lens": lens_held,
               "wrote_brief": written.get("brief", 0), "wrote_items": written.get("items", 0)}
     if written.get("refused_published"):
         result["refused_published"] = True
@@ -333,7 +375,16 @@ def _apply(week_start, clusters, excluded, breakdown, force) -> dict:
     # from what we hold, never fabricated; the draft is the scaffold, the edits
     # are the value.
     peel_recent = _peel_recent_award_count()
-    intro = brief_copy.draft_the_read(clusters, peel_recent)
+    # The Read describes the draft's DEFAULT selection; lens-held items only
+    # enter the story if the operator pulls them back in.
+    intro = brief_copy.draft_the_read(
+        [c for c in clusters if c.get("included", True)], peel_recent)
+    # The lens-held count rides exclusion_breakdown (shown as a chip in the
+    # editor header, same pattern as the below-bar counts); the held items
+    # themselves are in the draft as included=false rows the editor can toggle.
+    lens_held = sum(1 for c in clusters if not c.get("included", True))
+    if lens_held:
+        breakdown = {**breakdown, "relevance_lens": lens_held}
     brief = supabase_client.insert_row("briefs", {
         "week_start": str(week_start),
         "status": "draft",
@@ -354,12 +405,13 @@ def _apply(week_start, clusters, excluded, breakdown, force) -> dict:
             "lead_signal_id": c["lead_signal_id"],
             "timing_path": c["timing_path"],
             "soonest_date": str(c["soonest_date"]) if c["soonest_date"] else None,
-            "included": True,
+            "included": bool(c.get("included", True)),
             "rank": c["rank"],
             "editor_note": note,
         })
         n += 1
-    log.info("  wrote draft brief %s with %d items", bid, n)
+    log.info("  wrote draft brief %s with %d items (%d held by the relevance "
+             "lens as included=false)", bid, n, lens_held)
     return {"brief": 1, "items": n}
 
 
