@@ -63,6 +63,14 @@ test("every claim carries a provenance link to the publisher document", () => {
   assert.ok(html.includes('href="https://tpsb.ca/y"'));
 });
 
+test("Watchlist link renders only when a real URL is configured, never a dead one", () => {
+  const bare = renderBrief(view());
+  assert.ok(!bare.includes("Watchlist"), "no watchlist link without a configured URL");
+  const withUrl = renderBrief(view({ watchlistUrl: "https://signalnorthintel.com/watchlist" }));
+  assert.ok(withUrl.includes('href="https://signalnorthintel.com/watchlist"'));
+  assert.ok(withUrl.includes("Watchlist"));
+});
+
 test("a quiet week is stated honestly, not padded", () => {
   const html = renderBrief(view({ lead: null, supporting: [] }));
   assert.ok(html.includes("quiet week"), "quiet-week note present");

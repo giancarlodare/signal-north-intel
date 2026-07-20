@@ -42,6 +42,10 @@ export interface BriefView {
   exhibits: Exhibit[];
   reviewedHeldCount: number;     // excluded_below_threshold (honest density)
   methodNote: string;            // selection + provenance method footer
+  // The design reserves a per-item "Watchlist" action ({{WATCH_URL}}). No
+  // watchlist feature exists yet, so the link renders ONLY when a real URL is
+  // supplied here; a dead placeholder link is never emitted.
+  watchlistUrl?: string | null;
 }
 
 // Designed palette (from the supplied template).
@@ -134,8 +138,21 @@ function readHtml(view: BriefView): string {
 // public URL; nothing is linked to a URL we do not hold.
 function sourceLink(url: string | null, labelText: string): string {
   if (!url) return "";
-  return `<a href="${esc(url)}" style="color:${CRIMSON};text-decoration:none;font-weight:bold;">`
-    + `${esc(labelText)} &#8594;</a>`;
+  return `<a href="${esc(url)}" style="color:${CRIMSON};text-decoration:none;">${esc(labelText)}</a>`;
+}
+
+const SRC_CELL = `font-family:${SANS};font-size:12px;font-weight:bold;letter-spacing:1px;`
+  + `text-transform:uppercase;mso-line-height-rule:exactly;line-height:18px;`;
+
+// Right-aligned Watchlist action cell; empty (not a dead link) until a real
+// watchlist URL exists.
+function watchCell(view: BriefView, padTop = ""): string {
+  const inner = view.watchlistUrl
+    ? `<a href="${esc(view.watchlistUrl)}" style="color:${MUTED};text-decoration:none;">`
+      + `&#9873;&nbsp;&nbsp;Watchlist</a>`
+    : "&nbsp;";
+  return `<td align="right" style="${padTop}font-family:${SANS};font-size:12px;`
+    + `mso-line-height-rule:exactly;line-height:18px;white-space:nowrap;">${inner}</td>`;
 }
 
 function leadHtml(view: BriefView): string {
@@ -164,9 +181,10 @@ function leadHtml(view: BriefView): string {
   }
   if (it.doc.url) {
     inner.push(spacer(16));
-    inner.push(`<tr><td colspan="2" style="font-family:${SANS};font-size:12px;font-weight:bold;`
-      + `letter-spacing:1px;text-transform:uppercase;mso-line-height-rule:exactly;line-height:18px;">`
-      + `${sourceLink(it.doc.url, "View the publisher record")}</td></tr>`);
+    inner.push(`<tr><td colspan="2" style="${SRC_CELL}">`
+      + `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="454" style="width:100%;">`
+      + `<tr><td align="left" style="${SRC_CELL}">${sourceLink(it.doc.url, "View the publisher record")}</td>`
+      + `${watchCell(view)}</tr></table></td></tr>`);
   }
   const card = `<tr><td style="border-top:3px solid ${CRIMSON};">`
     + `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="512" `
@@ -190,15 +208,16 @@ export function groupByBuyer(items: RenderItem[]): { buyer: string | null; items
   return order.map((b) => ({ buyer: b, items: byBuyer.get(b)! }));
 }
 
-function itemRow(it: RenderItem): string {
+function itemRow(it: RenderItem, view: BriefView): string {
   const window = actionWindow(it.doc.doc_type, it.timing_path,
                               it.doc.published_on, it.doc.date_precision);
-  const noteBits: string[] = [];
-  if (it.vendorSoWhat) noteBits.push(esc(it.vendorSoWhat));
-  const src = sourceLink(it.doc.url, "Source");
-  const noteRow = (noteBits.length || src)
-    ? `<tr><td colspan="2" style="padding-top:8px;${NOTE_TEXT}">`
-      + `${noteBits.join(" ")}${noteBits.length && src ? "&nbsp;" : ""}${src}</td></tr>`
+  const noteRow = it.vendorSoWhat
+    ? `<tr><td colspan="2" style="padding-top:8px;${NOTE_TEXT}">${esc(it.vendorSoWhat)}</td></tr>`
+    : "";
+  // Source sits on its own row (left), with the Watchlist action opposite.
+  const srcRow = it.doc.url
+    ? `<tr><td align="left" style="padding-top:10px;${SRC_CELL}">`
+      + `${sourceLink(it.doc.url, "Source")}</td>${watchCell(view, "padding-top:10px;")}</tr>`
     : "";
   return `<tr><td style="padding:20px 0 22px 0;border-bottom:1px solid ${BORDER};">`
     + `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="512" style="width:100%;">`
@@ -206,7 +225,7 @@ function itemRow(it: RenderItem): string {
     + `mso-line-height-rule:exactly;line-height:24px;">${esc(it.headline)}</td>`
     + `<td align="right" valign="top" width="150" style="width:150px;${DATE_CELL}">`
     + `${window ? esc(window) : "&nbsp;"}</td></tr>`
-    + `${noteRow}</table></td></tr>`;
+    + `${noteRow}${srcRow}</table></td></tr>`;
 }
 
 function buyerHeading(buyer: string | null): string {
@@ -218,7 +237,8 @@ function buyerHeading(buyer: string | null): string {
 function itemsHtml(view: BriefView): string {
   if (view.supporting.length > 0) {
     const groups = groupByBuyer(view.supporting);
-    const rows = groups.map((g) => buyerHeading(g.buyer) + g.items.map(itemRow).join("")).join("");
+    const rows = groups.map((g) =>
+      buyerHeading(g.buyer) + g.items.map((it) => itemRow(it, view)).join("")).join("");
     return band(rows, PAPER, "32px 44px 12px 44px");
   }
   if (!view.lead) {
