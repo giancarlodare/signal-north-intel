@@ -101,7 +101,11 @@ function actionWindowHtml(it: RenderItem): string | null {
 
 const KICKER = `font-family:${SANS};font-size:11px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;mso-line-height-rule:exactly;line-height:16px;`;
 const DATE_CELL = `font-family:${MONO};font-size:12px;color:${BODY};mso-line-height-rule:exactly;line-height:24px;`;
-const NOTE_TEXT = `font-family:${SANS};font-size:14px;color:${BODY};mso-line-height-rule:exactly;line-height:22px;`;
+// Phone-first type floors (operator, 2026-07-20): body text 16px minimum,
+// item notes 15px minimum, with comfortable line-height. Small type in email
+// gets silently ignored on a phone.
+const NOTE_TEXT = `font-family:${SANS};font-size:15px;color:${BODY};mso-line-height-rule:exactly;line-height:24px;`;
+const BODY_TEXT = `font-family:${SANS};font-size:16px;color:${BODY};mso-line-height-rule:exactly;line-height:26px;`;
 
 function spacer(h: number): string {
   return `<tr><td colspan="2" height="${h}" style="font-size:1px;line-height:1px;">&nbsp;</td></tr>`;
@@ -185,7 +189,7 @@ function leadHtml(view: BriefView): string {
   }
   if (it.vendorSoWhat) {
     inner.push(spacer(12));
-    inner.push(`<tr><td colspan="2" style="${NOTE_TEXT}line-height:23px;">${esc(it.vendorSoWhat)}</td></tr>`);
+    inner.push(`<tr><td colspan="2" style="${BODY_TEXT}">${esc(it.vendorSoWhat)}</td></tr>`);
   }
   if (it.doc.url) {
     inner.push(spacer(16));
@@ -250,8 +254,8 @@ function itemsHtml(view: BriefView): string {
   }
   if (!view.lead) {
     // A quiet week is stated honestly, never padded.
-    const rows = `<tr><td style="padding:20px 0 22px 0;font-family:${SERIF};font-size:15px;`
-      + `color:${NAVY};mso-line-height-rule:exactly;line-height:24px;">`
+    const rows = `<tr><td style="padding:20px 0 22px 0;font-family:${SERIF};font-size:16px;`
+      + `color:${NAVY};mso-line-height-rule:exactly;line-height:26px;">`
       + `A quiet week for new signals. The standing exhibits below carry the `
       + `through-line; we do not manufacture items to fill space.</td></tr>`;
     return band(rows, PAPER, "32px 44px 12px 44px");
