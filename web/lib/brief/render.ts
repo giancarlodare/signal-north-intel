@@ -10,7 +10,7 @@
 // type label, every claim carries a provenance link, month-precision dates
 // never fabricate a day, and a thin week is stated honestly rather than padded.
 
-import { actionWindow, type TimingPath } from "./date-label.ts";
+import { actionWindow, dateLabel, formatEventDate, type TimingPath } from "./date-label.ts";
 
 export interface BriefDoc {
   doc_type: string | null;
@@ -90,6 +90,15 @@ export function isoWeekTag(weekStart: string | null | undefined): string | null 
   return `WK ${String(week).padStart(2, "0")} / ${t.getUTCFullYear()}`;
 }
 
+// The action window as HTML for a narrow date cell: the label may wrap onto
+// its own line, but the date's internal spaces are non-breaking so it can
+// never split mid-date ("Tender expected 16 / Jul 2026" on a phone render).
+function actionWindowHtml(it: RenderItem): string | null {
+  const when = formatEventDate(it.doc.published_on, it.doc.date_precision);
+  if (!when) return null;
+  return `${esc(dateLabel(it.doc.doc_type, it.timing_path))} ${esc(when).replace(/ /g, "&nbsp;")}`;
+}
+
 const KICKER = `font-family:${SANS};font-size:11px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;mso-line-height-rule:exactly;line-height:16px;`;
 const DATE_CELL = `font-family:${MONO};font-size:12px;color:${BODY};mso-line-height-rule:exactly;line-height:24px;`;
 const NOTE_TEXT = `font-family:${SANS};font-size:14px;color:${BODY};mso-line-height-rule:exactly;line-height:22px;`;
@@ -158,14 +167,13 @@ function watchCell(view: BriefView, padTop = ""): string {
 function leadHtml(view: BriefView): string {
   const it = view.lead;
   if (!it) return "";
-  const window = actionWindow(it.doc.doc_type, it.timing_path,
-                              it.doc.published_on, it.doc.date_precision);
+  const window = actionWindowHtml(it);
   const meta = [it.buyer ? esc(it.buyer) : null, formatCad(it.amountCad)]
     .filter(Boolean).join(" &middot; ");
   const inner: string[] = [
     `<tr><td align="left" style="${KICKER}color:${CRIMSON};">Lead Item</td>`
     + `<td align="right" style="font-family:${MONO};font-size:12px;color:${BODY};`
-    + `mso-line-height-rule:exactly;line-height:16px;">${window ? esc(window) : "&nbsp;"}</td></tr>`,
+    + `mso-line-height-rule:exactly;line-height:16px;">${window ?? "&nbsp;"}</td></tr>`,
     spacer(14),
     `<tr><td colspan="2" style="font-family:${SERIF};font-size:22px;color:${NAVY};`
     + `mso-line-height-rule:exactly;line-height:29px;">${esc(it.headline)}</td></tr>`,
@@ -209,8 +217,7 @@ export function groupByBuyer(items: RenderItem[]): { buyer: string | null; items
 }
 
 function itemRow(it: RenderItem, view: BriefView): string {
-  const window = actionWindow(it.doc.doc_type, it.timing_path,
-                              it.doc.published_on, it.doc.date_precision);
+  const window = actionWindowHtml(it);
   const noteRow = it.vendorSoWhat
     ? `<tr><td colspan="2" style="padding-top:8px;${NOTE_TEXT}">${esc(it.vendorSoWhat)}</td></tr>`
     : "";
@@ -224,7 +231,7 @@ function itemRow(it: RenderItem, view: BriefView): string {
     + `<tr><td align="left" style="font-family:${SERIF};font-size:17px;color:${NAVY};`
     + `mso-line-height-rule:exactly;line-height:24px;">${esc(it.headline)}</td>`
     + `<td align="right" valign="top" width="150" style="width:150px;${DATE_CELL}">`
-    + `${window ? esc(window) : "&nbsp;"}</td></tr>`
+    + `${window ?? "&nbsp;"}</td></tr>`
     + `${noteRow}${srcRow}</table></td></tr>`;
 }
 
