@@ -163,6 +163,7 @@ export async function buildBriefView(
   return {
     masthead: "The Weekly Signal",
     weekLabel: weekLabel(brief.week_start),
+    weekStart: brief.week_start,
     theRead: brief.intro ?? null,
     lead,
     supporting,

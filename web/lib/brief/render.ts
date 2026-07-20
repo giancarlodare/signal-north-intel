@@ -1,12 +1,14 @@
 // Pure, email-safe render of a published brief. No React, no Next, no runtime
 // deps: it takes plain data and returns an HTML string, so it is unit-testable
 // and is the ONE canonical format shared by the web published view and the
-// Resend email (they cannot drift). Inline styles only, table layout, single
-// 600px column, system fonts, restrained palette, phone-first. The honesty
-// rules are enforced IN the output and asserted in tests: no em dashes, every
-// reader-facing date carries its type label, every claim carries a provenance
-// link, month-precision dates never fabricate a day, and a thin week is stated
-// honestly rather than padded.
+// Resend email (they cannot drift). Layout is the designed Weekly Signal
+// template (operator-supplied, 2026-07-20): navy masthead and footer, cream
+// Read band, crimson lead card, buyer-grouped item list, framed standing
+// exhibit. Table layout, inline styles, single 600px column, email-client
+// fonts (Georgia/Arial/Courier). The honesty rules are enforced IN the output
+// and asserted in tests: no em dashes, every reader-facing date carries its
+// type label, every claim carries a provenance link, month-precision dates
+// never fabricate a day, and a thin week is stated honestly rather than padded.
 
 import { actionWindow, type TimingPath } from "./date-label.ts";
 
@@ -33,21 +35,32 @@ export interface Exhibit {
 export interface BriefView {
   masthead: string;              // "The Weekly Signal"
   weekLabel: string;             // e.g. "14 to 20 July 2026"
+  weekStart?: string | null;     // ISO week_start date; drives the derived issue tag
   theRead: string | null;        // the editorial judgment paragraph (brief.intro)
   lead: RenderItem | null;
   supporting: RenderItem[];
   exhibits: Exhibit[];
   reviewedHeldCount: number;     // excluded_below_threshold (honest density)
   methodNote: string;            // selection + provenance method footer
+  // The design reserves a per-item "Watchlist" action ({{WATCH_URL}}). No
+  // watchlist feature exists yet, so the link renders ONLY when a real URL is
+  // supplied here; a dead placeholder link is never emitted.
+  watchlistUrl?: string | null;
 }
 
-const INK = "#1b1b1b";
-const MUTE = "#6b6b6b";
-const HAIR = "#e4e4e4";
-const ACCENT = "#24506b";
+// Designed palette (from the supplied template).
+const NAVY = "#0d1b2e";
+const NAVY_RULE = "#243d5c";
+const CRIMSON = "#c41230";
 const PAPER = "#ffffff";
+const CREAM = "#f8f7f4";
+const PAGE = "#f3f2ef";
+const BORDER = "#d4d1cb";
+const BODY = "#4a4742";
+const MUTED = "#9a948a";
 const SERIF = "Georgia, 'Times New Roman', serif";
-const SANS = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+const SANS = "Arial, Helvetica, sans-serif";
+const MONO = "'Courier New', Courier, monospace";
 
 function esc(s: string | null | undefined): string {
   return (s ?? "").replace(/[&<>"']/g, (c) =>
@@ -62,134 +75,256 @@ export function formatCad(n: number | null | undefined): string | null {
   return `$${Math.round(n)}`;
 }
 
-function label(text: string): string {
-  return `<span style="font-family:${SANS};font-size:11px;letter-spacing:.06em;`
-    + `text-transform:uppercase;color:${MUTE};">${esc(text)}</span>`;
+// The masthead's top-right tag. The design shows an issue number; we do not
+// keep a fabricatable sequence counter, so the tag is the ISO week DERIVED
+// from week_start (factual, deterministic). No week_start, no tag.
+export function isoWeekTag(weekStart: string | null | undefined): string | null {
+  if (!weekStart) return null;
+  const d = new Date(`${weekStart.slice(0, 10)}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return null;
+  const t = new Date(d);
+  t.setUTCDate(t.getUTCDate() + 3 - ((t.getUTCDay() + 6) % 7)); // ISO: the week's Thursday
+  const jan4 = new Date(Date.UTC(t.getUTCFullYear(), 0, 4));
+  jan4.setUTCDate(jan4.getUTCDate() + 3 - ((jan4.getUTCDay() + 6) % 7));
+  const week = 1 + Math.round((t.getTime() - jan4.getTime()) / (7 * 86400000));
+  return `WK ${String(week).padStart(2, "0")} / ${t.getUTCFullYear()}`;
 }
 
-function itemHtml(it: RenderItem, isLead: boolean): string {
+const KICKER = `font-family:${SANS};font-size:11px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;mso-line-height-rule:exactly;line-height:16px;`;
+const DATE_CELL = `font-family:${MONO};font-size:12px;color:${BODY};mso-line-height-rule:exactly;line-height:24px;`;
+const NOTE_TEXT = `font-family:${SANS};font-size:14px;color:${BODY};mso-line-height-rule:exactly;line-height:22px;`;
+
+function spacer(h: number): string {
+  return `<tr><td colspan="2" height="${h}" style="font-size:1px;line-height:1px;">&nbsp;</td></tr>`;
+}
+
+// A full-width band row of the 600px wrapper. White bands carry the side rule.
+function band(body: string, bg: string, pad: string, ruled = true): string {
+  const sides = ruled ? `border-left:1px solid ${BORDER};border-right:1px solid ${BORDER};` : "";
+  return `<tr><td bgcolor="${bg}" style="background-color:${bg};padding:${pad};${sides}">`
+    + `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="512" style="width:100%;">`
+    + `${body}</table></td></tr>`;
+}
+
+function mastheadHtml(view: BriefView): string {
+  const tag = isoWeekTag(view.weekStart);
+  const rows = [
+    `<tr><td align="left" style="${KICKER}color:${CRIMSON};">Procurement Intelligence Brief</td>`
+    + `<td align="right" style="font-family:${MONO};font-size:12px;color:${MUTED};`
+    + `mso-line-height-rule:exactly;line-height:16px;">${tag ? esc(tag) : "&nbsp;"}</td></tr>`,
+    spacer(14),
+    `<tr><td colspan="2" align="left" style="font-family:${SERIF};font-size:34px;font-weight:normal;`
+    + `color:#ffffff;letter-spacing:-0.5px;mso-line-height-rule:exactly;line-height:40px;">`
+    + `${esc(view.masthead)}</td></tr>`,
+    spacer(12),
+    `<tr><td colspan="2" style="border-top:1px solid ${NAVY_RULE};padding-top:12px;`
+    + `font-family:${SANS};font-size:12px;letter-spacing:1px;color:${MUTED};text-transform:uppercase;`
+    + `mso-line-height-rule:exactly;line-height:18px;">Week of ${esc(view.weekLabel)}</td></tr>`,
+  ];
+  return band(rows.join(""), NAVY, "36px 44px 32px 44px", false);
+}
+
+function readHtml(view: BriefView): string {
+  if (!view.theRead) return "";
+  const rows = [
+    `<tr><td style="${KICKER}color:${NAVY};padding-bottom:16px;">The Read</td></tr>`,
+    `<tr><td style="font-family:${SERIF};font-size:17px;color:${NAVY};`
+    + `mso-line-height-rule:exactly;line-height:28px;">${esc(view.theRead)}</td></tr>`,
+  ];
+  return band(rows.join(""), CREAM, "36px 44px");
+}
+
+// Provenance link. Every claim carries one where the publisher document has a
+// public URL; nothing is linked to a URL we do not hold.
+function sourceLink(url: string | null, labelText: string): string {
+  if (!url) return "";
+  return `<a href="${esc(url)}" style="color:${CRIMSON};text-decoration:none;">${esc(labelText)}</a>`;
+}
+
+const SRC_CELL = `font-family:${SANS};font-size:12px;font-weight:bold;letter-spacing:1px;`
+  + `text-transform:uppercase;mso-line-height-rule:exactly;line-height:18px;`;
+
+// Right-aligned Watchlist action cell; empty (not a dead link) until a real
+// watchlist URL exists.
+function watchCell(view: BriefView, padTop = ""): string {
+  const inner = view.watchlistUrl
+    ? `<a href="${esc(view.watchlistUrl)}" style="color:${MUTED};text-decoration:none;">`
+      + `&#9873;&nbsp;&nbsp;Watchlist</a>`
+    : "&nbsp;";
+  return `<td align="right" style="${padTop}font-family:${SANS};font-size:12px;`
+    + `mso-line-height-rule:exactly;line-height:18px;white-space:nowrap;">${inner}</td>`;
+}
+
+function leadHtml(view: BriefView): string {
+  const it = view.lead;
+  if (!it) return "";
   const window = actionWindow(it.doc.doc_type, it.timing_path,
                               it.doc.published_on, it.doc.date_precision);
-  const amount = formatCad(it.amountCad);
-  const metaBits = [it.buyer ? esc(it.buyer) : null, amount].filter(Boolean).join("  &middot;  ");
-  const headSize = isLead ? "21px" : "17px";
-  const rows: string[] = [];
-
-  // Action window with its §7.4 type label (never a bare date).
-  if (window) {
-    rows.push(`<div style="margin:0 0 6px;">`
-      + `<span style="font-family:${SANS};font-size:12px;font-weight:600;`
-      + `color:${ACCENT};letter-spacing:.02em;">${esc(window)}</span></div>`);
+  const meta = [it.buyer ? esc(it.buyer) : null, formatCad(it.amountCad)]
+    .filter(Boolean).join(" &middot; ");
+  const inner: string[] = [
+    `<tr><td align="left" style="${KICKER}color:${CRIMSON};">Lead Item</td>`
+    + `<td align="right" style="font-family:${MONO};font-size:12px;color:${BODY};`
+    + `mso-line-height-rule:exactly;line-height:16px;">${window ? esc(window) : "&nbsp;"}</td></tr>`,
+    spacer(14),
+    `<tr><td colspan="2" style="font-family:${SERIF};font-size:22px;color:${NAVY};`
+    + `mso-line-height-rule:exactly;line-height:29px;">${esc(it.headline)}</td></tr>`,
+  ];
+  if (meta) {
+    inner.push(spacer(8));
+    inner.push(`<tr><td colspan="2" style="font-family:${SANS};font-size:12px;color:${MUTED};`
+      + `mso-line-height-rule:exactly;line-height:18px;">${meta}</td></tr>`);
   }
-  // Headline.
-  rows.push(`<div style="font-family:${SERIF};font-size:${headSize};line-height:1.3;`
-    + `color:${INK};margin:0 0 6px;font-weight:${isLead ? 700 : 600};">${esc(it.headline)}</div>`);
-  // Buyer and amount.
-  if (metaBits) {
-    rows.push(`<div style="font-family:${SANS};font-size:13px;color:${MUTE};margin:0 0 8px;">`
-      + `${metaBits}</div>`);
-  }
-  // The vendor "so what".
   if (it.vendorSoWhat) {
-    rows.push(`<div style="font-family:${SERIF};font-size:15px;line-height:1.55;`
-      + `color:${INK};margin:0 0 8px;">${esc(it.vendorSoWhat)}</div>`);
+    inner.push(spacer(12));
+    inner.push(`<tr><td colspan="2" style="${NOTE_TEXT}line-height:23px;">${esc(it.vendorSoWhat)}</td></tr>`);
   }
-  // Provenance link (every claim is sourced to the publisher document).
   if (it.doc.url) {
-    rows.push(`<div style="margin:0;">${label("Source")} `
-      + `<a href="${esc(it.doc.url)}" style="font-family:${SANS};font-size:12px;`
-      + `color:${ACCENT};text-decoration:underline;">publisher record</a></div>`);
+    inner.push(spacer(16));
+    inner.push(`<tr><td colspan="2" style="${SRC_CELL}">`
+      + `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="454" style="width:100%;">`
+      + `<tr><td align="left" style="${SRC_CELL}">${sourceLink(it.doc.url, "View the publisher record")}</td>`
+      + `${watchCell(view)}</tr></table></td></tr>`);
   }
-  const pad = isLead ? "18px" : "16px";
-  const border = isLead ? `border-left:3px solid ${ACCENT};padding-left:15px;` : "";
-  return `<div style="padding:${pad} 0;border-top:1px solid ${HAIR};${border}">${rows.join("")}</div>`;
+  const card = `<tr><td style="border-top:3px solid ${CRIMSON};">`
+    + `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="512" `
+    + `style="width:100%;border:1px solid ${BORDER};border-top:none;"><tr><td style="padding:28px 28px 26px 28px;">`
+    + `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="454" style="width:100%;">`
+    + `${inner.join("")}</table></td></tr></table></td></tr>`;
+  return band(card, PAPER, "36px 44px 8px 44px");
 }
 
-function barRow(r: { label: string; value: number; note?: string }, max: number,
-                fmt: "count" | "cad"): string {
-  const pct = max > 0 ? Math.max(2, Math.round((r.value / max) * 100)) : 0;
+// Supporting items in rank order, grouped visually under buyer headings per the
+// operator's ruling: separate brief items with separate dates and notes, one
+// heading per buyer in order of that buyer's strongest (first-ranked) item.
+export function groupByBuyer(items: RenderItem[]): { buyer: string | null; items: RenderItem[] }[] {
+  const order: (string | null)[] = [];
+  const byBuyer = new Map<string | null, RenderItem[]>();
+  for (const it of items) {
+    const key = it.buyer ?? null;
+    if (!byBuyer.has(key)) { byBuyer.set(key, []); order.push(key); }
+    byBuyer.get(key)!.push(it);
+  }
+  return order.map((b) => ({ buyer: b, items: byBuyer.get(b)! }));
+}
+
+function itemRow(it: RenderItem, view: BriefView): string {
+  const window = actionWindow(it.doc.doc_type, it.timing_path,
+                              it.doc.published_on, it.doc.date_precision);
+  const noteRow = it.vendorSoWhat
+    ? `<tr><td colspan="2" style="padding-top:8px;${NOTE_TEXT}">${esc(it.vendorSoWhat)}</td></tr>`
+    : "";
+  // Source sits on its own row (left), with the Watchlist action opposite.
+  const srcRow = it.doc.url
+    ? `<tr><td align="left" style="padding-top:10px;${SRC_CELL}">`
+      + `${sourceLink(it.doc.url, "Source")}</td>${watchCell(view, "padding-top:10px;")}</tr>`
+    : "";
+  return `<tr><td style="padding:20px 0 22px 0;border-bottom:1px solid ${BORDER};">`
+    + `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="512" style="width:100%;">`
+    + `<tr><td align="left" style="font-family:${SERIF};font-size:17px;color:${NAVY};`
+    + `mso-line-height-rule:exactly;line-height:24px;">${esc(it.headline)}</td>`
+    + `<td align="right" valign="top" width="150" style="width:150px;${DATE_CELL}">`
+    + `${window ? esc(window) : "&nbsp;"}</td></tr>`
+    + `${noteRow}${srcRow}</table></td></tr>`;
+}
+
+function buyerHeading(buyer: string | null): string {
+  return `<tr><td style="padding:20px 0 4px 0;border-bottom:1px solid ${NAVY};`
+    + `${KICKER}font-size:12px;color:${NAVY};line-height:18px;">`
+    + `${esc(buyer ?? "Buyer unresolved")}</td></tr>`;
+}
+
+function itemsHtml(view: BriefView): string {
+  if (view.supporting.length > 0) {
+    const groups = groupByBuyer(view.supporting);
+    const rows = groups.map((g) =>
+      buyerHeading(g.buyer) + g.items.map((it) => itemRow(it, view)).join("")).join("");
+    return band(rows, PAPER, "32px 44px 12px 44px");
+  }
+  if (!view.lead) {
+    // A quiet week is stated honestly, never padded.
+    const rows = `<tr><td style="padding:20px 0 22px 0;font-family:${SERIF};font-size:15px;`
+      + `color:${NAVY};mso-line-height-rule:exactly;line-height:24px;">`
+      + `A quiet week for new signals. The standing exhibits below carry the `
+      + `through-line; we do not manufacture items to fill space.</td></tr>`;
+    return band(rows, PAPER, "32px 44px 12px 44px");
+  }
+  return "";
+}
+
+// Exhibit bars per the template geometry: 300px track, px = value/max * 300,
+// 4px floor so zero-adjacent values stay visible. Counts and CAD both honest;
+// the "partial" note rides the label so a part-quarter is never a full bar lie.
+function exhibitRow(r: { label: string; value: number; note?: string }, max: number,
+                    fmt: "count" | "cad"): string {
+  const px = max > 0 ? Math.max(4, Math.round((r.value / max) * 300)) : 4;
   const shown = fmt === "cad" ? (formatCad(r.value) ?? "0") : String(r.value);
-  const note = r.note ? ` <span style="color:${MUTE};font-size:11px;">${esc(r.note)}</span>` : "";
-  return `<tr>`
-    + `<td style="font-family:${SANS};font-size:12px;color:${INK};padding:3px 8px 3px 0;`
-    + `white-space:nowrap;vertical-align:middle;">${esc(r.label)}</td>`
-    + `<td style="width:100%;vertical-align:middle;padding:3px 0;">`
-    + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;"><tr>`
-    + `<td width="${pct}%" style="background:${ACCENT};height:9px;font-size:0;line-height:0;">&nbsp;</td>`
-    + `<td style="font-size:0;line-height:0;">&nbsp;</td></tr></table></td>`
-    + `<td style="font-family:${SANS};font-size:12px;color:${INK};padding:3px 0 3px 10px;`
-    + `text-align:right;white-space:nowrap;vertical-align:middle;">${esc(shown)}${note}</td>`
-    + `</tr>`;
+  const labelText = r.note ? `${r.label} (${r.note})` : r.label;
+  return `<tr><td style="padding:0 0 12px 0;">`
+    + `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="454" style="width:100%;">`
+    + `<tr><td width="104" style="width:104px;font-family:${SANS};font-size:12px;color:${BODY};`
+    + `mso-line-height-rule:exactly;line-height:16px;padding-right:10px;">${esc(labelText)}</td>`
+    + `<td width="300" style="width:300px;" valign="middle">`
+    + `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>`
+    + `<td width="${px}" height="14" bgcolor="${NAVY}" style="width:${px}px;height:14px;`
+    + `background-color:${NAVY};font-size:1px;line-height:1px;">&nbsp;</td></tr></table></td>`
+    + `<td align="right" style="font-family:${MONO};font-size:12px;color:${NAVY};`
+    + `mso-line-height-rule:exactly;line-height:16px;padding-left:10px;white-space:nowrap;">`
+    + `${esc(shown)}</td></tr></table></td></tr>`;
 }
 
 function exhibitHtml(ex: Exhibit): string {
   const max = ex.rows.reduce((m, r) => Math.max(m, r.value), 0);
-  const bars = ex.rows.map((r) => barRow(r, max, ex.format)).join("");
-  return `<div style="padding:18px 0;border-top:1px solid ${HAIR};">`
-    + `<div style="font-family:${SANS};font-size:14px;font-weight:600;color:${INK};margin:0 0 3px;">`
-    + `${esc(ex.title)}</div>`
-    + `<div style="font-family:${SANS};font-size:11px;color:${MUTE};margin:0 0 12px;">${esc(ex.basis)}</div>`
-    + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">`
-    + `${bars}</table></div>`;
+  const bars = ex.rows.map((r) => exhibitRow(r, max, ex.format)).join("");
+  const card = `<tr><td style="padding:0;">`
+    + `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="512" `
+    + `style="width:100%;border:1px solid ${BORDER};" bgcolor="${CREAM}">`
+    + `<tr><td style="padding:26px 28px 28px 28px;background-color:${CREAM};">`
+    + `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="454" style="width:100%;">`
+    + `<tr><td style="${KICKER}color:${NAVY};">Standing Exhibit</td></tr>`
+    + `<tr><td style="padding:6px 0 18px 0;font-family:${SERIF};font-size:17px;color:${NAVY};`
+    + `mso-line-height-rule:exactly;line-height:24px;">${esc(ex.title)}</td></tr>`
+    + `${bars}`
+    + `<tr><td style="padding-top:8px;border-top:1px solid ${BORDER};font-family:${SANS};`
+    + `font-size:11px;color:${MUTED};mso-line-height-rule:exactly;line-height:16px;">`
+    + `${esc(ex.basis)}</td></tr>`
+    + `</table></td></tr></table></td></tr>`;
+  return band(card, PAPER, "28px 44px 40px 44px");
 }
 
-function sectionHead(text: string): string {
-  return `<div style="font-family:${SANS};font-size:11px;font-weight:700;`
-    + `letter-spacing:.12em;text-transform:uppercase;color:${MUTE};`
-    + `margin:26px 0 2px;">${esc(text)}</div>`;
-}
-
-export function renderBrief(view: BriefView): string {
-  const parts: string[] = [];
-
-  // Masthead.
-  parts.push(`<div style="padding:0 0 14px;border-bottom:2px solid ${INK};">`
-    + `<div style="font-family:${SERIF};font-size:24px;font-weight:700;color:${INK};`
-    + `letter-spacing:-.01em;">${esc(view.masthead)}</div>`
-    + `<div style="font-family:${SANS};font-size:12px;color:${MUTE};margin-top:4px;">`
-    + `Week of ${esc(view.weekLabel)}</div></div>`);
-
-  // The Read.
-  if (view.theRead) {
-    parts.push(sectionHead("The Read"));
-    parts.push(`<div style="font-family:${SERIF};font-size:16px;line-height:1.6;`
-      + `color:${INK};margin:8px 0 4px;">${esc(view.theRead)}</div>`);
-  }
-
-  // Lead item.
-  if (view.lead) {
-    parts.push(sectionHead("Lead"));
-    parts.push(itemHtml(view.lead, true));
-  }
-
-  // Supporting items, or an honest quiet-week note (never padding).
-  if (view.supporting.length > 0) {
-    parts.push(sectionHead(view.lead ? "Also this week" : "This week"));
-    parts.push(view.supporting.map((it) => itemHtml(it, false)).join(""));
-  } else if (!view.lead) {
-    parts.push(sectionHead("This week"));
-    parts.push(`<div style="font-family:${SERIF};font-size:15px;line-height:1.55;`
-      + `color:${INK};padding:14px 0;border-top:1px solid ${HAIR};">`
-      + `A quiet week for new signals. The standing exhibits below carry the `
-      + `through-line; we do not manufacture items to fill space.</div>`);
-  }
-
-  // Standing exhibits.
-  if (view.exhibits.length > 0) {
-    parts.push(sectionHead("Standing exhibits"));
-    parts.push(view.exhibits.map(exhibitHtml).join(""));
-  }
-
-  // Provenance / method footer, with the honest held-below-bar count.
+function footerHtml(view: BriefView): string {
+  // Honest density: the held-below-bar count is part of the methodology, so a
+  // thin brief can never masquerade as the whole week's activity.
   const held = view.reviewedHeldCount > 0
     ? ` ${view.reviewedHeldCount} further item${view.reviewedHeldCount === 1 ? "" : "s"} `
       + `reviewed this week were held below our materiality bar.`
     : "";
-  parts.push(`<div style="padding:20px 0 8px;border-top:2px solid ${INK};margin-top:24px;`
-    + `font-family:${SANS};font-size:11px;line-height:1.6;color:${MUTE};">`
-    + `${esc(view.methodNote)}${esc(held)}</div>`);
+  // Pre-gate footer: the brief goes to the operator only, so there is no
+  // subscriber boilerplate. A postal address and a real unsubscribe link
+  // (CASL / CAN-SPAM) MUST be added here before any real subscriber send;
+  // fabricated placeholders are worse than their absence.
+  const rows = [
+    `<tr><td style="${KICKER}color:${MUTED};padding-bottom:12px;">Methodology</td></tr>`,
+    `<tr><td style="font-family:${SANS};font-size:12px;color:${MUTED};`
+    + `mso-line-height-rule:exactly;line-height:19px;padding-bottom:24px;">`
+    + `${esc(view.methodNote)}${esc(held)}</td></tr>`,
+    `<tr><td style="border-top:1px solid ${NAVY_RULE};padding-top:20px;font-family:${SANS};`
+    + `font-size:11px;color:${MUTED};mso-line-height-rule:exactly;line-height:18px;">`
+    + `${esc(view.masthead)} &#183; signalnorthintel.com</td></tr>`,
+  ];
+  return band(rows.join(""), NAVY, "32px 44px 36px 44px", false);
+}
 
-  return renderShell(view, parts.join(""));
+export function renderBrief(view: BriefView): string {
+  const bands = [
+    mastheadHtml(view),
+    readHtml(view),
+    leadHtml(view),
+    itemsHtml(view),
+    view.exhibits.map(exhibitHtml).join(""),
+    footerHtml(view),
+  ].join("");
+  return renderShell(view, bands);
 }
 
 // Plain-text alternative part, from the same data, so a client that prefers
@@ -233,17 +368,24 @@ export function renderBriefText(view: BriefView): string {
   return L.join("\n");
 }
 
-function renderShell(view: BriefView, body: string): string {
+function renderShell(view: BriefView, bands: string): string {
   const preheader = view.theRead ? esc(view.theRead).slice(0, 140) : esc(view.masthead);
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8">`
-    + `<meta name="viewport" content="width=device-width, initial-scale=1">`
-    + `<meta name="color-scheme" content="light only">`
+  return `<!DOCTYPE html><html lang="en" xmlns="http://www.w3.org/1999/xhtml" `
+    + `xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office"><head>`
+    + `<meta charset="utf-8">`
+    + `<meta name="viewport" content="width=device-width, initial-scale=1.0">`
+    + `<meta name="color-scheme" content="light dark">`
+    + `<meta name="supported-color-schemes" content="light dark">`
+    + `<!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch>`
+    + `</o:OfficeDocumentSettings></xml></noscript><![endif]-->`
     + `<title>${esc(view.masthead)}</title></head>`
-    + `<body style="margin:0;padding:0;background:${PAPER};">`
-    + `<div style="display:none;max-height:0;overflow:hidden;opacity:0;">${preheader}</div>`
-    + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" `
-    + `style="background:${PAPER};"><tr><td align="center" style="padding:28px 16px;">`
-    + `<table role="presentation" width="600" cellpadding="0" cellspacing="0" `
-    + `style="width:600px;max-width:600px;background:${PAPER};">`
-    + `<tr><td style="padding:0;">${body}</td></tr></table></td></tr></table></body></html>`;
+    + `<body style="margin:0;padding:0;background-color:${PAGE};`
+    + `-webkit-text-size-adjust:100%;text-size-adjust:100%;">`
+    + `<span style="display:none;font-size:1px;color:${PAGE};line-height:1px;max-height:0;`
+    + `max-width:0;opacity:0;overflow:hidden;mso-hide:all;">${preheader}</span>`
+    + `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" `
+    + `style="background-color:${PAGE};"><tr><td align="center" style="padding:32px 12px;">`
+    + `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" `
+    + `style="width:600px;max-width:600px;">${bands}</table>`
+    + `</td></tr></table></body></html>`;
 }
