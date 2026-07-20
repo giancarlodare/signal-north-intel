@@ -106,7 +106,14 @@ only NEW abstracts (a few/day steady state, capped 25 during backfill).
 - Biddingo platform (JS app, /m/ buyer pages client-rendered) joins the
   render-capable evaluation alongside eScribe (docs/big12-boards-design.md
   section 10). Windsor's open-data mirror makes Biddingo unnecessary for
-  Windsor; a public DRPS /m/ page is pending the operator's browser check.
+  Windsor. biddingo.com/m/drps CONFIRMED PUBLIC by operator browser
+  2026-07-20 ("Doing Business with Durham Regional Police Service", 38
+  bids, no sign-in, DRPS-2026-002-style references, Awarded/Closed
+  statuses incl. an awarded vehicle towing and storage contract); the
+  requests probe's empty page was client-side rendering, not a soft-404.
+  DRPS is therefore the evaluation's highest-value target: a police
+  service's full public bid history with awards. Evaluation stays banked;
+  probe-only holds.
 - Ottawa Quotations Portal (under-$100K standing offers, ottawa.ca):
   secondary, banked per operator instruction.
 - opendata.citywindsor.ca/RSS: alternative feed if the HTML page ever
