@@ -26,7 +26,7 @@ NEW_TENDER_NOTICES_URL = (
 # OPEN_TENDER_NOTICES_URL if PSPC renames it; the backfill fails loud on 404.
 OPEN_TENDER_NOTICES_URL = os.environ.get(
     "OPEN_TENDER_NOTICES_URL",
-    "https://canadabuys.canada.ca/opendata/pub/tenderNotice-avisAppelOffres.csv",
+    "https://canadabuys.canada.ca/opendata/pub/openTenderNotice-ouvertAvisAppelOffres.csv",
 )
 # The award notices file is published per Canadian federal fiscal year
 # (April 1 - March 31), e.g. "2026-2027-awardNotice-avisAttribution.csv".
