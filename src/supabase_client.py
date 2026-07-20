@@ -95,14 +95,18 @@ def find_or_create_vendor(raw_name: str) -> str | None:
     name = " ".join((raw_name or "").split())
     if not name:
         return None
-    # Double-quote the value so vendor names containing commas or parentheses
-    # (e.g. "9230-6000 Quebec Inc. (o/a Wocasa)") don't break PostgREST's
-    # filter parsing. Stray double quotes are dropped to keep the filter valid.
-    quoted = name.replace('"', "")
-
+    # Exact-match lookup with eq, NOT a quoted ilike pattern: PostgREST treats
+    # a double-quoted like/ilike value literally (the quotes join the pattern),
+    # so the quoted form silently never matched. Every repeat vendor missed
+    # this lookup, fell through to the ignore-duplicates insert whose body is
+    # empty on a duplicate, and the award linked vendor_id=None (issue #74).
+    # eq needs no quoting here: a plain column filter takes everything after
+    # "eq." as the value, commas and parentheses included. Same fix as
+    # resolve_orgs._fetch_org. The aliases containment filter keeps its quotes:
+    # that is array-literal syntax, not pattern quoting.
     for params in (
-        {"select": "id", "canonical_name": f'ilike."{quoted}"', "limit": 1},
-        {"select": "id", "aliases": f'cs.{{"{quoted}"}}', "limit": 1},
+        {"select": "id", "canonical_name": f"eq.{name}", "limit": 1},
+        {"select": "id", "aliases": f'cs.{{"{name.replace(chr(34), "")}"}}', "limit": 1},
     ):
         rows = _request("GET", "vendors", headers=_headers(), params=params).json()
         if rows:
@@ -110,14 +114,20 @@ def find_or_create_vendor(raw_name: str) -> str | None:
 
     # Insert, ignoring (not erroring on) a duplicate canonical_name that may
     # have been created concurrently. return=representation gives us the row
-    # back on a fresh insert; on an ignored duplicate the body is empty.
+    # back on a fresh insert; on an ignored duplicate the body is empty, so
+    # re-fetch rather than returning None (a lost race must still link).
     rows = _request(
         "POST",
         "vendors?on_conflict=canonical_name",
         headers=_headers(prefer="resolution=ignore-duplicates,return=representation"),
         data=_dumps({"canonical_name": name, "aliases": []}),
     ).json()
-    return rows[0]["id"] if rows else None
+    if rows:
+        return rows[0]["id"]
+    refetch = _request("GET", "vendors", headers=_headers(),
+                       params={"select": "id", "canonical_name": f"eq.{name}",
+                               "limit": 1}).json()
+    return refetch[0]["id"] if refetch else None
 
 
 def insert_contract_award(payload: dict) -> dict:

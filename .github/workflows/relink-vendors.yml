@@ -1,0 +1,38 @@
+name: Relink award vendors (manual backfill)
+
+# One-shot backfill for issue #74: contract_awards rows inserted while
+# find_or_create_vendor's broken quoted-ilike lookup returned None get their
+# vendor_id linked through the fixed lookup. Idempotent and non-destructive:
+# it writes only contract_awards.vendor_id (and vendors rows for genuinely
+# new names). Default run is a dry-run report; check "apply" to write.
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Write the links (unchecked = dry-run report only)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: relink-vendors
+  cancel-in-progress: false
+
+jobs:
+  relink:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Relink award vendors
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.relink_vendors ${{ inputs.apply && '--apply' || '--dry-run' }}
