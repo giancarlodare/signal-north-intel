@@ -61,10 +61,15 @@ MUNICIPALITIES = [
     {"org_key": "london", "subdomain": "london", "name": "City of London"},
     {"org_key": "durham", "subdomain": "durham", "name": "Region of Durham"},
     {"org_key": "yrp", "subdomain": "yrp", "name": "York Regional Police"},
-    # HELD on provenance (design rule: publisher-linked, no exceptions).
-    # drps.ca/about-us/procurement-services/ does not link the tenant one hop
-    # from the homepage (crawled 2026-07-20). Uncomment only after the DRPS
-    # site verifiably links drps.bidsandtenders.ca.
+    # PERMANENTLY PARKED on provenance, with evidence (operator browse,
+    # 2026-07-20): drps.ca/about-us/procurement-services/ states DRPS posts
+    # tenders, RFPs, and competitive opportunities on the Biddingo portal,
+    # and that link resolves to biddingo.com/login (a login wall). The
+    # publisher-named channel is Biddingo; the branded bids&tenders tenant
+    # is legacy/secondary and must not be enabled. Any Biddingo access is a
+    # separate operator policy decision (terms-of-service compliance and
+    # whether a registered-account collector fits the provenance and
+    # politeness rules), not a config flip here.
     # {"org_key": "drps", "subdomain": "drps", "name": "Durham Regional Police Service"},
 ]
 
