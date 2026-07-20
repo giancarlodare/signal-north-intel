@@ -1,0 +1,97 @@
+name: Calibration audit (monthly, report-only)
+
+# Phase 5: the standing honesty check on the extraction scorer. Blind
+# re-scores a stratified sample through the production extraction path and
+# posts the agreement report as a GitHub issue for the operator to adjudicate.
+#
+# REPORT-ONLY by contract and by permissions: the job can read the repo and
+# write issues, nothing else. No audit result may modify a signal, a score,
+# or a threshold; src/calibration_audit.py has no database write path and a
+# unit test greps its source to keep it that way.
+
+on:
+  schedule:
+    # First Monday of the month ~7:17am Toronto. Cron cannot express "first
+    # Monday" (dom+dow are OR'd), so both crons fire daily on days 1-7 and a
+    # guard step keeps only Monday 7am local (EDT/EST dual-cron pattern).
+    - cron: "17 11 1-7 * *"
+    - cron: "17 12 1-7 * *"
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Why this manual run (e.g. post prompt change) - recorded in the report"
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: calibration-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check whether it's the first Monday, 7am Toronto (manual runs skip this)
+        id: guard
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          dow=$(TZ=America/Toronto date +%u)
+          hour=$(TZ=America/Toronto date +%H)
+          if [ "$dow" = "1" ] && [ "$hour" = "07" ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping: $(TZ=America/Toronto date) is not first-Monday 7am."
+          fi
+
+      - name: Install dependencies
+        if: steps.guard.outputs.should_run == 'true'
+        run: pip install -r requirements.txt
+
+      - name: Run calibration audit (blind re-score, report-only)
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          EXTRACTION_MODEL: claude-opus-4-8
+        run: python -m src.calibration_audit --run --reason "${{ inputs.reason }}"
+
+      # The report is delivered as an issue so it lands in the watched
+      # notification channel and adjudication has a comment thread. Label
+      # creation is idempotent; if labeling still fails the issue is opened
+      # unlabeled rather than lost.
+      - name: Post the report as a GitHub issue
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Calibration audit $(date -u +%Y-%m)"
+          gh label create calibration-audit \
+            --description "Monthly scorer honesty-check reports" \
+            --color 0d1b2e --force || true
+          gh issue create --title "$title" --body-file audit-report.md \
+            --label calibration-audit \
+          || gh issue create --title "$title" --body-file audit-report.md
+
+      - name: Upload raw results artifact
+        if: steps.guard.outputs.should_run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: calibration-audit-${{ github.run_id }}
+          path: |
+            audit-report.md
+            audit-results.json
+          retention-days: 90
