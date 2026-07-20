@@ -71,6 +71,13 @@ test("every claim carries a provenance link to the publisher document", () => {
   assert.ok(html.includes('href="https://tpsb.ca/y"'));
 });
 
+test("phone-first type floors: body 16px, notes 15px, nothing at 14px", () => {
+  const html = renderBrief(view());
+  assert.ok(html.includes("font-size:16px"), "lead/body note at 16px");
+  assert.ok(html.includes("font-size:15px"), "item notes at 15px");
+  assert.ok(!html.includes("font-size:14px"), "the old 14px note size is gone");
+});
+
 test("Watchlist link renders only when a real URL is configured, never a dead one", () => {
   const bare = renderBrief(view());
   assert.ok(!bare.includes("Watchlist"), "no watchlist link without a configured URL");
