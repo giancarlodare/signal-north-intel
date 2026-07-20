@@ -1,0 +1,38 @@
+name: Backfill tender details (manual)
+
+# Enriches title-only federal tender documents from the complete open-tenders
+# CSV (docs/canadabuys-enrichment-design.md). Default run is a DRY-RUN that
+# reports the fillable count and the operator flag: which enriched close
+# dates would pull an existing tender into the current brief's imminent
+# window. Check "apply" only after reading that report.
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Write the enrichment (unchecked = dry-run report only)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: backfill-tender-details
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Backfill tender details
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.backfill_tender_details ${{ inputs.apply && '--apply' || '--dry-run' }}
