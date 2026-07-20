@@ -94,7 +94,17 @@ AWARDED_ERROR_BUDGET = 25   # per-row failures tolerated before the run fails lo
 MONTHS = {m: i for i, m in enumerate(
     ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], 1)}
 
-BID_REF = re.compile(r"^\d{4}-\d{2,5}[A-Za-z]{0,3}$")
+# Two reference shapes are live across the tier-1 tenants (markup probe,
+# 2026-07-20): Peel's digits-first form (2026-104P) and the letter-prefixed
+# form the others use (York RFPQ-3823-26 / T-10-108, Durham T-1083-2026 /
+# RFP-303-2017-C, London RFT-2026-143 / RFP17-50). The letter prefix is capped
+# at 4 chars and the token must carry two adjacent digits, so title words that
+# look reference-ish (COVID-19 is 5 letters, E-BIDDING has no digits) never
+# read as references. Never fabricate a reference.
+_REF_PAT = (r"(?:\d{4}-\d{2,5}[A-Za-z]{0,3}"
+            r"|(?=\S*\d\d)[A-Z]{1,4}\d{0,4}(?:-[A-Za-z0-9]{1,7}){1,3})")
+BID_REF = re.compile(rf"^{_REF_PAT}$")
+BID_REF_WORD = re.compile(rf"\b{_REF_PAT}\b")
 MAX_STORED_CHARS = 20000
 
 
@@ -211,13 +221,15 @@ _CLICK_TAB_JS = """(label) => {
   return false;
 }"""
 
-# A populated grid has at least one row whose text carries a bid reference like
-# 2026-104P. Waiting on this (not on a guessed td/strong structure) is what makes
-# the read robust to the platform's exact cell markup.
-_HAS_BID_ROW_JS = """(sel) => {
-  const re = /\\b\\d{4}-\\d{2,5}[A-Za-z]{0,3}\\b/;
-  return [...document.querySelectorAll(sel)].some(tr => re.test(tr.innerText || ''));
-}"""
+# A populated grid has at least one row whose text carries a bid reference.
+# Waiting on this (not on a guessed td/strong structure) is what makes the read
+# robust to the platform's exact cell markup. Built from _REF_PAT so the wait
+# accepts every reference shape the parser accepts.
+_HAS_BID_ROW_JS = ("(sel) => {\n"
+                   f"  const re = /\\b{_REF_PAT}\\b/;\n"
+                   "  return [...document.querySelectorAll(sel)]"
+                   ".some(tr => re.test(tr.innerText || ''));\n"
+                   "}")
 
 
 def read_grid(page, status_label: str, is_default: bool) -> list:
@@ -248,9 +260,9 @@ def read_grid(page, status_label: str, is_default: bool) -> list:
     guid_by_ref = {}
     for l in links:
         gm = re.search(r"/Tender/Terms/([0-9a-fA-F-]{36})", l["href"])
-        rm = re.search(r"\b(\d{4}-\d{2,5}[A-Za-z]{0,3})\b", l["txt"])
+        rm = BID_REF_WORD.search(l["txt"])
         if gm and rm:
-            guid_by_ref.setdefault(rm.group(1), gm.group(1))
+            guid_by_ref.setdefault(rm.group(0), gm.group(1))
 
     header = next((r for r in grid if any("bid name" in (c or "").lower() for c in r)), None)
     if not header:
@@ -286,16 +298,40 @@ def read_grid(page, status_label: str, is_default: bool) -> list:
     return out
 
 
-def status_query_url(base: str, status: str, limit: int, start: int) -> str:
+def status_query_url(base: str, status: str, limit: int, start: int,
+                     sort: str | None = None) -> str:
     """Rewrite the captured Open Search URL for a different status/page, keeping
     every other query param (sort/dir/from/to) so the awarded query stays bounded
-    and ordered the same way the app orders it."""
+    and ordered the same way the app orders it. `sort` overrides the captured
+    sort when the caller needs a specific ordering."""
     parts = urlsplit(base)
     q = dict(parse_qsl(parts.query, keep_blank_values=True))
     q["status"] = status
     q["limit"] = str(limit)
     q["start"] = str(start)
+    if sort:
+        q["sort"] = sort
     return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(q), parts.fragment))
+
+
+def confirm_open_empty(page, captured: dict) -> bool:
+    """An empty Open grid is believed ONLY when the portal's own guarded Search
+    endpoint says total=0 for status=Open (YRP had zero open bids on
+    2026-07-20: a single police service legitimately idles between postings).
+    Everything else -- no captured call, non-200, non-JSON, total>0 -- stays a
+    loud failure, because a gated portal also renders an empty grid."""
+    if "url" not in captured:
+        return False
+    headers = {k: v for k, v in captured["headers"].items() if not k.startswith(":")}
+    url = status_query_url(captured["url"], "Open", 1, 0)
+    try:
+        resp = page.request.post(url, headers=headers,
+                                 data=captured.get("post_data") or "", timeout=45000)
+        if resp.status != 200:
+            return False
+        return (resp.json().get("total") or 0) == 0
+    except Exception:
+        return False
 
 
 def awarded_row_from_json(jr: dict) -> dict:
@@ -329,7 +365,12 @@ def fetch_awarded(page, captured: dict, muni: dict, source_id, keywords,
     read = 0
     start = 0
     while start < AWARDED_MAX:
-        url = status_query_url(base, "Awarded", AWARDED_PAGE, start)
+        # Newest-first, so when a portal's awarded history exceeds AWARDED_MAX
+        # (York: 3301 rows) the cap drops the OLDEST awards, never the newest.
+        # The captured call sorts DateClosing ASC; keeping that would cap away
+        # the most recent -- exactly the rows the product is for.
+        url = status_query_url(base, "Awarded", AWARDED_PAGE, start,
+                               sort="DateClosing DESC,Id")
         resp = page.request.post(url, headers=headers, data=post_data, timeout=45000)
         if resp.status != 200:
             raise RuntimeError(f"[{muni['org_key']}] awarded endpoint HTTP {resp.status}")
@@ -425,11 +466,18 @@ def collect(dry_run: bool = True) -> dict:
                 for label, doc_type in TAB_DOC_TYPE:
                     rows = read_grid(page, label, is_default=(doc_type == "tender_notice"))
                     log.info("[%s] %s: %d rows", muni["org_key"], label, len(rows))
-                    # LOUD-FAILURE GUARD (Open only; Awarded may legitimately be empty).
+                    # LOUD-FAILURE GUARD (Open only; Awarded may legitimately be
+                    # empty). Escape hatch: an empty Open grid is accepted when
+                    # the portal's own endpoint confirms total=0 open bids.
                     if label == "Open" and not rows:
-                        raise RuntimeError(
-                            f"[{muni['org_key']}] OPEN grid returned 0 rows: gated or "
-                            f"markup changed. Refusing to record silence.")
+                        if confirm_open_empty(page, captured):
+                            log.warning(
+                                "[%s] OPEN grid empty; endpoint confirms total=0 "
+                                "open bids. Continuing to Awarded.", muni["org_key"])
+                        else:
+                            raise RuntimeError(
+                                f"[{muni['org_key']}] OPEN grid returned 0 rows: gated or "
+                                f"markup changed. Refusing to record silence.")
                     for row in rows:
                         stats["read"] += 1
                         payload = build_payload(muni, source_id, doc_type, row, keywords)

@@ -264,3 +264,51 @@ def test_tier1_buyer_names_resolve_via_org_seed():
     seeded = {canonical for canonical, *_ in ORG_SEED}
     for muni in bt.MUNICIPALITIES:
         assert muni["name"] in seeded, f"{muni['name']} missing from ORG_SEED"
+
+
+# --- letter-prefixed references (tier-1 markup probe, 2026-07-20) -------------
+def test_parse_bid_name_letter_prefixed_references():
+    # Real bid names observed on the York/Durham/London/YRP tenants.
+    for text, want_ref in [
+        ("RFPQ-3823-26 - Construction Manager at Risk (CMAR) Services", "RFPQ-3823-26"),
+        ("RFT-3138-25 - Equipment and Supplies Required", "RFT-3138-25"),
+        ("T-1083-2026 - Harmony Creek WPCP motorized slide gate pre-purchase", "T-1083-2026"),
+        ("RFT-2026-143 - Construct New Intersection Pedestrian Signal", "RFT-2026-143"),
+        ("RFP17-50 - Early Years Programming – French Parent and Family Literacy Centre",
+         "RFP17-50"),
+        ("T-10-108 - TRAFFIC DATA COLLECTION & DATA SUBMISSION", "T-10-108"),
+        ("RFP-303-2017-C - Electrical Services Registry", "RFP-303-2017-C"),
+    ]:
+        ref, _title = bt.parse_bid_name(text)
+        assert ref == want_ref, f"{text!r} -> {ref!r}, wanted {want_ref!r}"
+
+
+def test_parse_bid_name_rejects_reference_lookalikes():
+    # Title words that look reference-ish must never become a reference:
+    # COVID-19 has a 5-letter prefix, E-BIDDING carries no digits.
+    for text in ["COVID-19 - Vaccination Clinic Staffing",
+                 "E-BIDDING - Vendor Information Session",
+                 "Pre-Qualification - General Contractors"]:
+        ref, title = bt.parse_bid_name(text)
+        assert ref is None, f"{text!r} wrongly parsed ref {ref!r}"
+
+
+def test_bid_ref_word_extracts_full_ref_from_register_link_text():
+    # The guid map keys on the same reference form the row parser produces;
+    # the word regex must take the full letter-prefixed token, not a digit tail.
+    m = bt.BID_REF_WORD.search(
+        "Register for this Bid - RFPQ-3823-26 - Construction Manager at Risk")
+    assert m and m.group(0) == "RFPQ-3823-26"
+    m = bt.BID_REF_WORD.search("Register for this Bid - 2026-104P - Flow Meters")
+    assert m and m.group(0) == "2026-104P"
+
+
+def test_status_query_url_sort_override_for_awarded_paging():
+    base = ("https://york.bidsandtenders.ca/Module/Tenders/en/Tender/Search/"
+            "eb167b72-95d5-4bbc-a85c-0846df5be368?status=Open&limit=25&start=0"
+            "&dir=ASC&from=&to=&sort=DateClosing+ASC,Id")
+    u = bt.status_query_url(base, "Awarded", 100, 0, sort="DateClosing DESC,Id")
+    assert "sort=DateClosing+DESC%2CId" in u
+    # without the override the captured sort is preserved untouched
+    u2 = bt.status_query_url(base, "Awarded", 100, 0)
+    assert "sort=DateClosing+ASC%2CId" in u2
