@@ -223,6 +223,38 @@ def apply_lens(clusters) -> int:
     return held
 
 
+def mark_previously_featured(clusters, prior_signal_ids, prior_cluster_keys) -> int:
+    """Mark clusters whose story already appeared in a PRIOR PUBLISHED brief:
+    same lead signal, or the same (cluster_kind, cluster_ref) carried across
+    weeks (an org story that runs two weeks keeps its ref even if the lead
+    signal changes). Display-only -- it never changes selection or rank; the
+    editor shows a 'carried' tag so new vs carried is visible at a glance.
+    Pure: sets c["previously_featured"]; returns how many were marked."""
+    n = 0
+    for c in clusters:
+        carried = c["lead_signal_id"] in prior_signal_ids \
+            or (c["cluster_kind"], str(c["cluster_ref"])) in prior_cluster_keys
+        c["previously_featured"] = carried
+        if carried:
+            n += 1
+    return n
+
+
+def _prior_featured_keys(week_start) -> tuple:
+    """(lead_signal_ids, (cluster_kind, cluster_ref) keys) of items INCLUDED in
+    published briefs from earlier weeks. Draft-only history is not 'featured':
+    only what a reader could actually have seen counts."""
+    rows = supabase_client.fetch_all_rows_where(
+        "brief_items",
+        "lead_signal_id,cluster_kind,cluster_ref,briefs!inner(status,week_start)",
+        {"included": "is.true",
+         "briefs.status": "eq.published",
+         "briefs.week_start": f"lt.{week_start}"})
+    sig_ids = {r["lead_signal_id"] for r in rows if r.get("lead_signal_id")}
+    keys = {(r["cluster_kind"], str(r["cluster_ref"])) for r in rows}
+    return sig_ids, keys
+
+
 def _procurement_by_signal():
     """signal_id -> procurement_id for active links whose procurement is live
     (proposed or confirmed, not rejected/merged)."""
@@ -269,6 +301,8 @@ def run(dry_run: bool = True, today: date | None = None, force: bool = False) ->
     proc_by_signal = _procurement_by_signal()
     clusters = cluster(included, proc_by_signal)
     lens_held = apply_lens(clusters)
+    prior_sigs, prior_keys = _prior_featured_keys(week_start)
+    carried = mark_previously_featured(clusters, prior_sigs, prior_keys)
 
     # Out-of-window diagnostic: where the corpus falls relative to the window, so
     # a thin brief is explainable (backfilled awards have old event dates; grants
@@ -306,6 +340,9 @@ def run(dry_run: bool = True, today: date | None = None, force: bool = False) ->
              "(non-defence, materiality < %d), written included=false for the "
              "editor to pull back", len(clusters) - lens_held, len(clusters),
              lens_held, LENS_MIN_MATERIALITY)
+    log.info("  previously featured: %d of %d clusters appeared in a prior "
+             "published brief (marked 'carried' in the editor)",
+             carried, len(clusters))
     log.info("  %-8s %-10s %-11s %-6s %5s  %s", "rank", "kind", "timing", "grade", "mat", "lead")
     for c in clusters[:25]:
         log.info("  #%-7d %-10s %-11s g%-5d %5d  %s [%s, soonest %s, %d sig]",
@@ -321,6 +358,7 @@ def run(dry_run: bool = True, today: date | None = None, force: bool = False) ->
               "included": len(included), "excluded_below_threshold": excluded,
               "exclusion_breakdown": breakdown, "clusters": len(clusters),
               "held_by_relevance_lens": lens_held,
+              "previously_featured": carried,
               "wrote_brief": written.get("brief", 0), "wrote_items": written.get("items", 0)}
     if written.get("refused_published"):
         result["refused_published"] = True
@@ -408,6 +446,7 @@ def _apply(week_start, clusters, excluded, breakdown, force) -> dict:
             "included": bool(c.get("included", True)),
             "rank": c["rank"],
             "editor_note": note,
+            "previously_featured": bool(c.get("previously_featured", False)),
         })
         n += 1
     log.info("  wrote draft brief %s with %d items (%d held by the relevance "

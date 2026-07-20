@@ -28,6 +28,7 @@ type Item = {
   headline_override: string | null;
   editor_note: string | null;
   lead_signal_id: string | null;
+  previously_featured: boolean;
 };
 type Brief = {
   id: string;
@@ -69,7 +70,7 @@ export default async function BriefPage() {
   if (brief) {
     const { data: itemRows } = await supabase
       .from("brief_items")
-      .select("id, cluster_kind, timing_path, soonest_date, included, rank, headline_override, editor_note, lead_signal_id")
+      .select("id, cluster_kind, timing_path, soonest_date, included, rank, headline_override, editor_note, lead_signal_id, previously_featured")
       .eq("brief_id", brief.id)
       .order("rank", { ascending: true, nullsFirst: false });
     items = (itemRows ?? []) as Item[];
@@ -159,6 +160,7 @@ export default async function BriefPage() {
                     {s?.materiality ? <span className="tag">M{s.materiality}</span> : null}
                     <span className="tag">{it.cluster_kind}</span>
                     {it.soonest_date ? <span className="tag">{it.soonest_date}</span> : null}
+                    {it.previously_featured ? <span className="tag">carried</span> : null}
                     {!it.included ? <span className="tag no">cut</span> : null}
                   </div>
                   <div className="title">{headline}</div>
