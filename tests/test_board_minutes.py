@@ -397,3 +397,71 @@ def test_month_precision_lands_in_payload(monkeypatch):
     bm.collect_board(board, "src-1", fetcher, NO_KEYWORDS, limit=5, dry_run=False)
     assert inserted[0]["published_on"] == "2026-04-01"
     assert inserted[0]["date_precision"] == "month"
+
+
+# --- Big 12 phase 2 (docs/big12-boards-design.md) -----------------------------
+def test_guess_meeting_date_big12_filename_formats():
+    """The three filename date shapes the phase-2 probe surfaced, one per
+    board. None beats a wrong date stays in force for the ambiguous forms."""
+    g = bm.guess_meeting_date
+    # Durham: underscore-separated day-first
+    assert g("19_JAN_2021_AGENDA_Public_external_2021118134648.pdf") == "2021-01-19"
+    assert g("Jan_2021_Minutes_Public_2021217145748.pdf") is None  # month+year only
+    # Halton: hyphen-separated month-first
+    assert g("meeting-book-halton-police-board-meeting-june-25-2026-2.pdf") == "2026-06-25"
+    assert g("Halton-Police-Board-Meeting-MAY-28-2026-2.pdf") == "2026-05-28"
+    # Sudbury: compact day-first
+    assert g("gspsb-agenda-public_28jan2026.pdf") == "2026-01-28"
+    assert g("media-release_gspsb-meeting_28jan2026.pdf") == "2026-01-28"
+    # Guards: digits/letters butted against the date are not a date
+    assert g("hash_x28jan2026y.pdf") is None
+    assert g("ref-2026-08 grant window") is None
+
+
+def test_guess_meeting_date_existing_formats_still_parse():
+    """Regression guard: the separator generalization must not break the
+    TPSB/Peel-era vectors."""
+    g = bm.guess_meeting_date
+    assert g("Minutes - June 25, 2026") == "2026-06-25"
+    assert g("agenda_2026-03-14.pdf") == "2026-03-14"
+    assert g("Board meeting of 26 September 2025") == "2025-09-26"
+    assert g("Sept. 26, 2025 Regular Meeting") == "2025-09-26"
+    assert g("meeting 24/04/26") is None
+    assert g("Item 32-05-26 discussion") is None
+
+
+def test_big12_boards_config_rows():
+    enabled = [b["name"] for b in bm.BOARDS if b.get("enabled", True)]
+    assert enabled == [
+        "Toronto Police Service Board",
+        "Peel Police Services Board",
+        "York Regional Police Services Board",
+        "Durham Regional Police Services Board",
+        "Halton Police Board",
+        "Waterloo Regional Police Services Board",
+        "Greater Sudbury Police Services Board",
+    ]
+    parked = {b["name"]: b for b in bm.BOARDS if not b.get("enabled", True)}
+    assert set(parked) == {
+        "Hamilton Police Service Board", "Niagara Regional Police Service Board",
+        "London Police Service Board", "Windsor Police Service Board",
+        "Ottawa Police Services Board"}
+    for b in parked.values():
+        assert b.get("parked_reason"), f"{b['name']} parked without a verdict"
+    # Every board has the fields resolve_source_id needs
+    for b in bm.BOARDS:
+        assert b["source_name_candidates"] and b["source_id_env"]
+
+
+def test_big12_enabled_boards_resolve_via_org_seed():
+    from src.resolve_orgs import ORG_SEED
+    seeded = {canonical for canonical, *_ in ORG_SEED}
+    for b in bm.BOARDS:
+        if b.get("enabled", True) and b["name"] not in (
+                "Toronto Police Service Board", "Peel Police Services Board"):
+            assert b["name"] in seeded, f"{b['name']} missing from ORG_SEED"
+    # The services behind the enabled boards resolve too
+    for svc in ("Durham Regional Police Service", "Halton Regional Police Service",
+                "Waterloo Regional Police Service", "Greater Sudbury Police Service",
+                "York Regional Police"):
+        assert svc in seeded, f"{svc} missing from ORG_SEED"
