@@ -71,3 +71,43 @@ def require_column(fieldnames: Iterable[str], *substrings: str, **kwargs) -> str
             f"update src/canadabuys.py."
         )
     return col
+
+
+def parse_unspsc_codes(raw: str | None) -> list[str]:
+    """Parse the CanadaBuys `unspsc` cell into clean 8-digit code strings.
+
+    The cell packs several codes separated by asterisks (and sometimes
+    newlines), e.g. "*25132100\n*72151600". Returns unique codes in source
+    order; anything that is not exactly 8 digits after stripping is dropped
+    (codes are fixed-width identifiers, leading zeros meaningful, so they
+    stay strings end to end).
+    """
+    if not raw:
+        return []
+    out: list[str] = []
+    for token in raw.replace("\n", "*").split("*"):
+        code = token.strip()
+        if len(code) == 8 and code.isdigit() and code not in out:
+            out.append(code)
+    return out
+
+
+def build_tender_content(facts: dict, description: str) -> str | None:
+    """Assemble documents.content for a tender: a facts-only labeled header
+    followed by the notice description. Empty fields are omitted, nothing is
+    invented; returns None when there are no facts and no description (the
+    column stays NULL rather than holding an empty shell).
+    """
+    order = ("Solicitation number", "Buyer", "End user", "Published",
+             "Closing date", "Status", "Notice type", "Procurement method",
+             "Expected contract start", "Expected contract end",
+             "Regions of delivery", "Amendment", "UNSPSC")
+    lines = [f"{label}: {facts[label]}" for label in order
+             if str(facts.get(label) or "").strip()]
+    body = (description or "").strip()
+    if not lines and not body:
+        return None
+    parts = ["\n".join(lines)] if lines else []
+    if body:
+        parts.append(body)
+    return "\n\n".join(parts)
