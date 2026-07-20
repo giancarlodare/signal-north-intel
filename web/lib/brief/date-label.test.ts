@@ -7,7 +7,9 @@ test("dateLabel maps the §7.4 table", () => {
   assert.equal(dateLabel("grant_award", "imminent"), "Application deadline");
   assert.equal(dateLabel("award_notice", "recent"), "Contract awarded");
   assert.equal(dateLabel("tender_notice", "imminent"), "Tender closes");
-  assert.equal(dateLabel("tender_notice", "recent"), "Tender expected");
+  // A recent tender's close date is in the past: "Bids closed", never the
+  // contradictory "Tender expected".
+  assert.equal(dateLabel("tender_notice", "recent"), "Bids closed");
   assert.equal(dateLabel("board_minutes", "recent"), "Board decision");
 });
 
@@ -34,5 +36,7 @@ test("actionWindow joins the label and the date, or null with no date", () => {
                "Tender closes 24 Jul 2026");
   assert.equal(actionWindow("grant_program", "imminent", "2026-08-01", "month"),
                "Application deadline Aug 2026");
+  assert.equal(actionWindow("tender_notice", "recent", "2026-07-16", "day"),
+               "Bids closed 16 Jul 2026");
   assert.equal(actionWindow("award_notice", "recent", null, null), null);
 });

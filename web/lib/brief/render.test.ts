@@ -47,14 +47,22 @@ test("no em dashes anywhere in the rendered brief", () => {
 
 test("every item renders its date TYPE label, never a bare date", () => {
   const html = renderBrief(view());
-  assert.ok(html.includes("Tender closes 24 Jul 2026"), "lead action window with label");
-  assert.ok(html.includes("Board decision Apr 2026"), "supporting action window with label");
+  assert.ok(html.includes("Tender closes 24&nbsp;Jul&nbsp;2026"), "lead action window with label");
+  assert.ok(html.includes("Board decision Apr&nbsp;2026"), "supporting action window with label");
+});
+
+test("the date can never wrap mid-date in a narrow cell", () => {
+  // The label may break onto its own line; the date's internal spaces are
+  // non-breaking, so "16 / Jul 2026" splits are impossible on phone renders.
+  const html = renderBrief(view());
+  assert.ok(!/Tender closes 24 Jul/.test(html), "date joined with &nbsp;, not plain spaces");
+  assert.ok(html.includes("closes 24&nbsp;Jul&nbsp;2026"));
 });
 
 test("month-precision date renders the month, never a fabricated day", () => {
   const html = renderBrief(view());
-  assert.ok(html.includes("Board decision Apr 2026"));
-  assert.ok(!/Board decision \d{1,2} Apr 2026/.test(html), "no fabricated day on a month date");
+  assert.ok(html.includes("Board decision Apr&nbsp;2026"));
+  assert.ok(!/Board decision \d{1,2}(&nbsp;| )Apr/.test(html), "no fabricated day on a month date");
 });
 
 test("every claim carries a provenance link to the publisher document", () => {

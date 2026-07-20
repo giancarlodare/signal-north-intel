@@ -9,8 +9,12 @@ const LABELS: Record<string, string> = {
   "grant_program|imminent": "Application deadline",
   "grant_award|imminent": "Application deadline",
   "award_notice|recent": "Contract awarded",
+  // A tender's event date is its close date. Imminent = still open ("Tender
+  // closes"); recent = that close date has passed, so the honest label is
+  // "Bids closed" -- "Tender expected" would contradict a bids-just-closed
+  // note (operator fix from the 2026-07-20 phone render).
   "tender_notice|imminent": "Tender closes",
-  "tender_notice|recent": "Tender expected",
+  "tender_notice|recent": "Bids closed",
   "board_minutes|recent": "Board decision",
 };
 
