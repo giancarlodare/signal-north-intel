@@ -6,7 +6,11 @@ import { buildBriefView } from "@/lib/brief/view";
 import { renderBrief, renderBriefText } from "@/lib/brief/render";
 
 // Pre-gate: the brief is emailed to the operator only. No list, no capture.
-const RECIPIENT = "giancarlo97dare@gmail.com";
+// BRIEF_RECIPIENT (Vercel env) overrides the destination so pointing this at a
+// real subscriber list later is a settings change, not a code change. The
+// default is the Resend ACCOUNT email: Resend test mode only delivers to the
+// account owner, so any other default (e.g. a personal gmail) fails silently.
+const RECIPIENT = process.env.BRIEF_RECIPIENT || "giancarlo@signalnorthintel.com";
 // onboarding@resend.dev sends to the account owner's address without a verified
 // domain, so this ships now; a holdco-domain sender replaces it post-gate.
 const SENDER = "The Weekly Signal <onboarding@resend.dev>";
