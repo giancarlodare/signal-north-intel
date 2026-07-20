@@ -38,7 +38,7 @@ from datetime import datetime, timezone
 from html.parser import HTMLParser
 from typing import Optional
 from urllib import robotparser
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urldefrag, urljoin, urlparse
 
 import requests
 
@@ -459,6 +459,10 @@ def find_document_links(html: str, base_url: str,
     seen: set[str] = set()
     results: list[tuple[str, str, str]] = []
     for url, text, context in extract_links_with_context(html, base_url):
+        # A fragment never names a different document; keeping it would
+        # collect '#main-content' / '#tab-...' anchor variants of the same
+        # page as separate documents with distinct content hashes.
+        url, _fragment = urldefrag(url)
         if url in seen:
             continue
         parsed = urlparse(url)
@@ -528,9 +532,16 @@ _DATE_PATTERNS = [
     # common atop board minutes and in archive filenames.
     re.compile(rf"{_LG}(\d{{1,2}})(?:st|nd|rd|th)?{_SEP}(?:of\s+)?{_MONTH_RE}\.?,?{_SEP}(20\d{{2}}){_RG}",
                re.IGNORECASE),
-    # Compact day-first: "28jan2026" (Sudbury filenames).
-    re.compile(rf"{_LG}(\d{{1,2}}){_MONTH_RE}(20\d{{2}}){_RG}", re.IGNORECASE),
+    # Compact day-first: "28jan2026", "17june26" (Sudbury filenames). A
+    # 2-digit year is accepted only inside the same 2015-2035 plausibility
+    # window the Peel filename convention uses (see guess_meeting_date).
+    re.compile(rf"{_LG}(\d{{1,2}}){_MONTH_RE}(20\d{{2}}|\d{{2}}){_RG}", re.IGNORECASE),
 ]
+
+# Month + year with NO day ("RTOC-Presentation-May2026", "March_2021_Minutes")
+# -> month precision. Applied by month_year_date to link text and URL only.
+_MONTH_YEAR_RE = re.compile(rf"{_LG}{_MONTH_RE}\.?[-_\s]?(20\d{{2}}){_RG}",
+                            re.IGNORECASE)
 
 
 def _valid(y: int, mo: int, d: int) -> Optional[str]:
@@ -565,11 +576,33 @@ def guess_meeting_date(*texts: str) -> Optional[str]:
                 return result
         m = _DATE_PATTERNS[3].search(text)
         if m:
-            result = _valid(int(m.group(3)), _MONTHS[m.group(2).lower().rstrip(".")],
-                            int(m.group(1)))
-            if result:
-                return result
+            year = int(m.group(3))
+            if year < 100:
+                year += 2000
+                if not (2015 <= year <= 2035):
+                    year = 0  # implausible 2-digit year: not a date
+            if year:
+                result = _valid(year, _MONTHS[m.group(2).lower().rstrip(".")],
+                                int(m.group(1)))
+                if result:
+                    return result
     return None
+
+
+def month_year_date(*texts) -> tuple:
+    """(published_on, 'month') from a month+year token with no day, or
+    (None, None). Month precision with the conventional day=01 placeholder
+    (renderers show 'Mar 2021', never a fabricated day). Callers apply this
+    to link text and URL only; publisher-authored filenames are trustworthy,
+    while a bare 'June 2026' inside page context or a document body is
+    commonplace and would mis-date."""
+    for text in texts:
+        m = _MONTH_YEAR_RE.search(text or "")
+        if m:
+            mo = _MONTHS.get(m.group(1).lower().rstrip("."))
+            if mo:
+                return f"{int(m.group(2)):04d}-{mo:02d}-01", "month"
+    return None, None
 
 
 # Peel's document slugs open with {agenda-item}-{MM}-{YY} (e.g. 33-04-26- =
@@ -622,7 +655,8 @@ def resolve_source_id(board: dict, sources: list) -> Optional[str]:
 def collect_board(board: dict, source_id: str, fetcher: PoliteFetcher,
                   keywords: Keywords, limit: int, dry_run: bool) -> dict:
     stats = {"listing_pages": 0, "candidates": 0, "inserted": 0,
-             "skipped_duplicate": 0, "skipped_robots": 0, "errors": 0}
+             "skipped_duplicate": 0, "skipped_robots": 0, "dead_links": 0,
+             "errors": 0}
 
     extra_patterns = [re.compile(p, re.IGNORECASE)
                       for p in board.get("doc_url_patterns", [])]
@@ -708,12 +742,19 @@ def collect_board(board: dict, source_id: str, fetcher: PoliteFetcher,
 
             title = link_text or urlparse(url).path.rsplit("/", 1)[-1]
             title = f"{board['name']} — {title}"[:500]
-            # Date derivation order: link text, URL, the listing page's text
-            # right before the link (meeting dates live in headings/rows next
-            # to links), then the document body. Full dates -> 'day'; the Peel
-            # item-month-year filename convention -> 'month'.
-            published_on, date_precision = derive_event_date(
-                link_text, url, listing_context, body[:4000])
+            # Date derivation order: (1) full date in link text or URL, (2)
+            # month+year in link text or URL at month precision, (3) the
+            # listing page's text right before the link, then the body.
+            # Filename month-year outranks listing context deliberately: on
+            # tabular archives (Durham) the context capture spans the PREVIOUS
+            # row, so a month-only filename dated from context lands on the
+            # wrong meeting. A correct month beats a wrong day.
+            published_on, date_precision = derive_event_date(link_text, url)
+            if not published_on:
+                published_on, date_precision = month_year_date(link_text, url)
+            if not published_on:
+                published_on, date_precision = derive_event_date(
+                    listing_context, body[:4000])
             # Tag-only: board business is in-scope by construction.
             result = evaluate(title, body[:20000], "", keywords)
 
@@ -738,6 +779,18 @@ def collect_board(board: dict, source_id: str, fetcher: PoliteFetcher,
             val_docs += 1
             val_dated += 1 if published_on else 0
             val_body += 1 if body else 0
+        except requests.HTTPError as e:
+            # A 404 on a document is the publisher's own dead link (nine-year
+            # archive pages accumulate them); skipping it loudly-logged keeps
+            # the board green while the WARNING keeps it visible. Anything
+            # else (403/5xx/network) stays an error: those can mean gating,
+            # which must never pass silently.
+            if e.response is not None and e.response.status_code == 404:
+                stats["dead_links"] += 1
+                log.warning("Dead link on listing (404): %s", url)
+            else:
+                log.exception("Error collecting %s", url)
+                stats["errors"] += 1
         except Exception:   # noqa: BLE001 - one bad document must not kill the board
             log.exception("Error collecting %s", url)
             stats["errors"] += 1
