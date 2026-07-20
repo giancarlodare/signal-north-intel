@@ -19,7 +19,7 @@ _PROMPTS_DIR = Path(__file__).parent
 # Active version per prompt name. Bump when a new version is released, and add
 # a matching CHANGELOG.md entry in the same commit.
 ACTIVE_VERSIONS = {
-    "extraction": 1,
+    "extraction": 2,
     "discovery": 1,
 }
 

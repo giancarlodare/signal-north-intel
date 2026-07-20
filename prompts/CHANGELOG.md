@@ -6,6 +6,18 @@ stamped onto produced artifacts as `<name>@v<version>` (e.g. `extraction@v1`).
 
 ## extraction
 
+### v2 - 2026-07-20
+- One-line confidence clarification from the first calibration audit
+  (issue #85, adjudicated): grade-5 confidence agreement was 50%, with every
+  flip on award_notice documents wobbling between confirmed/probable/
+  speculative. v2 states that an award notice reports an event that has
+  already happened and scores as confirmed unless the text itself hedges
+  ("intent to award", "pending", "proposed").
+- No other changes; v1 remains immutable. New signals stamp
+  `extracted_by = "extraction@v2"`, so next month's audit shows per-version
+  whether grade-5 confidence recovers.
+
+
 ### v1 — 2026-07-09
 - Initial versioned extraction prompt, ported from the PR #6 inline prompt
   (`signal_extractor.EXTRACTION_PROMPT`) and moved into the prompt library.
