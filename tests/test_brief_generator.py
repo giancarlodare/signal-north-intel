@@ -12,11 +12,11 @@ TODAY = date(2026, 7, 15)  # a Wednesday
 
 
 def _sig(sid, published_on, doc_type="award_notice", materiality=3, grade=3,
-         org=None, amount=None, title="t", defence=False):
+         org=None, amount=None, title="t", defence=False, doc_id=None):
     return {"id": sid, "signal_type": "contract_award", "confidence": "confirmed",
             "materiality": materiality, "evidence_grade": grade,
             "amount_max_cad": amount, "expected_timing": None,
-            "organization_id": org, "title": title,
+            "organization_id": org, "title": title, "document_id": doc_id,
             "organizations": {"canonical_name": org and f"Org {org}"},
             "documents": {"doc_type": doc_type, "published_on": published_on,
                           "date_precision": "day", "url": "http://x",
@@ -163,9 +163,9 @@ def test_action_items_never_org_cluster():
     ]
     clusters = bg.cluster(included, proc_by_signal={"t3": "proc9"})
     kinds = sorted((c["cluster_kind"], str(c["cluster_ref"])) for c in clusters)
-    assert kinds == [("organization", "peel"),   # the two board_minutes as one story
+    assert kinds == [("document", "g1"),         # grant: one item per program document
+                     ("organization", "peel"),   # the two board_minutes as one story
                      ("procurement", "proc9"),   # t3 follows its procurement link
-                     ("signal", "g1"),           # grant standalone, own deadline
                      ("signal", "t1"), ("signal", "t2")]  # tenders standalone
     org_cluster = next(c for c in clusters if c["cluster_kind"] == "organization")
     assert org_cluster["members"] == 2
@@ -251,3 +251,55 @@ def test_previously_featured_is_display_only():
     before = [(c["rank"], c["included"]) for c in clusters]
     bg.mark_previously_featured(clusters, {"s1"}, set())
     assert [(c["rank"], c["included"]) for c in clusters] == before
+
+
+# --- grant nuance: streams from one program document are ONE item -------------
+def test_grant_streams_from_one_document_cluster_as_one_item():
+    # The extractor split one program page (one deadline, one application)
+    # into per-stream signals; the brief must show ONE item with the streams
+    # enumerated, not one item per stream.
+    included = [
+        (_sig("s1", "2026-09-01", doc_type="grant_program", doc_id="fire-doc",
+              title="Fire Protection Grant: equipment stream"), "imminent"),
+        (_sig("s2", "2026-09-01", doc_type="grant_program", doc_id="fire-doc",
+              title="Fire Protection Grant: training stream", grade=2), "imminent"),
+    ]
+    clusters = bg.cluster(included, proc_by_signal={})
+    assert len(clusters) == 1
+    c = clusters[0]
+    assert (c["cluster_kind"], c["cluster_ref"]) == ("document", "fire-doc")
+    assert c["members"] == 2
+    assert c["stream_titles"] == ["Fire Protection Grant: equipment stream",
+                                  "Fire Protection Grant: training stream"]
+
+
+def test_grant_programs_from_different_documents_stay_separate():
+    included = [
+        (_sig("a", "2026-09-01", doc_type="grant_program", doc_id="doc-a"), "imminent"),
+        (_sig("b", "2026-08-15", doc_type="grant_program", doc_id="doc-b"), "imminent"),
+    ]
+    clusters = bg.cluster(included, proc_by_signal={})
+    assert len(clusters) == 2
+    assert {c["cluster_ref"] for c in clusters} == {"doc-a", "doc-b"}
+    # A single-signal program carries no stream list: nothing to enumerate.
+    assert all(c["stream_titles"] is None for c in clusters)
+
+
+def test_tenders_from_same_buyer_remain_standalone_per_signal():
+    # The nuance is grants-only: each tender is a separate bid.
+    included = [
+        (_sig("t1", "2026-08-01", doc_type="tender_notice", org="peel", doc_id="d1"), "imminent"),
+        (_sig("t2", "2026-08-05", doc_type="tender_notice", org="peel", doc_id="d2"), "imminent"),
+    ]
+    clusters = bg.cluster(included, proc_by_signal={})
+    assert {(c["cluster_kind"], c["cluster_ref"]) for c in clusters} == \
+        {("signal", "t1"), ("signal", "t2")}
+
+
+def test_grant_missing_document_id_degrades_to_standalone_never_wrong_merge():
+    included = [
+        (_sig("x", "2026-09-01", doc_type="grant_program"), "imminent"),
+        (_sig("y", "2026-09-01", doc_type="grant_program"), "imminent"),
+    ]
+    clusters = bg.cluster(included, proc_by_signal={})
+    assert len(clusters) == 2   # no shared document_id, no merge

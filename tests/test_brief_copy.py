@@ -148,3 +148,21 @@ def test_the_read_peel_fact_only_when_provided():
     assert "Region of Peel has closed 326 contracts" in bc.draft_the_read(clusters, 326)
     # a zero/None count is never rendered as a fake scale fact
     assert "Region of Peel has closed" not in bc.draft_the_read(clusters, 0)
+
+
+def test_grant_note_enumerates_streams_of_one_program():
+    note = bc.draft_item_note(
+        doc_type="grant_program", timing_path="imminent",
+        buyer="Ministry of the Solicitor General",
+        title="Fire Protection Grant 2026-27",
+        streams=["Fire Protection Grant: equipment stream",
+                 "Fire Protection Grant: training stream"])
+    assert "2 eligibility streams" in note
+    assert "equipment stream" in note and "training stream" in note
+    assert "One deadline and one application process" in note
+    assert "—" not in note
+    # A single-stream (or streamless) program keeps the plain grant note.
+    plain = bc.draft_item_note(
+        doc_type="grant_program", timing_path="imminent",
+        buyer="X", title="Y", streams=None)
+    assert "eligibility streams" not in plain
