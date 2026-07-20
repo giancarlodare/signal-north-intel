@@ -221,3 +221,33 @@ def test_lens_defence_tag_on_any_member_spares_the_cluster():
     clusters = bg.cluster(included, proc_by_signal={})
     assert bg.apply_lens(clusters) == 0
     assert clusters[0]["included"] is True
+
+
+# --- previously featured: new vs carried across published briefs --------------
+def test_previously_featured_marks_signal_and_cluster_matches():
+    included = [
+        (_sig("s1", "2026-07-14", materiality=4), "recent"),              # same signal
+        (_sig("s2", "2026-07-14", org="o1", materiality=4), "recent"),    # same org cluster
+        (_sig("s3", "2026-07-14", materiality=4), "recent"),              # genuinely new
+    ]
+    clusters = bg.cluster(included, proc_by_signal={})
+    carried = bg.mark_previously_featured(
+        clusters,
+        prior_signal_ids={"s1"},
+        # the org story ran last week under a different lead signal
+        prior_cluster_keys={("organization", "o1")})
+    by_id = {c["lead_signal_id"]: c for c in clusters}
+    assert by_id["s1"]["previously_featured"] is True
+    assert by_id["s2"]["previously_featured"] is True
+    assert by_id["s3"]["previously_featured"] is False
+    assert carried == 2
+
+
+def test_previously_featured_is_display_only():
+    # Marking never changes rank or the lens's included decision.
+    included = [(_sig("s1", "2026-07-14", materiality=4), "recent")]
+    clusters = bg.cluster(included, proc_by_signal={})
+    bg.apply_lens(clusters)
+    before = [(c["rank"], c["included"]) for c in clusters]
+    bg.mark_previously_featured(clusters, {"s1"}, set())
+    assert [(c["rank"], c["included"]) for c in clusters] == before
