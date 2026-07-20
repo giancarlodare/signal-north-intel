@@ -161,8 +161,8 @@ def test_dry_run_writes_nothing(monkeypatch):
 def test_doc_type_filter_is_passed_through(monkeypatch):
     seen = {}
 
-    def fake_get(status, limit, select="x", doc_type=None):
-        seen["doc_type"] = doc_type
+    def fake_get(status, limit, select="x", doc_type=None, doc_types=None, order=None):
+        seen.update(doc_type=doc_type, doc_types=doc_types, order=order)
         return []
 
     monkeypatch.setattr(se.supabase_client, "fetch_rows",
@@ -170,3 +170,50 @@ def test_doc_type_filter_is_passed_through(monkeypatch):
     monkeypatch.setattr(se.supabase_client, "get_documents_by_status", fake_get)
     se.run_extraction(batch_size=5, dry_run=True, doc_type="board_minutes")
     assert seen["doc_type"] == "board_minutes"
+    assert seen["order"] is None  # single-type legacy path does not force an order
+
+
+def test_forward_path_passes_doc_types_and_newest_first_order(monkeypatch):
+    """The daily forward path scopes to several types and drains newest first."""
+    seen = {}
+
+    def fake_get(status, limit, select="x", doc_type=None, doc_types=None, order=None):
+        seen.update(doc_types=doc_types, order=order)
+        return []
+
+    monkeypatch.setattr(se.supabase_client, "fetch_rows",
+                        lambda table, select, limit=10000: [])
+    monkeypatch.setattr(se.supabase_client, "get_documents_by_status", fake_get)
+    se.run_extraction(batch_size=50, dry_run=True, newest_first=True,
+                      doc_types=["tender_notice", "news_release", "grant_program"])
+    assert seen["doc_types"] == ["tender_notice", "news_release", "grant_program"]
+    # nullslast so undated backlog never sorts ahead of a dated, closing-soon doc
+    assert seen["order"] == "published_on.desc.nullslast"
+
+
+def test_get_documents_by_status_builds_in_filter_and_order(monkeypatch):
+    """The PostgREST params: several doc_types become an in.() filter, and the
+    order clause rides through verbatim."""
+    from src import supabase_client as sc
+
+    class _Resp:
+        def json(self):
+            return []
+
+    seen = {}
+
+    def fake_request(method, path, headers=None, params=None):
+        seen.update(method=method, path=path, params=params)
+        return _Resp()
+
+    monkeypatch.setattr(sc, "_headers", lambda *a, **k: {})
+    monkeypatch.setattr(sc, "_request", fake_request)
+    sc.get_documents_by_status(
+        "captured", 50,
+        doc_types=["tender_notice", "news_release", "grant_program"],
+        order="published_on.desc.nullslast")
+    p = seen["params"]
+    assert p["status"] == "eq.captured"
+    assert p["doc_type"] == "in.(tender_notice,news_release,grant_program)"
+    assert p["order"] == "published_on.desc.nullslast"
+    assert p["limit"] == 50

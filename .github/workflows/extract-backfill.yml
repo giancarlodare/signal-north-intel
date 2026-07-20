@@ -1,0 +1,52 @@
+name: Extract backfill (awards + board minutes)
+
+# The LOW-PRIORITY extraction pass, run by hand. The daily collector extracts
+# only the forward types (tender_notice / news_release / grant_program) that can
+# populate a brief; award_notice and board_minutes are reconciliation and
+# backtest fuel, not fresh signal, so they drain here instead of competing with
+# the forward path for the daily token budget.
+#
+# workflow_dispatch only (never scheduled): run it when you want to chip away at
+# the captured backlog, at whatever cadence and cap the budget allows. Newest
+# event date first, capped per run. Opus 4.8: awards are the reconciliation hard
+# key that links a tender to its settling award, and the model comparison showed
+# the cheaper model dropping reference numbers and conflating recipient with
+# buyer -- exactly the fields that carry that linkage. Idempotent: a run only
+# ever advances documents from `captured` to `extracted`/`failed`, so re-running
+# never double-extracts.
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "Max documents to extract this run (per-run cost ceiling)"
+        type: string
+        default: "200"
+
+concurrency:
+  group: extract-backfill
+  cancel-in-progress: false
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Extract award / board-minutes backlog into signals
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          EXTRACTION_MODEL: claude-opus-4-8
+        run: >
+          python -m src.signal_extractor
+          --doc-types award_notice,board_minutes
+          --newest-first --limit ${{ inputs.limit }}

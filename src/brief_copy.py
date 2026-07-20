@@ -58,36 +58,51 @@ def draft_item_note(*, doc_type: str | None, timing_path: str | None,
     """A 2 to 3 sentence vendor read for one item. Structurally true, keyed on
     the document type and timing, with the amount and plausible field added only
     when we have them."""
+    # The headline (title) renders directly above the note, so the note never
+    # restates it: echoing the title both duplicates the headline and doubles the
+    # subject when the title already embeds the buyer ("Region of Peel tenders X"
+    # -> "Region of Peel has opened Region of Peel tenders X"). The note refers to
+    # the opportunity as "this" and leads with the buyer instead.
     who = (buyer or "The buyer").strip()
-    what = (title or "this opportunity").strip()
+    is_prequal = "prequalif" in (title or "").lower()
     s: list[str] = []
 
-    if doc_type == "tender_notice" and timing_path == "imminent":
-        s.append(f"{who} has opened {what}.")
-        if "prequalif" in what.lower():
-            s.append("This is a prequalification, so the buyer is assembling a shortlist; "
-                     "a vendor not already known to them needs a qualified partner to make the list.")
+    if doc_type == "tender_notice":
+        if timing_path == "imminent":
+            if is_prequal:
+                s.append(f"{who} is prequalifying vendors for this, assembling a shortlist.")
+                s.append("A vendor not already known to them needs a qualified partner to make "
+                         "the list before the deadline.")
+            else:
+                s.append(f"{who} has this out for bids, closing inside the window.")
+                s.append("A vendor without a track record with this buyer should be lining up "
+                         "references and a local partner before it closes.")
         else:
-            s.append("Bids close inside the window, so a vendor without a track record with "
-                     "this buyer should be lining up references and a local partner now.")
+            # Peel tender dates are the CLOSE date, so a recent tender has just
+            # closed: the award is the next event, not a bid opportunity.
+            s.append(f"{who} has just closed bids on this.")
+            s.append("The award is the next event, so watch for the winner and note the buyer "
+                     "and category to be positioned for the recompete.")
     elif doc_type == "award_notice":
-        s.append(f"{who} has awarded {what}.")
+        s.append(f"{who} has awarded this contract.")
         s.append("The award is settled, so for a challenger the value is the recompete: note "
                  "the buyer and the category and be positioned before the next cycle opens.")
     elif doc_type in ("grant_program", "grant_award"):
-        s.append(f"{who} is accepting applications for {what}.")
+        s.append(f"{who} is accepting applications.")
         s.append("Eligibility is fixed by the program rules, so confirm fit before committing "
                  "proposal effort; the deadline is firm and does not move.")
     elif doc_type == "board_minutes":
-        s.append(f"{who} has taken a board decision on {what}.")
+        s.append(f"{who} has taken a board decision here.")
         s.append("A board approval is the commitment that precedes a tender, so engage the "
                  "buyer now, before an RFP posts and the field is set.")
     else:
-        s.append(f"{who}: {what}.")
+        s.append(f"{who} is the party to watch on this one.")
 
     # Field and amount, when present, close the read as ONE sentence, so the note
-    # stays within 2 to 3 sentences however much we hold.
-    field = plausible_field(what)
+    # stays within 2 to 3 sentences however much we hold. The plausible field is
+    # still read from the title's own words (the title is our input, just not
+    # echoed into the prose).
+    field = plausible_field(title or "")
     amt = _fmt_amount(amount_cad)
     if field and amt:
         s.append(f"The work reads as {field}, reported value {amt}.")

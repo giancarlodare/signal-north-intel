@@ -108,3 +108,34 @@ jobs:
           else
             echo "HEALTHCHECK_URL not set; skipping ping."
           fi
+
+      # Signal extraction (FORWARD types only): turn freshly collected
+      # tender_notice / news_release / grant_program DOCUMENTS into graded
+      # SIGNALS, newest event date first, capped at 50/run. This is the step
+      # that lets the weekly brief populate (the brief selects on signals, not
+      # documents, and these are the only types that carry closing-soon signal a
+      # subscriber can act on. The award/board-minutes backlog drains on a
+      # separate lower-priority pass (extract-backfill.yml), so this run's token
+      # budget is never spent on reconciliation fuel. Opus 4.8: a Haiku-vs-Opus
+      # comparison on real tender/news docs showed Haiku dropping the tender
+      # reference number (the procurement hard key) on 2 of 5 tenders and
+      # mislabeling close dates as open dates, with no human gate downstream to
+      # catch it. Opus captured the reference on all 5 and the buyer/funder
+      # correctly. ~$9/mo at this cadence is worth the fidelity.
+      #
+      # Placed AFTER the healthcheck ping ON PURPOSE: extraction depends on the
+      # Anthropic API, an external dependency. A transient LLM outage should NOT
+      # suppress the dead-man's-switch ping (collection already succeeded) or page
+      # the operator at 6am. It still fails the job, so a real problem shows RED
+      # in Actions -- loud, but not a page.
+      - name: Extract forward-signal documents into signals
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          EXTRACTION_MODEL: claude-opus-4-8
+        run: >
+          python -m src.signal_extractor
+          --doc-types tender_notice,news_release,grant_program
+          --newest-first --limit 50
