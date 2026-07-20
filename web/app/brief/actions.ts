@@ -11,9 +11,11 @@ import { renderBrief, renderBriefText } from "@/lib/brief/render";
 // default is the Resend ACCOUNT email: Resend test mode only delivers to the
 // account owner, so any other default (e.g. a personal gmail) fails silently.
 const RECIPIENT = process.env.BRIEF_RECIPIENT || "giancarlo@signalnorthintel.com";
-// onboarding@resend.dev sends to the account owner's address without a verified
-// domain, so this ships now; a holdco-domain sender replaces it post-gate.
-const SENDER = "The Weekly Signal <onboarding@resend.dev>";
+// Sends from the verified signalnorthintel.com domain (verified in Resend
+// 2026-07-20; the onboarding@resend.dev placeholder is retired). With a
+// verified domain Resend can deliver to any recipient, so BRIEF_RECIPIENT
+// controls the destination.
+const SENDER = "The Weekly Signal <signal@signalnorthintel.com>";
 
 // The /brief editor's writes. The generator produces a draft; the operator edits
 // here (cut items, reorder, add copy) and publishes. Nothing here authors a
