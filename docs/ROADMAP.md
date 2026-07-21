@@ -119,6 +119,56 @@ commitment signals) is what makes walking the arc possible. Keep that linkage
 clean in every collector and the proposer. Full spec:
 `docs/prediction-ledger-design.md` section 5.7.
 
+## Synapse Advisory drafting engine (banked 2026-07-21; separate IP, build on first paid engagement)
+
+**Banked as Synapse Advisory IP, operator instruction 2026-07-21
+(expanded spec same day). Not a Signal North product: zero SN code, zero
+SN data, zero SN branding.** A bid/grant application drafting engine in
+four layers; automated pipeline, human judgment at the top, the SN
+operating model pointed at proposals:
+
+1. **Client-material ingestion.** Uploads (Excel financials, capability
+   decks, past proposals, CVs) parsed into a per-client, per-engagement
+   knowledge base. Lives entirely on the Synapse side; this is the
+   material the firewall says never enters SN.
+2. **Intelligence layer.** The SN subscription feed as ONE input among
+   several: procurement history with the buyer, incumbent and award
+   patterns, grant program rules, plus geopolitical trends, policy
+   announcements, budget signals, the "where the wind is blowing"
+   strategic context.
+3. **Generation.** Drafts that fuse client evidence with market
+   intelligence against the RFP's own evaluation criteria, criterion by
+   criterion.
+4. **The audit loop.** Every draft scored section by section against the
+   rubric; weak sections surfaced WITH REASONS; iterate to threshold;
+   the human sharpens; version-stamped trail throughout, adjudicated the
+   way the calibration audit adjudicates predictions. The methodology
+   (the audit-loop discipline) is what transfers from Signal North; the
+   implementation is built fresh as Synapse IP.
+
+Demand evidence recorded: unsolicited McKinsey partner interest (would
+anchor founding membership) and the Peel grant-writing thread.
+
+**Founding-member structure (operator, 2026-07-21):** SN founding
+membership includes preferred standing at Synapse (priority engine
+access, founding engagement rates) as a CROSS-ENTITY PERK, never a
+bundled product. Separate contracts and separate invoices: the SN
+membership agreement references the Synapse benefit; Synapse engagements
+are their own paper. The legal form and disclosure language are a
+September counsel question (docs/legal-seam-investor.md, Synapse
+section).
+
+**Firewall implications live in docs/legal-seam-investor.md (Synapse
+section), for counsel alongside the investor-seam flags.** Short form:
+information flows SN to Synapse exactly as to any subscriber, never in
+reverse; no client RFP responses, drafts, or engagement material ever
+enters SN's corpus; conflict-check protocol so Synapse cannot draft
+competing bids on the same solicitation.
+
+**Build trigger: the first paid engagement post-gate, not before.** The
+first real RFP with a real deadline designs the tool better than
+speculation. Nothing is scaffolded until then.
+
 ## Parked / waiting
 
 - **TPSB board minutes** — parked in `src/board_minutes.py`: tpsb.ca's WAF
@@ -152,8 +202,14 @@ clean in every collector and the proposer. Full spec:
   - **OPP procurement IS publicly reachable via merx.com/
     infrastructureontario** (OPP Modernization Phase Three visible on its
     awarded tab), on the platform the tenders_merx collector already
-    speaks. Banked as a MERX buyer target pending the operator's browser
-    provenance check; details in docs/merx-windsor-design.md section 8.
+    speaks. PARKED 2026-07-21: neither the machine crawl nor the
+    operator's human browse of infrastructureontario.ca found a link to
+    the MERX page, so provenance is not established. Revival paths (both
+    banked): a deeper targeted crawl of IO's site on a quiet day (the link
+    may live on a project-specific or vendor-resources page), and the
+    data.ontario.ca OTP-dataset probe below, which covers provincial
+    procurement including OPP regardless of the IO question. Details in
+    docs/merx-windsor-design.md section 8.
   - **Aggregators are never sources**: Tendersift and GlobalTenders
     confirmed OTP/OPP tenders exist; research tools only, provenance rule
     excludes them as collection sources.
