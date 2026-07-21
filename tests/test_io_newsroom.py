@@ -78,6 +78,13 @@ def test_extract_title_falls_back_to_title_trimming_suffix():
     assert io.extract_title(html) == "Contract Awarded for Y"
 
 
+def test_extract_title_decodes_html_entities():
+    # IO titles carry raw entities (en dash, ampersand); a stored title must
+    # never show &#x2013; or &amp;.
+    html = "<h1>The Ottawa Hospital &#x2013; Civic Campus &amp; Redevelopment</h1>"
+    assert io.extract_title(html) == "The Ottawa Hospital – Civic Campus & Redevelopment"
+
+
 # --- sitemap discovery -------------------------------------------------------
 def test_discover_article_urls_filters_and_follows_index():
     index = ("<sitemapindex><loc>https://www.infrastructureontario.ca/en/"

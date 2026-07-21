@@ -38,6 +38,7 @@ recording silence; a live publisher newsroom always has years of history.
     python -m src.io_newsroom             # collect for real
 """
 import argparse
+import html
 import logging
 import re
 import sys
@@ -109,17 +110,17 @@ def _valid_iso(y: int, mo: int, d: int) -> Optional[str]:
     return None
 
 
-def extract_date(html: str) -> Optional[str]:
+def extract_date(page_html: str) -> Optional[str]:
     """Publication date (YYYY-MM-DD) from the page's own markup, or None.
     Machine-readable markup first (meta/JSON-LD/<time>), visible text last."""
     for pat in (_META_DATE, _META_DATE_REV, _JSONLD_DATE, _TIME_TAG):
-        for raw in pat.findall(html or ""):
+        for raw in pat.findall(page_html or ""):
             m = _ISO_IN.search(raw)
             if m:
                 iso = _valid_iso(int(m.group(1)), int(m.group(2)), int(m.group(3)))
                 if iso:
                     return iso
-    m = _TEXT_DATE.search(html or "")
+    m = _TEXT_DATE.search(page_html or "")
     if m:
         mo = MONTHS.get(m.group(1).lower())
         if mo:
@@ -127,27 +128,28 @@ def extract_date(html: str) -> Optional[str]:
     return None
 
 
-def extract_title(html: str) -> str:
+def extract_title(page_html: str) -> str:
     """The article heading: the first <h1>, falling back to <title> with any
-    trailing site-name suffix trimmed."""
-    m = _H1_RE.search(html or "")
+    trailing site-name suffix trimmed. HTML entities are decoded so a stored
+    title never carries a raw &#x2013; or &amp;."""
+    m = _H1_RE.search(page_html or "")
     if m:
-        text = " ".join(_TAG_RE.sub(" ", m.group(1)).split())
+        text = html.unescape(" ".join(_TAG_RE.sub(" ", m.group(1)).split()))
         if text:
             return text
-    m = _TITLE_RE.search(html or "")
+    m = _TITLE_RE.search(page_html or "")
     if m:
-        text = " ".join(_TAG_RE.sub(" ", m.group(1)).split())
+        text = html.unescape(" ".join(_TAG_RE.sub(" ", m.group(1)).split()))
         # Trim a "... | Infrastructure Ontario" style suffix.
         return re.split(r"\s[|–\-]\s", text, maxsplit=1)[0].strip()
     return ""
 
 
-def build_payload(url: str, html: str, source_id: Optional[str],
+def build_payload(url: str, page_html: str, source_id: Optional[str],
                   keywords: Keywords) -> dict:
-    title = extract_title(html) or urlparse(url).path.rstrip("/").rsplit("/", 1)[-1]
-    body = html_to_text(html).replace("\x00", "")
-    published_on = extract_date(html)
+    title = extract_title(page_html) or urlparse(url).path.rstrip("/").rsplit("/", 1)[-1]
+    body = html_to_text(page_html).replace("\x00", "")
+    published_on = extract_date(page_html)
     # Keep-all with defence tagging: IO infrastructure announcements are
     # in-scope by construction (provincial capital demand); the keyword
     # filter only sets defence_relevant, it never drops.
