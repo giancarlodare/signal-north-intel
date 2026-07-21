@@ -37,6 +37,9 @@ parks), delivered every morning for the sprint's duration.
   proceeds per its probe verdict.
 - **Aug 4-10:** saturation batches 2-3; portal build to staged (auth,
   dashboard, watchlist + event logging, Stripe test).
+- **Week 2, behind the fronts:** the cooperative-purchasing layer probe
+  (named 2026-07-21; CPO list and rationale in docs/ROADMAP.md): which of
+  the eleven CPOs publish opportunities/awards publicly and collectably.
 - **Checkpoint (Aug 4):** extraction-budget review; saturation multiplies
   Opus extraction volume, so the projected monthly number is re-stated
   before batch 2 enables.
