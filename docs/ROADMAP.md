@@ -152,8 +152,14 @@ clean in every collector and the proposer. Full spec:
   - **OPP procurement IS publicly reachable via merx.com/
     infrastructureontario** (OPP Modernization Phase Three visible on its
     awarded tab), on the platform the tenders_merx collector already
-    speaks. Banked as a MERX buyer target pending the operator's browser
-    provenance check; details in docs/merx-windsor-design.md section 8.
+    speaks. PARKED 2026-07-21: neither the machine crawl nor the
+    operator's human browse of infrastructureontario.ca found a link to
+    the MERX page, so provenance is not established. Revival paths (both
+    banked): a deeper targeted crawl of IO's site on a quiet day (the link
+    may live on a project-specific or vendor-resources page), and the
+    data.ontario.ca OTP-dataset probe below, which covers provincial
+    procurement including OPP regardless of the IO question. Details in
+    docs/merx-windsor-design.md section 8.
   - **Aggregators are never sources**: Tendersift and GlobalTenders
     confirmed OTP/OPP tenders exist; research tools only, provenance rule
     excludes them as collection sources.

@@ -121,7 +121,7 @@ only NEW abstracts (a few/day steady state, capped 25 during backfill).
 - MERX other-buyers slug search (cityofwindsor and cityofgreatersudbury
   confirmed to exist) waits until these two collectors are proven.
 
-## 8. Infrastructure Ontario as a MERX buyer target (banked 2026-07-21, provenance pending)
+## 8. Infrastructure Ontario as a MERX buyer target (PARKED 2026-07-21, provenance not established)
 
 Operator discovery: merx.com/infrastructureontario is a public MERX buyer
 page carrying OPP procurement, notably "PDC for Ontario Provincial Police
@@ -145,14 +145,23 @@ CI probe (2026-07-21, job 88525460550), read-only:
   not match IO's shape. Enabling IO therefore needs its OWN validation
   round against the 90% bars, likely a small per-buyer reference-shape
   extension.
-- PROVENANCE NOT YET ESTABLISHED: the machine crawl of
-  infrastructureontario.ca (homepage + /en/partner-with-us/procurement/)
-  found zero links to MERX. That may be JS rendering or the link may live
-  deeper; per the publisher-linked rule this needs the operator's browser
-  check of IO's procurement pages before any sources row exists, exactly
-  as ottawa.ca's WAF forced for the Ottawa row.
+- PROVENANCE NOT ESTABLISHED, checked BOTH ways (recorded like the DRPS
+  bids&tenders park): the machine crawl of infrastructureontario.ca
+  (homepage + /en/partner-with-us/procurement/) found zero links to MERX,
+  and the OPERATOR'S HUMAN BROWSE of infrastructureontario.ca including
+  the procurement pages (2026-07-21) could not clearly find a link to the
+  MERX buyer page either. A branded public buyer page is strong evidence
+  but does not qualify; IO is PARKED pending provenance.
 
-Build shape when provenance passes: parameterize tenders_merx by buyer
+Two revival paths, banked:
+
+1. A deeper targeted crawl of IO's site on a quiet day: the link may live
+   on a project-specific or vendor-resources page both checks missed.
+2. The data.ontario.ca probe for an OTP open dataset (see the ROADMAP OPP
+   entry), which would cover provincial procurement including OPP
+   regardless of the IO question.
+
+Build shape if provenance ever passes: parameterize tenders_merx by buyer
 config rows ({slug, buyer_name, source_url, reference shapes}), one sources
 migration row, Infrastructure Ontario (crown_corp) + Ontario Provincial
 Police in ORG_SEED, then the validation dry-run before enablement.
