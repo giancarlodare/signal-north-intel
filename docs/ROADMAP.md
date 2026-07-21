@@ -132,3 +132,17 @@ clean in every collector and the proposer. Full spec:
 - **prospects ↔ contract_awards vendor join** — design note in
   `web/app/prospects/constants.ts` (normalized matching, org-resolver
   discipline).
+- **OPP coverage (banked 2026-07-21, probe-first, WAITING on the portal
+  URL from the operator's human search).** Likely the single largest police
+  buyer in the province, currently dark to us except via federal grants and
+  ontario.ca news. The arc is provincial, not the municipal pattern:
+  procurement flows through Ontario central purchasing (Supply Chain
+  Ontario / Ontario Tenders Portal; our 2026-07-20 probe of the guessed
+  host DNS-failed, and pcpg.ca turned out to be a real-estate agency, so
+  the real URL comes from the operator), possibly Infrastructure Ontario
+  for facilities. Oversight signal is SolGen budget/estimates rather than
+  a single board; detachment boards exist but are long-tail. Probe scope
+  when the URL arrives: (1) does the tender portal have a public,
+  collectable, no-login surface, and (2) can buyer filtering isolate
+  OPP / SolGen procurement from the all-of-government stream. Probe-only,
+  read-only, robots respected; design doc before any build.
