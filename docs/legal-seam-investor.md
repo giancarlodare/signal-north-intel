@@ -109,10 +109,13 @@ exists yet). What counsel should review when it does:
 
 - **Direction of information flow.** Signal North to Synapse only, and
   only as to any subscriber: Synapse consumes SN's published outputs on
-  the same terms as everyone else, no privileged feed, no early access.
-  Nothing flows back. No client RFP response, draft, score sheet, or any
-  other engagement material ever enters SN's corpus, its collectors, its
-  extraction pipeline, or its briefs.
+  the same terms as everyone else, no privileged feed, no early access,
+  and the SN feed is one intelligence input among several on the Synapse
+  side. Nothing flows back. Client uploads (financials, capability
+  decks, past proposals, CVs) live in a per-client, per-engagement
+  knowledge base on the Synapse side; no client RFP response, draft,
+  score sheet, or any other engagement material ever enters SN's corpus,
+  its collectors, its extraction pipeline, or its briefs.
 - **IP separation.** The drafting engine reuses SN's audit-loop
   METHODOLOGY (version-stamped drafts adjudicated against a rubric, the
   calibration-audit discipline) but is built as separate Synapse IP with

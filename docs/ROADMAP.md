@@ -121,18 +121,30 @@ clean in every collector and the proposer. Full spec:
 
 ## Synapse Advisory drafting engine (banked 2026-07-21; separate IP, build on first paid engagement)
 
-**Banked as Synapse Advisory IP, operator instruction 2026-07-21. Not a
-Signal North product: zero SN code, zero SN data, zero SN branding.** A
-bid/grant application drafting engine:
+**Banked as Synapse Advisory IP, operator instruction 2026-07-21
+(expanded spec same day). Not a Signal North product: zero SN code, zero
+SN data, zero SN branding.** A bid/grant application drafting engine in
+four layers; automated pipeline, human judgment at the top, the SN
+operating model pointed at proposals:
 
-- RFP/grant rubric ingestion; drafting mapped criterion by criterion to
-  the solicitation's own evaluation rubric.
-- Iterative edit rounds SCORED against that rubric each round, so the
-  draft converges on the evaluators' stated weights instead of taste.
-- Audit trail per draft: version-stamped and adjudicated the way the
-  calibration audit adjudicates predictions. The methodology (the
-  audit-loop discipline) is what transfers from Signal North; the
-  implementation is built fresh as Synapse IP.
+1. **Client-material ingestion.** Uploads (Excel financials, capability
+   decks, past proposals, CVs) parsed into a per-client, per-engagement
+   knowledge base. Lives entirely on the Synapse side; this is the
+   material the firewall says never enters SN.
+2. **Intelligence layer.** The SN subscription feed as ONE input among
+   several: procurement history with the buyer, incumbent and award
+   patterns, grant program rules, plus geopolitical trends, policy
+   announcements, budget signals, the "where the wind is blowing"
+   strategic context.
+3. **Generation.** Drafts that fuse client evidence with market
+   intelligence against the RFP's own evaluation criteria, criterion by
+   criterion.
+4. **The audit loop.** Every draft scored section by section against the
+   rubric; weak sections surfaced WITH REASONS; iterate to threshold;
+   the human sharpens; version-stamped trail throughout, adjudicated the
+   way the calibration audit adjudicates predictions. The methodology
+   (the audit-loop discipline) is what transfers from Signal North; the
+   implementation is built fresh as Synapse IP.
 
 Demand evidence recorded: unsolicited McKinsey partner interest (would
 anchor founding membership) and the Peel grant-writing thread.
