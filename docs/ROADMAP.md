@@ -119,6 +119,35 @@ commitment signals) is what makes walking the arc possible. Keep that linkage
 clean in every collector and the proposer. Full spec:
 `docs/prediction-ledger-design.md` section 5.7.
 
+## Synapse Advisory drafting engine (banked 2026-07-21; separate IP, build on first paid engagement)
+
+**Banked as Synapse Advisory IP, operator instruction 2026-07-21. Not a
+Signal North product: zero SN code, zero SN data, zero SN branding.** A
+bid/grant application drafting engine:
+
+- RFP/grant rubric ingestion; drafting mapped criterion by criterion to
+  the solicitation's own evaluation rubric.
+- Iterative edit rounds SCORED against that rubric each round, so the
+  draft converges on the evaluators' stated weights instead of taste.
+- Audit trail per draft: version-stamped and adjudicated the way the
+  calibration audit adjudicates predictions. The methodology (the
+  audit-loop discipline) is what transfers from Signal North; the
+  implementation is built fresh as Synapse IP.
+
+Demand evidence recorded: unsolicited McKinsey partner interest (would
+anchor founding membership) and the Peel grant-writing thread.
+
+**Firewall implications live in docs/legal-seam-investor.md (Synapse
+section), for counsel alongside the investor-seam flags.** Short form:
+information flows SN to Synapse exactly as to any subscriber, never in
+reverse; no client RFP responses, drafts, or engagement material ever
+enters SN's corpus; conflict-check protocol so Synapse cannot draft
+competing bids on the same solicitation.
+
+**Build trigger: the first paid engagement post-gate, not before.** The
+first real RFP with a real deadline designs the tool better than
+speculation. Nothing is scaffolded until then.
+
 ## Parked / waiting
 
 - **TPSB board minutes** — parked in `src/board_minutes.py`: tpsb.ca's WAF

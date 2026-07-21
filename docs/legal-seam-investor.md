@@ -99,3 +99,25 @@ and where the line sits.
 The investor export exists in the design only as a dark, gated stub with a
 documented schema, so that its shape can be reviewed here before it is ever
 turned on.
+
+## Synapse Advisory firewall (recorded 2026-07-21, for counsel)
+
+A second seam, distinct from the investor seam: Synapse Advisory plans a
+bid/grant application drafting engine as its own IP (banked in
+docs/ROADMAP.md; build trigger is the first paid engagement, so nothing
+exists yet). What counsel should review when it does:
+
+- **Direction of information flow.** Signal North to Synapse only, and
+  only as to any subscriber: Synapse consumes SN's published outputs on
+  the same terms as everyone else, no privileged feed, no early access.
+  Nothing flows back. No client RFP response, draft, score sheet, or any
+  other engagement material ever enters SN's corpus, its collectors, its
+  extraction pipeline, or its briefs.
+- **IP separation.** The drafting engine reuses SN's audit-loop
+  METHODOLOGY (version-stamped drafts adjudicated against a rubric, the
+  calibration-audit discipline) but is built as separate Synapse IP with
+  zero SN code, zero SN data, zero SN branding.
+- **Conflict-check protocol.** Before any drafting engagement, Synapse
+  checks the solicitation against active engagements: it cannot draft
+  competing bids on the same solicitation. The protocol and its records
+  live on the Synapse side; SN never sees who Synapse drafts for.
