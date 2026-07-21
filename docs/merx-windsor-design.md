@@ -165,3 +165,56 @@ Build shape if provenance ever passes: parameterize tenders_merx by buyer
 config rows ({slug, buyer_name, source_url, reference shapes}), one sources
 migration row, Infrastructure Ontario (crown_corp) + Ontario Provincial
 Police in ORG_SEED, then the validation dry-run before enablement.
+
+IO's PROXY-COVERAGE LINE once section 9 enables: "awards via newsroom
+live, tender feed parked pending provenance."
+
+## 9. IO newsroom collector (design for review, approved target 2026-07-21)
+
+Publisher-official provincial infrastructure award signal on the existing
+newsroom/requests pattern, clean provenance (IO's own site), no MERX
+question involved.
+
+**Probe evidence** (CI job 88649903849): /en/sitemap.xml serves 1618 URLs,
+227 procurement-flavoured; the news section carries server-side HTML pages
+(all sampled 200s) titled "Contract Awarded for ..." across subway
+extensions, hospital redevelopments, and the OnSat satellite program, plus
+occasional tender-stage items ("Request for Proposals Closes for ...") and
+milestone items ("Substantial Completion Reached ...").
+
+**What it does and does not cover**: it PARTIALLY replaces the parked IO
+MERX page. Awards become visible through the publisher's own
+announcements; the tender feed does NOT (RFP-stage items appear as
+occasional news, not a structured solicitation feed with references and
+closing dates). The MERX park and its revival paths stand unchanged.
+
+**Collector** (src/io_newsroom.py, requests-based on the shared
+PoliteFetcher):
+
+- Discovery from the publisher's own index: /en/sitemap.xml filtered to
+  /en/news-and-media/news/ page URLs. LOUD FAILURE on zero sitemap locs.
+- Per-run NEW-item cap 25 (content_hash(url, doc_type) checked first), so
+  the multi-year archive drains over days, board-minutes style.
+- doc_type news_release, status captured. published_on from the page's
+  own dated markup at day precision; the build verifies the date element
+  and the validation bar holds it to >= 90 percent parsed (none beats a
+  wrong date). Title from the page heading; body via html_to_text;
+  keep-all with defence/CI keyword tagging.
+- buyer attribution: the client organization varies per announcement
+  (CAMH, Metrolinx, hospitals); extraction resolves it from the prose.
+  ORG_SEED adds Infrastructure Ontario (crown_corp, provincial, ON) so
+  the agency itself resolves when named.
+
+**Extractor fit, confirmed against the code**: the taxonomy already
+defines contract_award as a signal_type at grade 5, and grade() takes
+max(signal_type grade, doc_type floor), so a news_release whose prose
+announces an award extracts as a grade-5 contract_award signal by the
+SAME mechanism that catches board resolutions inside board_minutes
+documents. news_release is already in the daily forward extraction path,
+so IO announcements ride existing plumbing with no extractor change.
+
+**Sources + validation + scheduling**: one URL-guarded sources row
+(https://www.infrastructureontario.ca/en/news-and-media/news/); CI
+dry-run before enablement with a VALIDATION line (>= 90 percent date
+parse on sampled items, nonzero award-titled items, nonzero text bodies);
+one daily-collect step after the grants collector.
