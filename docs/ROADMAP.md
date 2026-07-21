@@ -169,6 +169,29 @@ competing bids on the same solicitation.
 first real RFP with a real deadline designs the tool better than
 speculation. Nothing is scaffolded until then.
 
+## Cooperative purchasing layer (named week-2 sprint probe, upgraded 2026-07-21)
+
+**A structural feature of Ontario municipal purchasing that per-buyer
+portals partially miss**: cooperative tenders carry many buyers' demand in
+one solicitation, and awards form contracts between the vendor and EACH
+member agency (halton.ca states this explicitly for HCPG, whose published
+member roster includes Halton Regional Police Service). Three official
+vendor pages have now named this layer independently (DRPS, Vaughan,
+Halton), and those vendor pages ARE the provenance chains.
+
+Aggregate CPO list across the three sightings: HCPG (Halton Co-operative
+Purchasing Group), PCPG (Police Cooperative Purchasing Group), Supply
+Chain Ontario, OECM (named twice), provincial Vendor-of-Record
+arrangements (named twice), the Ministry of Public and Business Service
+Delivery marketplace (doingbusiness.mgs.gov.on.ca), Canoe Procurement
+Group, Kinetic GPO, YPCO (York Purchasing Co-operative), HealthPRO, SGP.
+
+Probe scope (week 2 of docs/august-sprint-plan.md, behind the sprint
+fronts): for each CPO, does it publish opportunities and/or awards
+publicly and collectably (no login, robots-compatible)? Standard
+discipline: read-only, no accounts; public-and-collectable surfaces get a
+design-first proposal, walled ones get recorded verdicts.
+
 ## Parked / waiting
 
 - **TPSB board minutes** — parked in `src/board_minutes.py`: tpsb.ca's WAF
