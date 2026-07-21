@@ -36,10 +36,6 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # The generator is deterministic (no LLM), so only the Supabase creds are
-      # needed. --force is passed through only when the input is checked.
-      - name: Regenerate brief (brief generator only)
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: python -m src.brief_generator --apply ${{ inputs.force && '--force' || '' }}
+      # PROBE OVERRIDE (branch probe/ontario-opendata, never merged).
+      - name: Ontario open data OTP/tender probe
+        run: python scripts/probe_ontario_opendata.py
