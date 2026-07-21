@@ -2,6 +2,13 @@
 
 Standing report commands the operator issues in chat; keep these current.
 
+## Time zone
+
+ALL times shown to the operator are Eastern (America/Toronto), never UTC.
+The operator's label for this is EST; use the correct Eastern wall-clock
+time year-round (EDT offset in summer), converting from UTC internally.
+Cron schedules stay UTC in config, but are always REPORTED as Eastern.
+
 ## "overnight status"
 
 When the operator says "overnight status", deliver a compact report built
