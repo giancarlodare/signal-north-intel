@@ -73,6 +73,32 @@ def test_parse_abstract_number_token_requires_a_digit():
     assert a["sol_num"] is None
 
 
+def test_parse_abstract_title_fallback_for_unlabeled_pages():
+    # IWSD-style abstracts omit the labeled field; the page title carries it
+    # (CI diagnostic 2026-07-21).
+    text = ("Iwsd/is/dcmb Cp000860 Shadow Ridge Sanitary Sewer Rehabilitation "
+            "- 41826-91345-T05 | MERX Loading... "
+            "Closing Date 2026/08/05 03:00:00 PM EDT")
+    a = tm.parse_abstract(text)
+    assert a["sol_num"] == "41826-91345-T05"
+    assert a["closing_on"] == "2026-08-05"
+
+
+def test_parse_abstract_closing_tolerates_digitless_gap():
+    # The gap window is digit-free by design (it can never eat into a date),
+    # which covers the observed label-to-value gaps.
+    a = tm.parse_abstract("Closing Date : Amended 2026/06/11 03:00:00 PM EDT")
+    assert a["closing_on"] == "2026-06-11"
+
+
+def test_parse_abstract_previous_amendment_close_is_not_current():
+    # The only date on this page is the PREVIOUS amendment's close; taking it
+    # would record a wrong current close. None beats a wrong date.
+    a = tm.parse_abstract(
+        "Closing Date A - Previous Amendment 2026/06/11 03:00:00 PM EDT")
+    assert a["closing_on"] is None
+
+
 # --- identity hash -----------------------------------------------------------
 def test_hash_keyed_on_merx_id_and_doc_type():
     # Computable from the listing alone, so known ids skip the abstract fetch.

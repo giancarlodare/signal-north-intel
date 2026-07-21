@@ -73,7 +73,17 @@ ERROR_BUDGET = 25       # abstract failures tolerated before loud abort
 # digit so a following label word can never read as the value.
 SOLNUM_RE = re.compile(
     r"Solicitation\s+Number\s*:?\s*([A-Za-z0-9][A-Za-z0-9./_-]*\d[A-Za-z0-9./_-]*)")
-CLOSING_RE = re.compile(r"Closing\s+Date\s*:?\s*(\d{4})/(\d{1,2})/(\d{1,2})")
+# Fallback (CI diagnostic 2026-07-21, job 88522188983): IWSD-style abstracts
+# omit the labeled field, but the page <title> always ends
+# "... - 41826-91345-T05 | MERX", and the number keeps Ottawa's
+# NNNNN-NNNNN-LNN shape. The "| MERX" anchor keeps body numbers out.
+SOLNUM_TITLE_RE = re.compile(r"-\s*(\d{4,6}-\d{4,6}-[A-Z]\d{2})\s*\|\s*MERX")
+# Amended solicitations interleave text between the label and the date
+# ("Closing Date A - Previous Amendment 2026/06/11 ..."). A short non-digit
+# gap is tolerated, but never across "Previous": a previous amendment's
+# close is explicitly NOT the current close, and none beats a wrong date.
+CLOSING_RE = re.compile(
+    r"Closing\s+Date\b(?:(?!Previous)[^0-9]){0,40}(\d{4})/(\d{1,2})/(\d{1,2})")
 STATUS_RE = re.compile(r"This solicitation is\s+([A-Z]+)")
 
 
@@ -127,7 +137,7 @@ def has_next_page(html: str, base_url: str, tab: str, page: int) -> bool:
 def parse_abstract(text: str) -> dict:
     """{sol_num, closing_on, status} from the abstract page's linearized
     text. Missing fields stay None: never fabricate a reference or a date."""
-    sm = SOLNUM_RE.search(text)
+    sm = SOLNUM_RE.search(text) or SOLNUM_TITLE_RE.search(text)
     cm = CLOSING_RE.search(text)
     closing = None
     if cm:

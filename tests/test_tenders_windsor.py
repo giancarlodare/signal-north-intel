@@ -73,6 +73,49 @@ def test_parse_items_links_assigned_to_their_item():
     assert items[1]["results_url"] is None        # no unofficial results yet
 
 
+# Header shapes the CI diagnostic surfaced (2026-07-21): no-space refs, the
+# PREQUAL family (incl. the doubled PREQUAL/TENDER form), and a Notice with a
+# 4-digit year.
+DIAG_PAGE = """
+<html><body>
+<h3>RFT59-26, RESIDENTIAL MILL AND PAVE I</h3>
+<p>Open: May 01, 2026 12:00 AM EST Close: May 20, 2026 11:30 AM EST</p>
+<h3>PREQUAL 69-26, PEACE FOUNTAIN REPLACEMENT PROJECT</h3>
+<p>Open: Apr 02, 2026 12:00 AM EST Close: Apr 30, 2026 11:30 AM EST</p>
+<h3>Prequal Tender 92-26, COLLISION REPAIR SERVICES WINDSOR POLICE FLEET</h3>
+<p>Open: Mar 03, 2026 12:00 AM EST Close: Mar 31, 2026 11:30 AM EST</p>
+<h3>PREQUAL/TENDER 34-26 PREQUAL - TENDER 34-26, ELECTRICAL SERVICES</h3>
+<p>Open: Feb 04, 2026 12:00 AM EST Close: Feb 25, 2026 11:30 AM EST</p>
+<h3>PREQUALIFICATION 157-25, REPLACEMENT OF PRIVATE DRAIN CONNECTIONS</h3>
+<p>Open: Jan 05, 2026 12:00 AM EST Close: Jan 28, 2026 11:30 AM EST</p>
+<h3>Notice 001-2026, Enterprise Resource Planning (ERP) Solution</h3>
+<p>Open: Jun 06, 2026 12:00 AM EST Close: Jun 24, 2026 11:30 AM EST</p>
+</body></html>
+"""
+
+
+def test_parse_items_diagnostic_header_shapes():
+    items, markers = tw.parse_items(DIAG_PAGE)
+    assert markers == 6
+    assert [it["ref"] for it in items] == \
+        ["59-26", "69-26", "92-26", "34-26", "157-25", "001-2026"]
+    assert all(it["close_on"] for it in items)
+
+
+def test_doubled_prequal_tender_header_yields_one_item():
+    items, _ = tw.parse_items(DIAG_PAGE)
+    doubled = [it for it in items if it["ref"] == "34-26"]
+    assert len(doubled) == 1
+    assert doubled[0]["title"] == "ELECTRICAL SERVICES"
+
+
+def test_windsor_police_prequal_title():
+    items, _ = tw.parse_items(DIAG_PAGE)
+    wps = next(it for it in items if it["ref"] == "92-26")
+    assert wps["prefix"] == "Prequal Tender"
+    assert wps["title"].startswith("COLLISION REPAIR SERVICES")
+
+
 # --- payloads ----------------------------------------------------------------
 def test_tender_payload_hard_key_and_close_date():
     items, _ = _items()

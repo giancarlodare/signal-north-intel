@@ -50,10 +50,17 @@ BUYER_NAME = "City of Windsor"    # must match a resolve_orgs ORG_SEED canonical
 MAX_STORED_CHARS = 20000
 ERROR_BUDGET = 25                 # per-item failures tolerated before loud abort
 
-# Item header as the page prints it: "RFP 86-26, Retaining Wall ..." (probe
-# 2026-07-20: prefixes RFT/RFP/EOI/RFPQ live, RFQ reserved; refs \d{1,3}-\d{2}).
-# RFPQ before RFP so alternation matches the longer prefix first.
-ITEM_HEAD = re.compile(r"\b(RFPQ|RFP|RFT|RFQ|EOI)\s+(\d{1,3}-\d{2})\s*,?\s")
+# Item header as the page prints it. The CI diagnostic (2026-07-21, job
+# 88522188983) showed the full range of live shapes: "RFP 86-26," but also
+# no-space "RFT59-26,", the PREQUAL family ("PREQUAL 69-26", "Prequal Tender
+# 92-26", "PREQUALIFICATION 157-25", doubled "PREQUAL/TENDER 34-26 PREQUAL -
+# TENDER 34-26,"), and "Notice 001-2026" with a 4-digit year. Longer
+# alternatives come first; the Open:-window guard in parse_items is what
+# keeps the case-insensitive match from splitting on mid-description text.
+ITEM_HEAD = re.compile(
+    r"\b(RFPQ|RFP|RFT|RFQ|EOI|PREQUAL(?:IFICATION)?(?:[\s/-]+TENDER)?|NOTICE)"
+    r"\s*(\d{1,3}-(?:\d{4}|\d{2}))\s*,?\s",
+    re.IGNORECASE)
 # A real header is followed by its own "Open:" marker within this window
 # (title lengths run well under it). A reference mentioned mid-description
 # is not, so it never starts a phantom item (see parse_items).
@@ -167,7 +174,9 @@ def parse_items(html: str, base_url: str = LISTING_URL) -> tuple[list[dict], int
                 results_url = absolute
 
         items.append({
-            "prefix": m.group(1),
+            # Normalized: the doubled "PREQUAL - TENDER" shape carries inner
+            # whitespace runs the title should not reproduce.
+            "prefix": " ".join(m.group(1).split()),
             "ref": m.group(2),
             "title": title,
             "open_on": _date_iso(*om.groups()) if om else None,
