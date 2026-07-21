@@ -10,6 +10,7 @@ respected, 2s shared delay, no accounts.
 """
 import re
 import sys
+import time
 from urllib.parse import quote
 
 sys.path.insert(0, ".")
@@ -24,7 +25,25 @@ QUERIES = ["tender", "tenders portal", "procurement", "solicitation",
 RELEVANT = re.compile(r"tender|procure|solicit|contract|award|vendor|bid|police",
                       re.IGNORECASE)
 
+# The first run hit a TRANSIENT 502 on robots.txt, which the fetcher rightly
+# treats as stay-out (a 5xx robots is not permission). Retry the host warm-up
+# a few times with a long polite pause; a fresh fetcher clears the per-host
+# robots cache. Only a repeated 5xx is reported as the run's honest outcome.
 fetcher = PoliteFetcher()
+for attempt in range(1, 5):
+    warm = fetcher.get(f"{BASE}/api/3/action/site_read")
+    if warm is not None:
+        print(f"warm-up OK on attempt {attempt} (HTTP {warm.status_code})")
+        break
+    print(f"warm-up attempt {attempt}: host unreachable (robots 5xx or "
+          f"network); waiting 45s before retry")
+    time.sleep(45)
+    fetcher = PoliteFetcher()
+else:
+    print("data.ontario.ca stayed unreachable across all attempts; "
+          "probe result: TRANSIENT FAILURE, re-run later. Not a verdict.")
+    sys.exit(1)
+
 packages: dict[str, dict] = {}
 
 print("=" * 70)
