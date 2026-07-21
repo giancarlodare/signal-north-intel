@@ -141,6 +141,12 @@ ORG_SEED = [
     ("City of Ottawa",
      ["City of Ottawa"],
      ["municipality"], "municipal", "ON"),
+    # MERX/Windsor collectors (docs/merx-windsor-design.md): tenders_windsor
+    # writes this exact name to documents.buyer_name. City of Ottawa (the
+    # tenders_merx buyer) already exists above.
+    ("City of Windsor",
+     ["Windsor", "The Corporation of the City of Windsor"],
+     ["municipality"], "municipal", "ON"),
     ("Parks Canada",
      ["Parks Canada", "Parks Canada Agency"],
      ["federal_agency"], "federal", None),

@@ -76,6 +76,24 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python -m src.board_minutes
 
+      # Windsor open-data bids + MERX-Ottawa solicitations: light requests
+      # collectors on the board-minutes politeness pattern, no Chromium
+      # (docs/merx-windsor-design.md section 6). Each fails loudly on an
+      # empty page, so a gated or changed endpoint goes RED, never silent.
+      - name: Run Windsor open-data tenders collector
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.tenders_windsor
+
+      - name: Run MERX-Ottawa tenders collector
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.tenders_merx
+
       - name: Run newsroom RSS collector
         if: steps.guard.outputs.should_run == 'true'
         env:

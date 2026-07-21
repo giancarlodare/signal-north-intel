@@ -120,3 +120,39 @@ only NEW abstracts (a few/day steady state, capped 25 during backfill).
   degrades.
 - MERX other-buyers slug search (cityofwindsor and cityofgreatersudbury
   confirmed to exist) waits until these two collectors are proven.
+
+## 8. Infrastructure Ontario as a MERX buyer target (banked 2026-07-21, provenance pending)
+
+Operator discovery: merx.com/infrastructureontario is a public MERX buyer
+page carrying OPP procurement, notably "PDC for Ontario Provincial Police
+Modernization Phase Three" (MERX id 0000261577). This is the first public,
+collectable surface for OPP-related buying: the provincial arc runs through
+IO for facilities, and the Ontario Tenders Portal itself is closed to
+automation (see the ROADMAP OPP entry: Jaggaer host, robots Disallow /esop).
+
+CI probe (2026-07-21, job 88525460550), read-only:
+
+- Tab structure IDENTICAL to Ottawa's and parses with the existing
+  tenders_merx functions unchanged: open-bids 4 ids, awarded-bids 50+ ids
+  across 2+ pages (the OPP Modernization item sits on awarded page 2, with
+  another OPP item, "Architectural Design Services for Project Connect -
+  OPP Comp...", beside it), bidresults-bids 4 ids. Pagination behaves; the
+  merx:{id} hash namespace is buyer-agnostic because MERX ids are
+  platform-global.
+- Abstract caveat: IO's solicitation numbers use a different shape
+  (24-1432, not Ottawa's NNNNN-NNNNN-LNN), and only 1 of 3 sampled
+  abstracts carried the labeled field; the Ottawa page-title fallback will
+  not match IO's shape. Enabling IO therefore needs its OWN validation
+  round against the 90% bars, likely a small per-buyer reference-shape
+  extension.
+- PROVENANCE NOT YET ESTABLISHED: the machine crawl of
+  infrastructureontario.ca (homepage + /en/partner-with-us/procurement/)
+  found zero links to MERX. That may be JS rendering or the link may live
+  deeper; per the publisher-linked rule this needs the operator's browser
+  check of IO's procurement pages before any sources row exists, exactly
+  as ottawa.ca's WAF forced for the Ottawa row.
+
+Build shape when provenance passes: parameterize tenders_merx by buyer
+config rows ({slug, buyer_name, source_url, reference shapes}), one sources
+migration row, Infrastructure Ontario (crown_corp) + Ontario Provincial
+Police in ORG_SEED, then the validation dry-run before enablement.
