@@ -1,7 +1,8 @@
 # Tier-2 bids&tenders enablement record
 
-Status: PROVENANCE COMPLETE, 8 of 8 (2026-07-21, sprint front 4; the
-final two rows passed by operator browser the same day). Enablement is
+Status: PROVENANCE COMPLETE, 9 of 9 including the optional Halton Hills
+row (2026-07-21, sprint front 4; Vaughan and Halton Region passed by
+operator browser, the rest by machine crawl). Enablement is
 gated on the Sunday Jul 26-27 brief drafting correctly from the current
 cohort; the wave enables Monday Jul 28 on the operator's go. Every
 enabled row is a MUNICIPALITIES config entry in
@@ -20,7 +21,7 @@ ORG_SEED entry, validated by the standard CI dry-run before merge.
 | Niagara Region | niagararegion.bidsandtenders.ca | niagararegion.ca/business/tenders/default.aspx links the tenant (round-3 probe, job 88639498421) | PASS |
 | City of Vaughan | vaughan.bidsandtenders.ca | OPERATOR BROWSER 2026-07-21 (vaughan.ca 403s the collector UA): vaughan.ca/business/procurement-services states "The City of Vaughan uses bids&tenders" and links the tenant twice | PASS |
 | Halton Region | haltonregion.bidsandtenders.ca | OPERATOR BROWSER 2026-07-21: halton.ca/the-region/finance-and-transparency/doing-business-with-the-region states bid opportunities are on "Halton's Bid Opportunities website, Bids and Tenders" with a direct tenant link. This also settles the two-channel question: bids&tenders is the PUBLISHER-NAMED channel; merx.com/haltonregion is secondary and NOT a collector target | PASS |
-| Town of Halton Hills | haltonhills.bidsandtenders.ca | Optional ninth (operator 2026-07-21: include if one-row cost). The config row is one line, but provenance is part of the cost: its machine check runs with the next probe batch, and the row enables only on a pass | CONDITIONAL |
+| Town of Halton Hills | haltonhills.bidsandtenders.ca | haltonhills.ca/work/bids-tenders links the tenant (CI probe job 88649903849, same day). The optional ninth's condition is met | PASS |
 
 Corrected probe artifact: the earlier tier survey used the wrong region
 slugs; halton.bidsandtenders.ca and niagara.bidsandtenders.ca error out,
