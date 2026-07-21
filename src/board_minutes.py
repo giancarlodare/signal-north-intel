@@ -38,7 +38,7 @@ from datetime import datetime, timezone
 from html.parser import HTMLParser
 from typing import Optional
 from urllib import robotparser
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urldefrag, urljoin, urlparse
 
 import requests
 
@@ -128,6 +128,140 @@ BOARDS = [
         # 2017–2026 — the per-run cap pages through that backlog over multiple
         # runs because duplicates don't consume the cap.
         "doc_url_patterns": [r"/media/.+\.pdf$"],
+    },
+    # ------------------------------------------------------------------
+    # Big 12 phase 2 (docs/big12-boards-design.md, approved 2026-07-20).
+    # Every enabled board passed the four-pass CI probe: publisher-linked
+    # provenance, fetchable with this collector's own fetch path, robots
+    # respected, text PDFs confirmed by extraction.
+    # ------------------------------------------------------------------
+    {
+        "name": "York Regional Police Services Board",
+        "source_name_candidates": [
+            "York Regional Police Services Board - Meetings",
+            "York Regional Police Services Board", "YRPSB"],
+        "source_id_env": "YRPSB_SOURCE_ID",
+        "listing_urls": ["https://www.yrpsb.ca/meetings",
+                         "https://www.yrpsb.ca/meetings-archives"],
+        # The archives page links per-year pages /meetings-archives-2017..
+        # (~25-27 docs each); one-level expansion reaches them all. The
+        # per-year links are plain-http URLs on the same host.
+        "listing_expand_prefixes": ["/meetings-archives-"],
+        "doc_url_patterns": [r"/usercontent/.+\.pdf$"],
+    },
+    {
+        "name": "Durham Regional Police Services Board",
+        "source_name_candidates": [
+            "Durham Regional Police Services Board - Meetings",
+            "Durham Regional Police Services Board",
+            "Durham Region Police Services Board", "DRPSB"],
+        "source_id_env": "DRPSB_SOURCE_ID",
+        "listing_urls": [
+            "https://durhampoliceboard.ca/archived-board-meetings-agendas-and-minutes/",
+            "https://durhampoliceboard.ca/"],
+        # 174 candidates on the archive page alone; some documents live on
+        # reports.drps.ca (off-host PDFs are allowed when the path ends .pdf).
+        "doc_url_patterns": [r"/upload_files/.+\.pdf$"],
+    },
+    {
+        "name": "Halton Police Board",
+        "source_name_candidates": [
+            "Halton Police Board - Meetings",
+            "Halton Police Board", "Halton Regional Police Services Board"],
+        "source_id_env": "HALTON_PB_SOURCE_ID",
+        "listing_urls": ["https://haltonpoliceboard.ca/meetings/"],
+        # WordPress: /meetings/ lists per-meeting pages carrying "Download
+        # Agenda" links. AGENDAS ONLY by design: minutes are .docx (skipped
+        # by BINARY_DOC_EXT); the agenda meeting books (46-138pp text PDFs)
+        # carry the full staff reports, which is the signal.
+        "listing_expand_prefixes": ["/meetings/"],
+        # One observed agenda URL lacks a .pdf suffix, so the extension is
+        # not required here; office binaries are excluded upstream.
+        "doc_url_patterns": [r"/wp-content/uploads/.+"],
+    },
+    {
+        "name": "Waterloo Regional Police Services Board",
+        "source_name_candidates": [
+            "Waterloo Regional Police Services Board - Meetings",
+            "Waterloo Regional Police Services Board",
+            "Waterloo Regional Police Service Board", "WRPSB"],
+        "source_id_env": "WRPSB_SOURCE_ID",
+        "listing_urls": ["https://www.wrps.on.ca/police-service-board-meetings"],
+        # Per-meeting /resource/ pages each link one agenda PDF in the
+        # service's own S3 bucket; those are off-host PDFs with agenda-named
+        # text, caught by the generic name pattern. The meetings-archive path
+        # 403s through a wrps.ca redirect (recorded); current listing only.
+        "listing_expand_prefixes": ["/resource/"],
+    },
+    {
+        "name": "Greater Sudbury Police Services Board",
+        "source_name_candidates": [
+            "Greater Sudbury Police Services Board - Meetings",
+            "Greater Sudbury Police Services Board",
+            "Greater Sudbury Police Service Board", "GSPSB"],
+        "source_id_env": "GSPSB_SOURCE_ID",
+        "listing_urls": [
+            "https://www.gsps.ca/about-gsps/greater-sudbury-police-service-board/board-meetings/"],
+        "doc_url_patterns": [r"/media/.+"],
+    },
+    # PARKED boards (probe 2026-07-20, four passes + the Ottawa timeboxed
+    # check; docs/big12-boards-design.md section 3). The verdict travels with
+    # the config so revival is a flag flip plus a re-probe, not archaeology.
+    {
+        "name": "Hamilton Police Service Board",
+        "enabled": False,
+        "parked_reason": (
+            "hamiltonpsb.ca agendas-and-materials listing is JS-rendered "
+            "(Umbraco); zero server-side documents. Revive via the banked "
+            "render-capable collection evaluation (Wave 2-later)."),
+        "source_name_candidates": ["Hamilton Police Service Board"],
+        "source_id_env": "HPSB_SOURCE_ID",
+        "listing_urls": ["https://www.hamiltonpsb.ca/meetings/agendas-and-materials/"],
+    },
+    {
+        "name": "Niagara Regional Police Service Board",
+        "enabled": False,
+        "parked_reason": (
+            "documents live on pub-niagarapolice.escribemeetings.com (eScribe "
+            "JS shell, 4 links in raw HTML). Revive via eScribe adapter."),
+        "source_name_candidates": ["Niagara Regional Police Service Board"],
+        "source_id_env": "NRPSB_SOURCE_ID",
+        "listing_urls": ["https://pub-niagarapolice.escribemeetings.com/"],
+    },
+    {
+        "name": "London Police Service Board",
+        "enabled": False,
+        "parked_reason": (
+            "no meeting documents server-side anywhere; "
+            "calendar.londonpolice.ca exposes events only; "
+            "londonpoliceboard.ca does not resolve. Revive via a targeted "
+            "re-probe of a board-meeting calendar detail page."),
+        "source_name_candidates": ["London Police Service Board"],
+        "source_id_env": "LPSB_SOURCE_ID",
+        "listing_urls": ["https://calendar.londonpolice.ca/meetings"],
+    },
+    {
+        "name": "Windsor Police Service Board",
+        "enabled": False,
+        "parked_reason": (
+            "windsorpolice.ca/about/wps-board carries zero document links; "
+            "minutes presumably with the city clerk (citywindsor.ca) but not "
+            "publisher-linked from the board page. Provenance not established."),
+        "source_name_candidates": ["Windsor Police Service Board"],
+        "source_id_env": "WPSB_SOURCE_ID",
+        "listing_urls": ["https://www.windsorpolice.ca/about/wps-board"],
+    },
+    {
+        "name": "Ottawa Police Services Board",
+        "enabled": False,
+        "parked_reason": (
+            "timeboxed check 2026-07-20: ottawapoliceboard.ca per-year "
+            "meetings pages (2011-2025) link every per-meeting agenda to "
+            "pub-ottawa.escribemeetings.com Meeting.aspx (eScribe). Parked "
+            "per the one-probe rule. Revive via eScribe adapter."),
+        "source_name_candidates": ["Ottawa Police Services Board", "OPSB"],
+        "source_id_env": "OPSB_SOURCE_ID",
+        "listing_urls": ["https://www.ottawapoliceboard.ca/opsb-cspo/meetings.html"],
     },
 ]
 
@@ -325,6 +459,10 @@ def find_document_links(html: str, base_url: str,
     seen: set[str] = set()
     results: list[tuple[str, str, str]] = []
     for url, text, context in extract_links_with_context(html, base_url):
+        # A fragment never names a different document; keeping it would
+        # collect '#main-content' / '#tab-...' anchor variants of the same
+        # page as separate documents with distinct content hashes.
+        url, _fragment = urldefrag(url)
         if url in seen:
             continue
         parsed = urlparse(url)
@@ -372,19 +510,38 @@ _MONTH_RE = (r"(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|"
              r"Jul(?:y)?|Aug(?:ust)?|Sept?(?:ember)?|Oct(?:ober)?|"
              r"Nov(?:ember)?|Dec(?:ember)?)")
 
+# Separators inside month-name dates: listing text uses spaces, board
+# filenames use hyphens/underscores (Halton "june-25-2026", Durham
+# "19_JAN_2021"; big12-boards probe 2026-07-20). "." is deliberately NOT a
+# separator so ambiguous all-numeric forms stay unparsed. \b cannot guard
+# these (underscore is a word character), so explicit guards are used:
+# no letter/digit immediately before, no digit immediately after.
+_SEP = r"[-_\s]+"
+_LG = r"(?<![A-Za-z0-9])"
+_RG = r"(?![0-9])"
+
 _DATE_PATTERNS = [
     # ISO-ish: 2026-04-24 (also _ . / separators). (?<!\d)/(?!\d) instead of
     # \b: underscore is a word character, so \b would fail on filenames like
     # agenda_2026-03-14.
     re.compile(r"(?<!\d)(20\d{2})[-_./](\d{1,2})[-_./](\d{1,2})(?!\d)"),
-    # Month-first: "April 24, 2026", "Sept. 26 2025".
-    re.compile(rf"\b{_MONTH_RE}\.?\s+(\d{{1,2}})(?:st|nd|rd|th)?,?\s+(20\d{{2}})\b",
+    # Month-first: "April 24, 2026", "Sept. 26 2025", "june-25-2026".
+    re.compile(rf"{_LG}{_MONTH_RE}\.?,?{_SEP}(\d{{1,2}})(?:st|nd|rd|th)?,?{_SEP}(20\d{{2}}){_RG}",
                re.IGNORECASE),
-    # Day-first: "26 September 2025", "26th of Sept. 2025" — common atop
-    # board minutes and presentations.
-    re.compile(rf"\b(\d{{1,2}})(?:st|nd|rd|th)?\s+(?:of\s+)?{_MONTH_RE}\.?,?\s+(20\d{{2}})\b",
+    # Day-first: "26 September 2025", "26th of Sept. 2025", "19_JAN_2021";
+    # common atop board minutes and in archive filenames.
+    re.compile(rf"{_LG}(\d{{1,2}})(?:st|nd|rd|th)?{_SEP}(?:of\s+)?{_MONTH_RE}\.?,?{_SEP}(20\d{{2}}){_RG}",
                re.IGNORECASE),
+    # Compact day-first: "28jan2026", "17june26" (Sudbury filenames). A
+    # 2-digit year is accepted only inside the same 2015-2035 plausibility
+    # window the Peel filename convention uses (see guess_meeting_date).
+    re.compile(rf"{_LG}(\d{{1,2}}){_MONTH_RE}(20\d{{2}}|\d{{2}}){_RG}", re.IGNORECASE),
 ]
+
+# Month + year with NO day ("RTOC-Presentation-May2026", "March_2021_Minutes")
+# -> month precision. Applied by month_year_date to link text and URL only.
+_MONTH_YEAR_RE = re.compile(rf"{_LG}{_MONTH_RE}\.?[-_\s]?(20\d{{2}}){_RG}",
+                            re.IGNORECASE)
 
 
 def _valid(y: int, mo: int, d: int) -> Optional[str]:
@@ -417,7 +574,35 @@ def guess_meeting_date(*texts: str) -> Optional[str]:
                             int(m.group(1)))
             if result:
                 return result
+        m = _DATE_PATTERNS[3].search(text)
+        if m:
+            year = int(m.group(3))
+            if year < 100:
+                year += 2000
+                if not (2015 <= year <= 2035):
+                    year = 0  # implausible 2-digit year: not a date
+            if year:
+                result = _valid(year, _MONTHS[m.group(2).lower().rstrip(".")],
+                                int(m.group(1)))
+                if result:
+                    return result
     return None
+
+
+def month_year_date(*texts) -> tuple:
+    """(published_on, 'month') from a month+year token with no day, or
+    (None, None). Month precision with the conventional day=01 placeholder
+    (renderers show 'Mar 2021', never a fabricated day). Callers apply this
+    to link text and URL only; publisher-authored filenames are trustworthy,
+    while a bare 'June 2026' inside page context or a document body is
+    commonplace and would mis-date."""
+    for text in texts:
+        m = _MONTH_YEAR_RE.search(text or "")
+        if m:
+            mo = _MONTHS.get(m.group(1).lower().rstrip("."))
+            if mo:
+                return f"{int(m.group(2)):04d}-{mo:02d}-01", "month"
+    return None, None
 
 
 # Peel's document slugs open with {agenda-item}-{MM}-{YY} (e.g. 33-04-26- =
@@ -470,7 +655,8 @@ def resolve_source_id(board: dict, sources: list) -> Optional[str]:
 def collect_board(board: dict, source_id: str, fetcher: PoliteFetcher,
                   keywords: Keywords, limit: int, dry_run: bool) -> dict:
     stats = {"listing_pages": 0, "candidates": 0, "inserted": 0,
-             "skipped_duplicate": 0, "skipped_robots": 0, "errors": 0}
+             "skipped_duplicate": 0, "skipped_robots": 0, "dead_links": 0,
+             "errors": 0}
 
     extra_patterns = [re.compile(p, re.IGNORECASE)
                       for p in board.get("doc_url_patterns", [])]
@@ -513,6 +699,11 @@ def collect_board(board: dict, source_id: str, fetcher: PoliteFetcher,
                     queue.append(url)
                     expanded += 1
 
+    # Per-board validation counters over the documents actually processed this
+    # run (docs/big12-boards-design.md section 8: >= 90% date-parse, nonzero
+    # text bodies). Logged, not returned: the stats dict shape is unchanged.
+    val_docs = val_dated = val_body = 0
+
     # The cap counts NEW documents, not candidates: already-collected docs are
     # skipped without consuming it. That's what lets a multi-year backlog page
     # through over successive runs instead of stalling on the first 25 forever.
@@ -551,12 +742,19 @@ def collect_board(board: dict, source_id: str, fetcher: PoliteFetcher,
 
             title = link_text or urlparse(url).path.rsplit("/", 1)[-1]
             title = f"{board['name']} — {title}"[:500]
-            # Date derivation order: link text, URL, the listing page's text
-            # right before the link (meeting dates live in headings/rows next
-            # to links), then the document body. Full dates -> 'day'; the Peel
-            # item-month-year filename convention -> 'month'.
-            published_on, date_precision = derive_event_date(
-                link_text, url, listing_context, body[:4000])
+            # Date derivation order: (1) full date in link text or URL, (2)
+            # month+year in link text or URL at month precision, (3) the
+            # listing page's text right before the link, then the body.
+            # Filename month-year outranks listing context deliberately: on
+            # tabular archives (Durham) the context capture spans the PREVIOUS
+            # row, so a month-only filename dated from context lands on the
+            # wrong meeting. A correct month beats a wrong day.
+            published_on, date_precision = derive_event_date(link_text, url)
+            if not published_on:
+                published_on, date_precision = month_year_date(link_text, url)
+            if not published_on:
+                published_on, date_precision = derive_event_date(
+                    listing_context, body[:4000])
             # Tag-only: board business is in-scope by construction.
             result = evaluate(title, body[:20000], "", keywords)
 
@@ -578,10 +776,30 @@ def collect_board(board: dict, source_id: str, fetcher: PoliteFetcher,
             else:
                 supabase_client.insert_document(payload)
             stats["inserted"] += 1
+            val_docs += 1
+            val_dated += 1 if published_on else 0
+            val_body += 1 if body else 0
+        except requests.HTTPError as e:
+            # A 404 on a document is the publisher's own dead link (nine-year
+            # archive pages accumulate them); skipping it loudly-logged keeps
+            # the board green while the WARNING keeps it visible. Anything
+            # else (403/5xx/network) stays an error: those can mean gating,
+            # which must never pass silently.
+            if e.response is not None and e.response.status_code == 404:
+                stats["dead_links"] += 1
+                log.warning("Dead link on listing (404): %s", url)
+            else:
+                log.exception("Error collecting %s", url)
+                stats["errors"] += 1
         except Exception:   # noqa: BLE001 - one bad document must not kill the board
             log.exception("Error collecting %s", url)
             stats["errors"] += 1
 
+    if val_docs:
+        log.info("VALIDATION [%s]: docs=%d date_parsed=%d (%d%%) nonzero_body=%d (%d%%)",
+                 board["name"], val_docs, val_dated,
+                 round(100 * val_dated / val_docs), val_body,
+                 round(100 * val_body / val_docs))
     return stats
 
 

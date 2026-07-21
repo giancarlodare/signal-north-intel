@@ -397,3 +397,154 @@ def test_month_precision_lands_in_payload(monkeypatch):
     bm.collect_board(board, "src-1", fetcher, NO_KEYWORDS, limit=5, dry_run=False)
     assert inserted[0]["published_on"] == "2026-04-01"
     assert inserted[0]["date_precision"] == "month"
+
+
+# --- Big 12 phase 2 (docs/big12-boards-design.md) -----------------------------
+def test_guess_meeting_date_big12_filename_formats():
+    """The three filename date shapes the phase-2 probe surfaced, one per
+    board. None beats a wrong date stays in force for the ambiguous forms."""
+    g = bm.guess_meeting_date
+    # Durham: underscore-separated day-first
+    assert g("19_JAN_2021_AGENDA_Public_external_2021118134648.pdf") == "2021-01-19"
+    assert g("Jan_2021_Minutes_Public_2021217145748.pdf") is None  # month+year only
+    # Halton: hyphen-separated month-first
+    assert g("meeting-book-halton-police-board-meeting-june-25-2026-2.pdf") == "2026-06-25"
+    assert g("Halton-Police-Board-Meeting-MAY-28-2026-2.pdf") == "2026-05-28"
+    # Sudbury: compact day-first
+    assert g("gspsb-agenda-public_28jan2026.pdf") == "2026-01-28"
+    assert g("media-release_gspsb-meeting_28jan2026.pdf") == "2026-01-28"
+    # Guards: digits/letters butted against the date are not a date
+    assert g("hash_x28jan2026y.pdf") is None
+    assert g("ref-2026-08 grant window") is None
+
+
+def test_guess_meeting_date_existing_formats_still_parse():
+    """Regression guard: the separator generalization must not break the
+    TPSB/Peel-era vectors."""
+    g = bm.guess_meeting_date
+    assert g("Minutes - June 25, 2026") == "2026-06-25"
+    assert g("agenda_2026-03-14.pdf") == "2026-03-14"
+    assert g("Board meeting of 26 September 2025") == "2025-09-26"
+    assert g("Sept. 26, 2025 Regular Meeting") == "2025-09-26"
+    assert g("meeting 24/04/26") is None
+    assert g("Item 32-05-26 discussion") is None
+
+
+def test_big12_boards_config_rows():
+    enabled = [b["name"] for b in bm.BOARDS if b.get("enabled", True)]
+    assert enabled == [
+        "Toronto Police Service Board",
+        "Peel Police Services Board",
+        "York Regional Police Services Board",
+        "Durham Regional Police Services Board",
+        "Halton Police Board",
+        "Waterloo Regional Police Services Board",
+        "Greater Sudbury Police Services Board",
+    ]
+    parked = {b["name"]: b for b in bm.BOARDS if not b.get("enabled", True)}
+    assert set(parked) == {
+        "Hamilton Police Service Board", "Niagara Regional Police Service Board",
+        "London Police Service Board", "Windsor Police Service Board",
+        "Ottawa Police Services Board"}
+    for b in parked.values():
+        assert b.get("parked_reason"), f"{b['name']} parked without a verdict"
+    # Every board has the fields resolve_source_id needs
+    for b in bm.BOARDS:
+        assert b["source_name_candidates"] and b["source_id_env"]
+
+
+def test_big12_enabled_boards_resolve_via_org_seed():
+    from src.resolve_orgs import ORG_SEED
+    seeded = {canonical for canonical, *_ in ORG_SEED}
+    for b in bm.BOARDS:
+        if b.get("enabled", True) and b["name"] not in (
+                "Toronto Police Service Board", "Peel Police Services Board"):
+            assert b["name"] in seeded, f"{b['name']} missing from ORG_SEED"
+    # The services behind the enabled boards resolve too
+    for svc in ("Durham Regional Police Service", "Halton Regional Police Service",
+                "Waterloo Regional Police Service", "Greater Sudbury Police Service",
+                "York Regional Police"):
+        assert svc in seeded, f"{svc} missing from ORG_SEED"
+
+
+def test_month_year_date_fallback_month_precision():
+    """Month+year filenames (no day) date at month precision; day=01 is the
+    conventional placeholder, never a fabricated real day."""
+    assert bm.month_year_date("Real Time Operation Centre",
+                              "/wp-content/uploads/2026/06/RTOC-Presentation-May2026.pdf") \
+        == ("2026-05-01", "month")
+    assert bm.month_year_date("View", "/upload_files/March_2021_Minutes_Public_202142385336.pdf") \
+        == ("2021-03-01", "month")
+    assert bm.month_year_date("View", "/media/x/psb-emcrrt-may-2026.pdf") \
+        == ("2026-05-01", "month")
+    assert bm.month_year_date("DEU Presentation", "/media/y/deu-board-presentation.pdf") \
+        == (None, None)
+
+
+def test_compact_two_digit_year_in_plausibility_window():
+    g = bm.guess_meeting_date
+    assert g("bcwap-presentation-17june26.pdf") == "2026-06-17"
+    assert g("minutes-20may26.pdf") == "2026-05-20"
+    assert g("archive-5jan12.pdf") is None      # 2012: outside the window
+    assert g("gspsb-agenda-public_28jan2026.pdf") == "2026-01-28"
+
+
+def test_find_document_links_strips_url_fragments():
+    """Anchor variants of the same page must not become separate documents
+    (Waterloo '#main-content', Durham '#tab-...')."""
+    html = ('<a href="/resource/psb-agenda-minutes-february-6-2026">Read More</a>'
+            '<a href="/resource/psb-agenda-minutes-february-6-2026#main-content">'
+            'Skip to main content</a>')
+    links = bm.find_document_links(html, "https://board.example.ca/meetings")
+    urls = [u for u, *_ in links]
+    assert urls == ["https://board.example.ca/resource/psb-agenda-minutes-february-6-2026"]
+
+
+def test_dead_link_404_is_skipped_not_failed(monkeypatch):
+    """A publisher's dead link (404) is logged and counted, never a board
+    failure; a nine-year archive page would otherwise be red forever."""
+    import requests as _requests
+
+    class Fetcher404:
+        def get(self, url):
+            if url.endswith(".pdf"):
+                resp = _requests.Response()
+                resp.status_code = 404
+                raise _requests.HTTPError("404", response=resp)
+            r = _requests.Response()
+            r.status_code = 200
+            r._content = (b'<html><a href="/upload_files/dead-minutes.pdf">'
+                          b'View minutes</a></html>')
+            r.encoding = "utf-8"
+            r.headers["Content-Type"] = "text/html"
+            return r
+
+    monkeypatch.setattr(bm.supabase_client, "get_document_by_hash", lambda h: None)
+    board = {"name": "T", "source_name_candidates": ["T"], "source_id_env": "T_ID",
+             "listing_urls": ["https://board.example.ca/meetings"],
+             "doc_url_patterns": [r"/upload_files/.+\.pdf$"]}
+    stats = bm.collect_board(board, "src-1", Fetcher404(), NO_KEYWORDS,
+                             limit=5, dry_run=True)
+    assert stats["dead_links"] == 1
+    assert stats["errors"] == 0
+
+
+def test_filename_month_year_outranks_listing_context(monkeypatch):
+    """The Durham defect: a month-only filename must date at month precision
+    from the filename, NOT take the neighboring row's (previous meeting's)
+    full date from listing context."""
+    pdf = _mini_pdf("body without any date")
+    listing = ('<h3>Meeting of January 19, 2021</h3>'
+               '<a href="/upload_files/March_2021_Minutes_Public_1.pdf">View</a>')
+    fetcher = FakeFetcher({
+        "https://board.example.ca/meetings": FakeResponse(listing),
+        "https://board.example.ca/upload_files/March_2021_Minutes_Public_1.pdf":
+            FakeResponse(content=pdf, headers={"Content-Type": "application/pdf"}),
+    })
+    inserted = _wire(monkeypatch)
+    board = {"name": "T", "source_name_candidates": ["T"], "source_id_env": "T_ID",
+             "listing_urls": ["https://board.example.ca/meetings"],
+             "doc_url_patterns": [r"/upload_files/.+\.pdf$"]}
+    bm.collect_board(board, "src-1", fetcher, NO_KEYWORDS, limit=5, dry_run=False)
+    assert inserted[0]["published_on"] == "2021-03-01"
+    assert inserted[0]["date_precision"] == "month"
