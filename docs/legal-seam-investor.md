@@ -124,3 +124,13 @@ exists yet). What counsel should review when it does:
   checks the solicitation against active engagements: it cannot draft
   competing bids on the same solicitation. The protocol and its records
   live on the Synapse side; SN never sees who Synapse drafts for.
+- **Founding-member cross-entity benefit (counsel question for
+  September).** SN founding membership includes preferred standing at
+  Synapse (priority engine access, founding engagement rates) as a
+  cross-entity perk, never a bundled product: separate contracts,
+  separate invoices, the SN membership agreement referencing the Synapse
+  benefit while Synapse engagements remain their own paper. For counsel:
+  (1) the cleanest legal form for that cross-entity benefit, and (2) the
+  disclosure language that states the neutrality wall IN the membership
+  terms themselves, not just behind them, so a member reads the
+  one-directional information flow as a term of what they bought.

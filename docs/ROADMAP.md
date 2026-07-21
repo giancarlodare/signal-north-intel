@@ -149,6 +149,15 @@ operating model pointed at proposals:
 Demand evidence recorded: unsolicited McKinsey partner interest (would
 anchor founding membership) and the Peel grant-writing thread.
 
+**Founding-member structure (operator, 2026-07-21):** SN founding
+membership includes preferred standing at Synapse (priority engine
+access, founding engagement rates) as a CROSS-ENTITY PERK, never a
+bundled product. Separate contracts and separate invoices: the SN
+membership agreement references the Synapse benefit; Synapse engagements
+are their own paper. The legal form and disclosure language are a
+September counsel question (docs/legal-seam-investor.md, Synapse
+section).
+
 **Firewall implications live in docs/legal-seam-investor.md (Synapse
 section), for counsel alongside the investor-seam flags.** Short form:
 information flows SN to Synapse exactly as to any subscriber, never in
