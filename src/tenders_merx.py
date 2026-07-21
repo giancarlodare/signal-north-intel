@@ -82,6 +82,11 @@ SOLNUM_TITLE_RE = re.compile(r"-\s*(\d{4,6}-\d{4,6}-[A-Z]\d{2})\s*\|\s*MERX")
 # ("Closing Date A - Previous Amendment 2026/06/11 ..."). A short non-digit
 # gap is tolerated, but never across "Previous": a previous amendment's
 # close is explicitly NOT the current close, and none beats a wrong date.
+# STRUCTURAL CEILING (CI diagnostic 2026-07-21, job 88523493062, all 8
+# amended pages): the CURRENT close of an amended solicitation appears
+# NOWHERE in the server HTML (zero raw-only date tokens; every dated field
+# is annotated "A - Previous Amendment", current values client-rendered).
+# Those rows carry published_on NULL honestly; ~10% of sampled abstracts.
 CLOSING_RE = re.compile(
     r"Closing\s+Date\b(?:(?!Previous)[^0-9]){0,40}(\d{4})/(\d{1,2})/(\d{1,2})")
 STATUS_RE = re.compile(r"This solicitation is\s+([A-Z]+)")
