@@ -147,6 +147,12 @@ ORG_SEED = [
     ("City of Windsor",
      ["Windsor", "The Corporation of the City of Windsor"],
      ["municipality"], "municipal", "ON"),
+    # IO newsroom collector (docs/merx-windsor-design.md section 9): the
+    # delivering agency, so it resolves when an announcement names it. The
+    # client organizations (hospitals, Metrolinx, CAMH) resolve separately.
+    ("Infrastructure Ontario",
+     ["IO", "Ontario Infrastructure and Lands Corporation"],
+     ["crown_corp"], "provincial", "ON"),
     ("Parks Canada",
      ["Parks Canada", "Parks Canada Agency"],
      ["federal_agency"], "federal", None),
