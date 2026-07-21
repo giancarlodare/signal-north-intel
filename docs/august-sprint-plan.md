@@ -9,8 +9,17 @@ sources. **We compress the calendar, never the checks.**
 **Park rule:** anything stuck 3+ days gets a park-with-verdict and a dated
 proxy-coverage line. The sprint never stalls on one stubborn source.
 
+**Ceiling rule (operator, 2026-07-21):** dates in this plan are CEILINGS,
+not targets. When a front closes early, the next work pulls forward
+immediately; nothing idles until its scheduled day. If all fronts are
+ahead, week-2 items (CPO probe, saturation batch prep, Hansard build)
+pull forward.
+
 **Reporting:** daily check-in (cleared / in flight / stuck with day count /
-parks), delivered every morning for the sprint's duration.
+parks), delivered every morning for the sprint's duration. Every check-in
+ENDS with a filled action list for the operator regardless of the
+calendar: go's, browser checks, merges, reviews. The operator never opens
+the chat to an empty queue.
 
 ## Week 1 (Jul 21-27): open every front's probe
 
