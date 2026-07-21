@@ -132,17 +132,28 @@ clean in every collector and the proposer. Full spec:
 - **prospects ↔ contract_awards vendor join** — design note in
   `web/app/prospects/constants.ts` (normalized matching, org-resolver
   discipline).
-- **OPP coverage (banked 2026-07-21, probe-first, WAITING on the portal
-  URL from the operator's human search).** Likely the single largest police
-  buyer in the province, currently dark to us except via federal grants and
-  ontario.ca news. The arc is provincial, not the municipal pattern:
-  procurement flows through Ontario central purchasing (Supply Chain
-  Ontario / Ontario Tenders Portal; our 2026-07-20 probe of the guessed
-  host DNS-failed, and pcpg.ca turned out to be a real-estate agency, so
-  the real URL comes from the operator), possibly Infrastructure Ontario
-  for facilities. Oversight signal is SolGen budget/estimates rather than
-  a single board; detachment boards exist but are long-tail. Probe scope
-  when the URL arrives: (1) does the tender portal have a public,
-  collectable, no-login surface, and (2) can buyer filtering isolate
-  OPP / SolGen procurement from the all-of-government stream. Probe-only,
-  read-only, robots respected; design doc before any build.
+- **OPP coverage (probed 2026-07-21; the open door is Infrastructure
+  Ontario on MERX).** Likely the single largest police buyer in the
+  province, currently dark to us except via federal grants and ontario.ca
+  news. The arc is provincial: central purchasing plus Infrastructure
+  Ontario for facilities; oversight signal is SolGen budget/estimates
+  rather than a single board; detachment boards long-tail. Probe results
+  (CI job 88525460550, read-only):
+  - **Ontario Tenders Portal is CLOSED to automation.** It is
+    Jaggaer-hosted (ontariotenders.app.jaggaer.com, supplier login at
+    /esop/nac-host/public/web/login.html) and its robots.txt disallows the
+    entire /esop tree to all agents, which covers every candidate public
+    path; the site root is a 117-byte JS stub. Whether or not a no-login
+    browse surface exists behind that, robots forbids automated
+    collection, so OTP joins the registered-access policy bank as
+    human-research-only. A future probe candidate that routes around this
+    honestly: whether data.ontario.ca publishes an OTP tender dataset
+    (publisher open data, like Windsor's).
+  - **OPP procurement IS publicly reachable via merx.com/
+    infrastructureontario** (OPP Modernization Phase Three visible on its
+    awarded tab), on the platform the tenders_merx collector already
+    speaks. Banked as a MERX buyer target pending the operator's browser
+    provenance check; details in docs/merx-windsor-design.md section 8.
+  - **Aggregators are never sources**: Tendersift and GlobalTenders
+    confirmed OTP/OPP tenders exist; research tools only, provenance rule
+    excludes them as collection sources.
