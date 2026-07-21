@@ -61,10 +61,21 @@ MUNICIPALITIES = [
     {"org_key": "london", "subdomain": "london", "name": "City of London"},
     {"org_key": "durham", "subdomain": "durham", "name": "Region of Durham"},
     {"org_key": "yrp", "subdomain": "yrp", "name": "York Regional Police"},
-    # HELD on provenance (design rule: publisher-linked, no exceptions).
-    # drps.ca/about-us/procurement-services/ does not link the tenant one hop
-    # from the homepage (crawled 2026-07-20). Uncomment only after the DRPS
-    # site verifiably links drps.bidsandtenders.ca.
+    # PERMANENTLY PARKED on provenance, with evidence (operator browse,
+    # 2026-07-20): drps.ca/about-us/procurement-services/ states DRPS posts
+    # tenders, RFPs, and competitive opportunities on the Biddingo portal.
+    # The publisher-named channel is Biddingo; this branded bids&tenders
+    # tenant is legacy/secondary and must not be enabled.
+    #
+    # DRPS IS reachable there: biddingo.com/m/drps is PUBLIC, no sign-in
+    # (operator browser, 2026-07-20: "Doing Business with Durham Regional
+    # Police Service", 38 bids, references like DRPS-2026-002, Awarded and
+    # Closed statuses visible, incl. an awarded vehicle towing and storage
+    # contract). The page is client-rendered (server HTML is a JS shell, so
+    # requests-based probes see an empty page; that is rendering, not a
+    # soft-404). Collection is pending the banked render-capable evaluation
+    # (docs/big12-boards-design.md section 10), where a police service's
+    # full public bid history with awards is now its highest-value target.
     # {"org_key": "drps", "subdomain": "drps", "name": "Durham Regional Police Service"},
 ]
 
