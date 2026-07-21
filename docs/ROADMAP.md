@@ -228,11 +228,14 @@ design-first proposal, walled ones get recorded verdicts.
     speaks. PARKED 2026-07-21: neither the machine crawl nor the
     operator's human browse of infrastructureontario.ca found a link to
     the MERX page, so provenance is not established. Revival paths (both
-    banked): a deeper targeted crawl of IO's site on a quiet day (the link
-    may live on a project-specific or vendor-resources page), and the
-    data.ontario.ca OTP-dataset probe below, which covers provincial
-    procurement including OPP regardless of the IO question. Details in
-    docs/merx-windsor-design.md section 8.
+    banked): a deeper targeted crawl of IO's site on a quiet day (the
+    2026-07-21 sitemap sweep of 227 procurement-ish pages found no MERX
+    link either), and the data.ontario.ca OTP-dataset probe below, which
+    covers provincial procurement including OPP regardless of the IO
+    question. PROXY COVERAGE: the IO newsroom collector (design in
+    docs/merx-windsor-design.md section 9, approved target 2026-07-21)
+    makes IO's line "awards via newsroom live, tender feed parked pending
+    provenance". Details in docs/merx-windsor-design.md sections 8-9.
   - **Aggregators are never sources**: Tendersift and GlobalTenders
     confirmed OTP/OPP tenders exist; research tools only, provenance rule
     excludes them as collection sources.
