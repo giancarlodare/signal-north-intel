@@ -109,3 +109,11 @@ simulation
 simulator
 training simulator
 training system
+
+# Police service acronyms as the Windsor open-data and MERX-Ottawa portals
+# print them (docs/merx-windsor-design.md section 4): "92-26 WPS Collision
+# Repair", "EPS/OPS/ Supply and Deliver...". Matching is SUBSTRING, so bare
+# "ops" is unsafe (it hits "stops", "laptops"); only the slash-delimited
+# form Ottawa actually prints is listed. "wps" appears in no common word.
+wps
+ops/
