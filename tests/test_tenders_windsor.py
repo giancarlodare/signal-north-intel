@@ -159,7 +159,9 @@ def test_missing_close_date_is_null_not_fabricated():
     undated = dict(items[1], close_on=None)
     p = tw.build_payload(undated, "s", "tender_notice", KW)
     assert p["published_on"] is None
-    assert p["date_precision"] is None
+    # published_on carries the null-date signal; date_precision stays a valid
+    # non-null value ('day') for the NOT NULL documents column.
+    assert p["date_precision"] == "day"
 
 
 # --- the operator's absolute copy rule ---------------------------------------

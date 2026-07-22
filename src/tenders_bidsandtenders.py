@@ -205,7 +205,10 @@ def build_payload(muni: dict, source_id: str, doc_type: str, row: dict,
         "doc_type": doc_type,
         "status": "captured",
         "published_on": date_iso,
-        "date_precision": precision,
+        # documents.date_precision is NOT NULL (day|month); a bid whose date did
+        # not parse still needs a valid value, and published_on=None carries the
+        # null-date signal. Matches board_minutes.
+        "date_precision": precision or "day",
         "reference_number": ref,          # hard key for the proposer + arc walk
         "content_hash": chash,
         "content": body[:MAX_STORED_CHARS] or None,

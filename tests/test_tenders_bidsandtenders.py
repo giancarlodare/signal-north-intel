@@ -126,7 +126,9 @@ def test_build_payload_no_guid_falls_back_to_portal_url():
 
 def test_build_payload_unparseable_date_is_null():
     p = bt.build_payload(MUNI, "s", "tender_notice", _row(date="Ongoing"), KW)
-    assert p["published_on"] is None and p["date_precision"] is None
+    # published_on carries the null-date signal; date_precision stays a valid
+    # non-null value ('day') for the NOT NULL documents column.
+    assert p["published_on"] is None and p["date_precision"] == "day"
 
 
 # --- Method-B awarded ---------------------------------------------------------

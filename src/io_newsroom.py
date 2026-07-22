@@ -161,7 +161,10 @@ def build_payload(url: str, page_html: str, source_id: Optional[str],
         "doc_type": "news_release",
         "status": "captured",
         "published_on": published_on,
-        "date_precision": "day" if published_on else None,
+        # documents.date_precision is NOT NULL (day|month); an undated article
+        # still needs a valid value, and published_on=None carries the
+        # null-date signal. Matches board_minutes.
+        "date_precision": "day",
         "content_hash": content_hash(url, "news_release"),
         "content": body[:MAX_STORED_CHARS] or None,
         "defence_relevant": result.defence_relevant,

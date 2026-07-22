@@ -126,7 +126,9 @@ def test_payload_without_closing_date_is_null():
     a = tm.parse_abstract("Solicitation Number 19224-1 no dates here")
     p = tm.build_payload("1", "u", "Title", "tender_notice", a, "body", None, KW)
     assert p["published_on"] is None
-    assert p["date_precision"] is None
+    # published_on carries the null-date signal; date_precision must stay a
+    # valid non-null value ('day') for the NOT NULL documents column.
+    assert p["date_precision"] == "day"
 
 
 # --- the operator's absolute copy rule ---------------------------------------
