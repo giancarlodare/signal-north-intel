@@ -36,10 +36,16 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # The generator is deterministic (no LLM), so only the Supabase creds are
-      # needed. --force is passed through only when the input is checked.
-      - name: Regenerate brief (brief generator only)
+      # PROBE OVERRIDE (branch probe/fix-sources, never merged): show the
+      # current sources state (dry-run) then apply the merx/windsor DB fix.
+      - name: Sources fix dry-run (show current state + plan)
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: python -m src.brief_generator --apply ${{ inputs.force && '--force' || '' }}
+        run: python scripts/fix_merx_windsor_sources.py --dry-run
+
+      - name: Sources fix apply
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python scripts/fix_merx_windsor_sources.py
