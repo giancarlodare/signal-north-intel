@@ -132,7 +132,9 @@ def test_build_payload_undated_is_null_not_fabricated():
     html = "<h1>Substantial Completion Reached</h1><p>no date</p>"
     p = io.build_payload(ARTICLE, html, "s", KW)
     assert p["published_on"] is None
-    assert p["date_precision"] is None
+    # published_on carries the null-date signal; date_precision stays a valid
+    # non-null value ('day') for the NOT NULL documents column.
+    assert p["date_precision"] == "day"
 
 
 def test_hash_matches_rss_news_release_keying():

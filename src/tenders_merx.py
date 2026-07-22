@@ -166,7 +166,10 @@ def build_payload(merx_id: str, url: str, title: str, doc_type: str,
         "doc_type": doc_type,
         "status": "captured",
         "published_on": abstract["closing_on"],
-        "date_precision": "day" if abstract["closing_on"] else None,
+        # documents.date_precision is NOT NULL (day|month); an undated award
+        # (amended-solicitation ceiling) still needs a valid value, and
+        # published_on=None carries the null-date signal. Matches board_minutes.
+        "date_precision": "day",
         "reference_number": abstract["sol_num"],   # Ottawa's own hard key
         "content_hash": merx_hash(merx_id, doc_type),
         "content": body[:MAX_STORED_CHARS] or None,

@@ -212,7 +212,10 @@ def build_payload(item: dict, source_id: Optional[str], doc_type: str,
         # The close date is the event the spine cares about (the results PDF
         # publishes no award date, and none beats a wrong date).
         "published_on": item["close_on"],
-        "date_precision": "day" if item["close_on"] else None,
+        # documents.date_precision is NOT NULL (day|month); an item with no
+        # parsed close still needs a valid value, and published_on=None carries
+        # the null-date signal. Matches board_minutes.
+        "date_precision": "day",
         "reference_number": item["ref"],
         "content_hash": content_hash(item["ref"], doc_type, "windsor"),
         "content": body or None,
