@@ -72,6 +72,22 @@ Above the bar: scale aggressively to all services on the same extractor.
 The proof is brought to the operator FAST as a precision table with the
 misclassified examples, so the scale/fix decision is made on evidence.
 
+## 4a. Peel source probe (2026-07-25, CI job 89695342290)
+
+- `peelpolice.ca`: server-side (102 KB, ~64k text), news/chief/press +
+  crime/api markers. Collectable. The newsroom SUB-URL is not the guessed
+  `.aspx` path (all 404); pass-2 crawls the homepage for the actual news link.
+- `peelpoliceboard.ca`: server-side (47 KB), news/media-release/press markers.
+  Collectable; the meetings sub-URL likewise needs the homepage-link crawl.
+- `data.peelregion.ca`: **ArcGIS open-data portal, collectable** (dataset /
+  open-data / api / arcgis / opendata hints), the leading-indicator (crime /
+  auto-theft) feed source. robots declares a **60s Crawl-delay**, honored, so
+  it is a low-frequency pull.
+- `opendata.peelpolice.ca`: does not resolve (not a real host).
+
+Next: crawl the two service homepages for their real news/statement listing
+URLs, then build the adapter against them plus the ArcGIS feed.
+
 ## 5. Build order
 
 1. `src/upstream_intent.py`: source adapters (newsroom + board-statement +
