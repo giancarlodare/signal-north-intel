@@ -175,3 +175,49 @@ def test_body_keeps_unmapped_columns():
            "Submission Deadline": "2026-08-05", "Weird Extra Field": "keep me"}
     p = tt.build_payload(rec, COLS, OPEN_DS, "src-1", KW)
     assert "Weird Extra Field: keep me" in p["content"]
+
+
+# --- resilience: idempotent insert + transient-timeout retry -----------------
+def test_idempotent_insert_skips_when_hash_present(monkeypatch):
+    calls = {"insert": 0}
+    monkeypatch.setattr(tt.supabase_client, "get_document_by_hash", lambda h: {"id": "x"})
+    monkeypatch.setattr(tt.supabase_client, "insert_document",
+                        lambda p: calls.__setitem__("insert", calls["insert"] + 1))
+    tt._idempotent_insert({"content_hash": "h"})
+    assert calls["insert"] == 0    # a committed row is never double-inserted
+
+
+def test_idempotent_insert_inserts_when_absent(monkeypatch):
+    calls = {"insert": 0}
+    monkeypatch.setattr(tt.supabase_client, "get_document_by_hash", lambda h: None)
+    monkeypatch.setattr(tt.supabase_client, "insert_document",
+                        lambda p: calls.__setitem__("insert", calls["insert"] + 1))
+    tt._idempotent_insert({"content_hash": "h"})
+    assert calls["insert"] == 1
+
+
+def test_db_retry_recovers_from_transient_timeout(monkeypatch):
+    import requests
+    monkeypatch.setattr(tt.time, "sleep", lambda s: None)
+    n = {"calls": 0}
+
+    def flaky():
+        n["calls"] += 1
+        if n["calls"] < 3:
+            raise requests.exceptions.ReadTimeout("boom")
+        return "ok"
+
+    assert tt._db_retry(flaky, "test", "slug") == "ok"
+    assert n["calls"] == 3
+
+
+def test_db_retry_reraises_after_exhausting(monkeypatch):
+    import pytest
+    import requests
+    monkeypatch.setattr(tt.time, "sleep", lambda s: None)
+
+    def always_down():
+        raise requests.exceptions.ConnectionError("down")
+
+    with pytest.raises(requests.exceptions.ConnectionError):
+        tt._db_retry(always_down, "test", "slug", attempts=3)
