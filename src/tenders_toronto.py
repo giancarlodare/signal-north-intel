@@ -340,6 +340,7 @@ def collect_dataset(ds: dict, fetcher: PoliteFetcher, source_id: Optional[str],
     offset = 0
     known_pages = 0
     cols: dict = {}
+    sample_logged = 0   # cap the per-row dry-run print (first few rows suffice)
     while offset < PAGE_MAX * PAGE_LIMIT:
         result = datastore_page(fetcher, resource_id, offset, PAGE_LIMIT)
         tval["pages"] += 1
@@ -388,9 +389,11 @@ def collect_dataset(ds: dict, fetcher: PoliteFetcher, source_id: Optional[str],
             tval["new"] += 1
             try:
                 if dry_run:
-                    log.info("[dry-run] %-13s ref=%-18s date=%s :: %s",
-                             ds["doc_type"], payload["reference_number"],
-                             payload["published_on"], payload["title"][:60])
+                    if sample_logged < 3:
+                        log.info("[dry-run] %-13s ref=%-18s date=%s :: %s",
+                                 ds["doc_type"], payload["reference_number"],
+                                 payload["published_on"], payload["title"][:60])
+                        sample_logged += 1
                 else:
                     supabase_client.insert_document(payload)
                 stats["inserted"] += 1
