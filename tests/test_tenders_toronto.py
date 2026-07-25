@@ -126,7 +126,9 @@ def test_non_competitive_keys_on_workspace_number_and_marks():
            "Contract Date": "2026-01-10", "Supplier Name": "Vendor X",
            "Division": "IT"}
     p = tt.build_payload(rec, cols, NC_DS, "src-1", KW)
-    assert p["status"] == "non_competitive"
+    # status is the processing_status enum; the sole-source marker rides in the
+    # title and content instead.
+    assert p["status"] == "captured"
     assert p["title"] == "Non-competitive: Proprietary renewal"
     assert p["reference_number"] is None      # no solicitation reference
     assert p["published_on"] == "2026-01-10"

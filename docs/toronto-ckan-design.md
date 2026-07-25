@@ -84,11 +84,13 @@ Per row, emit one document:
   same `Document Number`, so the award clusters to its solicitation.
   published_on = `Award Authority Obtained Date`. content carries the
   `Successful Supplier` and award value.
-- **`tobids-non-competitive-contracts` -> `award_notice`, `status =
-  non_competitive`.** No solicitation reference (sole-source), so
-  reference_number stays NULL; the `Reason` (sole-source justification) is
-  the description, the signal this dataset uniquely provides. published_on =
-  `Contract Date`.
+- **`tobids-non-competitive-contracts` -> `award_notice`, marked
+  non-competitive in the title and content** (the `status` column is the
+  processing_status enum, not a business marker, so the sole-source signal
+  rides in the title "Non-competitive: ..." and the content's first line
+  instead). No solicitation reference (sole-source), so reference_number
+  stays NULL; the `Reason` (sole-source justification) is the description,
+  the signal this dataset uniquely provides. published_on = `Contract Date`.
 
 Hard key vs row identity (a distinction the live data forced): the
 CLUSTERING key is Toronto's own reference (`Document Number`), stored in

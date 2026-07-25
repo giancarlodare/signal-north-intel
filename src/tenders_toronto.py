@@ -329,9 +329,12 @@ def build_payload(rec: dict, cols: dict, ds: dict, source_id: Optional[str],
         "url": url,
         "title": title[:500],
         "doc_type": ds["doc_type"],
-        # Non-competitive awards carry a machine-readable status so downstream
-        # can isolate sole-source signal; everything else is 'captured'.
-        "status": "non_competitive" if ds["non_competitive"] else "captured",
+        # status is the processing_status ENUM (captured -> extracted/failed),
+        # not a business marker, so every row is 'captured'. The sole-source
+        # signal rides in the title ("Non-competitive: ...") and the content's
+        # first line ("NON-COMPETITIVE (sole-source) contract."), both
+        # machine-readable, so downstream can isolate it without a schema change.
+        "status": "captured",
         "published_on": published_on,
         # documents.date_precision is NOT NULL (day|month); a row with no
         # parsed date still needs a valid value, and published_on=None carries
