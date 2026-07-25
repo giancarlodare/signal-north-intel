@@ -44,11 +44,24 @@ and whether OPP / Solicitor General buys are namable:
 - `ontario.ca` supply-chain / VOR / doing-business slugs: all **404** (guessed
   slugs wrong); the real ontario.ca SCO/VOR page URLs need finding.
 
-**Probe pass 2 (next):** crawl `www.doingbusiness.mgs.gov.on.ca/sitemap*` for
-the opportunity/award listing pages and confirm (a) they are server-side and
-robots-allowed, (b) whether a buyer/ministry field isolates OPP / SolGen; and
-find the correct ontario.ca SCO + Vendor-of-Record page URLs. Then this
-verdict finalizes and the collector shape below is chosen.
+**Probe pass 2 (2026-07-25, CI job 89695342290):**
+
+- Marketplace sitemap: `/sitemap.xml`, `/sitemap_index.xml`, `/sitemap` all
+  404. No sitemap to enumerate opportunity listings, so the listings are not
+  sitemap-collectable; the marketplace is likely a search-app for
+  opportunities. The actual opportunity-listing URL/endpoint is still unknown
+  (candidate for an operator browser check or a deeper crawl of the hub links
+  below).
+- **Real ontario.ca hub found: `ontario.ca/page/doing-business-government-ontario`**
+  (200, 101 KB, markers tender/award/procurement). This is the
+  publisher-official provenance anchor; its links point to the SCO /
+  Vendor-of-Record / marketplace resources. The earlier 404s were wrong slugs.
+
+**Probe pass 3 (next):** crawl the ontario.ca doing-business hub for its links
+to the SCO / VOR / marketplace opportunity + award surfaces, and follow them to
+the actual listing endpoint; confirm robots + server-side + whether OPP/SolGen
+is isolable there. If the listings prove to be a JS search-app, the front joins
+the render-capable evaluation with a proxy line, per section 3.
 
 Open questions the verdict still answers: which surfaces publish
 opportunities/awards collectably; whether OPP/SolGen buys are isolable; JS-app
