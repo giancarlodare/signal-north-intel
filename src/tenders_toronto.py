@@ -425,6 +425,12 @@ def collect_dataset(ds: dict, fetcher: PoliteFetcher, source_id: Optional[str],
     # past the steady-state PAGE_MAX to reach the full history (awarded is 7500+
     # rows). +5 pages of headroom past the cap.
     page_ceiling = max(PAGE_MAX, cap // PAGE_LIMIT + 5)
+    # Backfill mode (a raised cap) must page the WHOLE dataset to `total`, so
+    # the KNOWN_PAGE_STOP early-out is disabled: already-collected rows sit at
+    # the front (from prior runs) while the un-collected history is deeper, so
+    # stopping at the first all-known pages would leave the tail undrained.
+    # Steady state keeps the early-out (it stops once it catches up).
+    backfill = cap > NEW_PER_DATASET
     tval = {"rows_seen": 0, "new": 0, "date_parsed": 0, "ref_parsed": 0,
             "key_parsed": 0, "pages": 0, "total": None, "cols": {},
             "non_competitive_marked": 0}
@@ -505,7 +511,7 @@ def collect_dataset(ds: dict, fetcher: PoliteFetcher, source_id: Optional[str],
                         f"failures): systemic, not transient. Aborting.")
 
         known_pages = known_pages + 1 if page_new == 0 else 0
-        if known_pages >= KNOWN_PAGE_STOP or tval["new"] >= cap:
+        if tval["new"] >= cap or (not backfill and known_pages >= KNOWN_PAGE_STOP):
             break
         if tval["total"] is not None and offset + PAGE_LIMIT >= tval["total"]:
             break
