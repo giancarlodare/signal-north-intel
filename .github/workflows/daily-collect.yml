@@ -66,16 +66,6 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python -m src.main
 
-      # Board minutes ride the same guard and the workflow-level concurrency
-      # group. A failure here fails the job, so the healthcheck ping below is
-      # withheld and the dead-man's switch pages on it.
-      - name: Run board minutes collector
-        if: steps.guard.outputs.should_run == 'true'
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-        run: python -m src.board_minutes
-
       # Windsor open-data bids + MERX-Ottawa solicitations: light requests
       # collectors on the board-minutes politeness pattern, no Chromium
       # (docs/merx-windsor-design.md section 6). Each fails loudly on an
@@ -168,3 +158,22 @@ jobs:
           python -m src.signal_extractor
           --doc-types tender_notice,news_release,grant_program
           --newest-first --limit 50
+
+      # Board minutes run LAST, on purpose (operator 2026-07-25). The board
+      # sites' WAFs (tpsb.ca, durhampoliceboard.ca) intermittently 415 a heavy
+      # crawl repeated within a short window; as an early step that failed the
+      # whole job and skipped the brief-critical forward collectors + extraction.
+      # Placed after them and after extraction, a board WAF blip now degrades
+      # only board BACKFILL (idempotent, content_hash-deduped, resumes next
+      # run) instead of blocking the pipeline. It STILL fails the job loudly
+      # (red) so the WAF stays visible, but the healthcheck above has already
+      # pinged and the forward pipeline has already run. Board minutes are not
+      # in the daily forward-extraction doc-types (they drain via
+      # extract-backfill.yml), so running them after extraction costs the brief
+      # nothing.
+      - name: Run board minutes collector
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.board_minutes
