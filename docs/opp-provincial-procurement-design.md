@@ -30,13 +30,29 @@ and whether OPP / Solicitor General buys are namable:
 - ontario.ca Supply Chain Ontario + Vendor of Record pages
 - Ontario Tenders Portal (Jaggaer) robots recheck
 
-**Verdict: PENDING probe results.** The three questions the verdict answers:
-1. Which surfaces publish opportunities and/or awards publicly and collectably
-   (server-side HTML or a structured feed), robots permitting?
-2. Can OPP / SolGen buys be isolated (a buyer/ministry field or a namable
-   marker), so we tag rather than drown in all-ministry procurement?
-3. Is the marketplace a JS app (render-capable evaluation territory) or
-   requests-collectable (Windsor/Toronto pattern)?
+**Probe pass 1 (2026-07-25, CI job 89692912290), partial verdict:**
+
+- `doingbusiness.mgs.gov.on.ca` (no-www): robots **DISALLOWED**. Use the www
+  host, never this one.
+- `www.doingbusiness.mgs.gov.on.ca`: robots **ALLOWED**, 200, **server-side
+  HTML** (only 5 scripts, ~8.4k text chars), a "procurement" marker, and a
+  **sitemap** hint. This is the collectable surface (Windsor/Toronto pattern),
+  but the landing page is thin: the opportunity/award LISTINGS are deeper, so a
+  sitemap-driven crawl is needed to find them and confirm OPP/SolGen isolation.
+- Ontario Tenders Portal (Jaggaer) root: 200 but a 3.7k stub, no procurement
+  markers, consistent with the existing OTP park (robots disallows /esop).
+- `ontario.ca` supply-chain / VOR / doing-business slugs: all **404** (guessed
+  slugs wrong); the real ontario.ca SCO/VOR page URLs need finding.
+
+**Probe pass 2 (next):** crawl `www.doingbusiness.mgs.gov.on.ca/sitemap*` for
+the opportunity/award listing pages and confirm (a) they are server-side and
+robots-allowed, (b) whether a buyer/ministry field isolates OPP / SolGen; and
+find the correct ontario.ca SCO + Vendor-of-Record page URLs. Then this
+verdict finalizes and the collector shape below is chosen.
+
+Open questions the verdict still answers: which surfaces publish
+opportunities/awards collectably; whether OPP/SolGen buys are isolable; JS-app
+vs requests-collectable per surface.
 
 ## 3. Collector shape (conditional on the verdict)
 
