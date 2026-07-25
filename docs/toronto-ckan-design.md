@@ -35,13 +35,26 @@ purchasing returned the three target datasets above plus XML-only feeds
 `tobids-*` datasets each expose CSV, JSON, and XML resources, so the
 collector reads structured rows, never scraped HTML.
 
-Not yet pinned by the probe (the probe enumerated datasets, it did not dump
-rows): the exact column names for the solicitation/call reference, the
-per-row publisher notice URL, and the date fields. The build reads one
-sample row per dataset via `datastore_search` (limit 1), maps the columns
-once, and the validation bar in section 5 holds the mapping honest before
-enablement. The design fixes the semantics (what each field must carry);
-the build fixes the literal column names against a live sample.
+Columns pinned from the live datastore fields by the CI validation dry-run
+(2026-07-25, regenerate-brief probe override, job 89681821890):
+
+- open-solicitations: `Document Number`, `Submission Deadline` (close),
+  `Issue Date`, `Solicitation Document Description`, `Division`,
+  `High Level Category`.
+- awarded-contracts: `Document Number`, `Successful Supplier`,
+  `Award Authority Obtained Date` (the award date), `Solicitation Document
+  Description`, `Division`. MANY rows share one `Document Number` (one per
+  successful supplier), so the reference is the clustering key, not the row
+  identity (see section 3).
+- non-competitive-contracts: `Workspace Number` (per-contract key), `Reason`
+  (the sole-source justification, used as the description), `Contract Date`
+  (award date), `Supplier Name`, `Contract Amount`. There is NO solicitation
+  reference (sole-source), so reference_number stays NULL and identity keys
+  on Workspace Number.
+
+The literal names are resolved at run time by `_resolve_columns` (logged
+every run), so a column rename surfaces as an UNMAPPED warning and a failed
+validation bar rather than a silent regression.
 
 ## 3. Collector
 
@@ -54,38 +67,41 @@ scraping:
   datastore resource id (prefer the CSV/JSON resource backed by the
   datastore; fall back to fetching the CSV resource directly if the
   datastore is not active).
-- Page rows via `datastore_search` (`limit` + `offset`) until exhausted.
-  A per-run NEW-row cap (25, board-minutes style, `content_hash(url,
-  doc_type)` checked first) drains the multi-year history over days; the
-  steady state fetches only rows whose hash is new.
+- Page rows via `datastore_search` (`limit` + `offset`). A per-run NEW-row
+  cap (100, `content_hash` checked first) drains the multi-year history over
+  days; unlike MERX each row arrives whole in the page (no per-row fetch),
+  so the cap costs Toronto nothing and only paces our own writes. Steady
+  state stops after two all-known pages.
 
 Per row, emit one document:
 
 - **`tobids-all-open-solicitations` -> `tender_notice`.** reference_number
-  = Toronto's own solicitation / call reference (the hard key; see below).
-  published_on = the closing date at day precision. buyer_name = "City of
-  Toronto". content = the row's description / commodity text. url = the
-  per-solicitation Toronto Bids notice page if the row carries one, else
-  the dataset landing page anchored by reference (publisher artifact
-  first, listing fallback, Windsor convention).
-- **`tobids-awarded-contracts` -> `award_notice`.** Same reference as its
-  originating solicitation where present, so the notice and its award share
-  a hard key and reconcile. published_on = the award date at day precision.
-  content includes the winning vendor and award value where the row
-  carries them.
-- **`tobids-non-competitive-contracts` -> `award_notice`, marked
-  non-competitive.** A `non_competitive` marker rides in the document
-  (status text / content prefix) so downstream can isolate sole-source
-  awards, the signal this dataset uniquely provides. Same reference-key and
-  date discipline as competitive awards.
+  = the solicitation `Document Number`. published_on = the closing date
+  (`Submission Deadline`) at day precision. buyer_name = "City of Toronto".
+  url = the dataset landing page anchored by reference (open data carries no
+  per-solicitation notice URL).
+- **`tobids-awarded-contracts` -> `award_notice`.** reference_number = the
+  same `Document Number`, so the award clusters to its solicitation.
+  published_on = `Award Authority Obtained Date`. content carries the
+  `Successful Supplier` and award value.
+- **`tobids-non-competitive-contracts` -> `award_notice`, `status =
+  non_competitive`.** No solicitation reference (sole-source), so
+  reference_number stays NULL; the `Reason` (sole-source justification) is
+  the description, the signal this dataset uniquely provides. published_on =
+  `Contract Date`.
 
-Hard key (operator instruction): reference_number is Toronto's own
-solicitation / call reference, never a CKAN row id. Toronto's procurement
-references take forms like a Tender Call number, an RFQ/RFP number, or a
-Doc number; the build maps the reference column from the sample row and the
-validation bar requires it to parse on >= 90% of rows. The CKAN `_id` rides
-only in the URL / content_hash namespace, never as the procurement key
-(same discipline as the MERX id in tenders_merx).
+Hard key vs row identity (a distinction the live data forced): the
+CLUSTERING key is Toronto's own reference (`Document Number`), stored in
+reference_number so awards cluster to their solicitation, exactly as the
+operator asked. But awarded-contracts carries MANY rows per Document Number
+(one per successful supplier), so the Document Number cannot be the row
+IDENTITY: `content_hash` keys on the reference PLUS supplier PLUS award date
+for awards, or the Document Number alone for the one-row-per-solicitation
+open feed. Non-competitive rows key on `Workspace Number` (their per-contract
+identifier) in a separate namespace. The CKAN `_id` is never used (unstable
+across dataset refreshes). Keying identity on the reference alone would have
+collapsed every award under a solicitation into a single row; the CI dry-run
+caught it before enablement.
 
 Dates (per the #103 fix): `date_precision` is always `"day"`, never None.
 When a row carries no usable date, published_on is NULL and date_precision
@@ -117,25 +133,33 @@ then raise. A silent-empty CKAN response never passes as success.
 ## 5. Validation before enablement (tier-1 bars)
 
 CI dry-run before the migration applies and the build PR merges, one
-VALIDATION log line per dataset:
+VALIDATION line per dataset. `key_parsed` is the row identity key
+(solicitation Document Number, or Workspace Number for non-competitive);
+`ref_parsed` is the solicitation reference specifically.
 
-- open-solicitations: >= 90% of rows parse reference AND closing date;
-  nonzero rows.
-- awarded-contracts: >= 90% of rows parse reference AND award date OR a
-  published NULL-date row where the source genuinely omits it (never a
-  fabricated date); nonzero rows; vendor field nonzero.
-- non-competitive-contracts: nonzero rows; the non_competitive marker set
-  on every row from this dataset; reference parse >= 90%.
-- Below the bar: diagnose and extend the column mapping before enabling,
-  never enable-and-hope.
+RESULT (job 89681821890, first sample page per dataset, 100 rows each):
+
+- open-solicitations (total 905): key_parsed 100%, date_parsed 100%. PASS.
+- awarded-contracts (total 7583): key_parsed 100%, date_parsed 100% after
+  pinning `Award Authority Obtained Date`; vendor nonzero. PASS.
+- non-competitive-contracts (total 2922): key_parsed 100% (Workspace
+  Number), date_parsed 100%, non_competitive marker on every row.
+  ref_parsed 0% is STRUCTURAL, not a defect: sole-source contracts have no
+  solicitation. PASS.
+
+Bar: key_parsed AND date_parsed >= 90% per dataset (a genuinely
+source-omitted date is a published NULL, never fabricated). Below the bar:
+diagnose and extend the column mapping before enabling, never
+enable-and-hope.
 
 ## 6. Scheduling
 
 A light requests collector (CKAN JSON, no Chromium): one new step in
 daily-collect after the Windsor / MERX steps, sharing the politeness
 pattern. Steady state is three `datastore_search` sweeps returning mostly
-already-hashed rows; the per-run cap of 25 new rows bounds the initial
-history drain.
+already-hashed rows; the per-run cap of 100 new rows per dataset bounds the
+initial history drain (awarded-contracts' 7583-row backlog drains over
+days, board-minutes style).
 
 ## 7. Banked, not built
 

@@ -113,21 +113,51 @@ def test_award_payload_uses_award_date_and_tags_defence():
     assert "Acme Ltd" in p["content"]
 
 
-def test_non_competitive_marked_and_reference_fallback():
-    # A non-competitive row with no solicitation reference: status marks it,
-    # the title flags it, and identity falls back to a stable composite
-    # (never colliding with a referenced row's namespace).
-    rec = {"Description": "Proprietary software renewal", "Award Date": "2026-01-10",
-           "Awarded Supplier": "Vendor X", "Division": "IT"}
-    cols = dict(COLS, reference=None)
+def test_non_competitive_keys_on_workspace_number_and_marks():
+    # Non-competitive rows have no solicitation reference (sole-source); their
+    # per-row key is the Workspace Number, reference_number stays NULL, the
+    # Reason stands in as the description, and identity lives in its own
+    # namespace so it can never collide with a competitive award.
+    cols = {"reference": None, "workspace": "Workspace Number",
+            "award": "Contract Date", "vendor": "Supplier Name",
+            "division": "Division", "description": "Reason", "value": None,
+            "close": None, "issue": None, "category": None, "url": None}
+    rec = {"Workspace Number": "WS-777", "Reason": "Proprietary renewal",
+           "Contract Date": "2026-01-10", "Supplier Name": "Vendor X",
+           "Division": "IT"}
     p = tt.build_payload(rec, cols, NC_DS, "src-1", KW)
     assert p["status"] == "non_competitive"
-    assert p["title"].startswith("Non-competitive:")
-    assert p["reference_number"] is None
+    assert p["title"] == "Non-competitive: Proprietary renewal"
+    assert p["reference_number"] is None      # no solicitation reference
+    assert p["published_on"] == "2026-01-10"
     assert p["content_hash"] == tt.content_hash(
-        "toronto-nc:Vendor X|Proprietary software renewal|IT|2026-01-10",
-        "award_notice")
+        "toronto-nc:WS-777|Vendor X|2026-01-10", "award_notice")
     assert "NON-COMPETITIVE" in p["content"]
+    assert "Contract ref: WS-777" in p["content"]
+
+
+def test_multiple_awards_under_one_solicitation_stay_distinct():
+    # awarded-contracts carries many rows per Document Number (one per
+    # successful supplier). Identity must include supplier + date so the
+    # awards do not collapse into a single document.
+    base = {"Solicitation Number": "3303123110", "Description": "Supply of valves",
+            "Award Date": "2026-02-01"}
+    a = tt.build_payload(dict(base, **{"Awarded Supplier": "Acme"}),
+                         COLS, AWARD_DS, "s", KW)
+    b = tt.build_payload(dict(base, **{"Awarded Supplier": "Globex"}),
+                         COLS, AWARD_DS, "s", KW)
+    assert a["reference_number"] == b["reference_number"] == "3303123110"
+    assert a["content_hash"] != b["content_hash"]   # distinct awards survive
+
+
+def test_award_identity_namespaced_away_from_solicitation():
+    # A tender_notice and an award_notice that happen to share a solicitation
+    # reference must not collide (different namespaces).
+    rec = {"Solicitation Number": "555", "Description": "x", "Submission Deadline": "2026-08-01"}
+    t = tt.build_payload(rec, COLS, OPEN_DS, "s", KW)
+    a = tt.build_payload(dict(rec, **{"Awarded Supplier": "Y", "Award Date": "2026-09-01"}),
+                         COLS, AWARD_DS, "s", KW)
+    assert t["content_hash"] != a["content_hash"]
 
 
 def test_missing_date_yields_null_published_on_valid_precision():

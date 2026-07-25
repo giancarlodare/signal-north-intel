@@ -98,22 +98,34 @@ DATASETS = [
 # first so "solicitation document number" wins over a bare "number", and
 # "closing date" wins over a bare "date". The resolver logs its picks.
 COLUMN_CANDIDATES = {
-    # Toronto's own solicitation / call reference: the procurement hard key.
+    # Toronto's own solicitation / call reference: the procurement CLUSTERING
+    # key (the proposer clusters awards to their solicitation on it). It is NOT
+    # the row identity: awarded-contracts carries many rows per Document Number
+    # (one per successful supplier), so identity keys on this plus supplier +
+    # date (see build_payload). Non-competitive contracts have no solicitation
+    # reference (sole-source); their per-row key is Workspace Number, mapped to
+    # the 'workspace' role below, and reference_number stays NULL for them.
     "reference": ["solicitation document number", "solicitation number",
                   "document number", "notice reference", "reference number",
-                  "call number", "rfx number", "contract number", "po number",
-                  "purchase order"],
+                  "call number", "rfx number"],
+    # Non-competitive contracts' stable per-contract identifier.
+    "workspace": ["workspace number", "workspace"],
     "close": ["submission deadline", "closing date", "close date",
               "bid closing", "deadline", "closing"],
-    "award": ["award date", "awarded date", "date awarded", "contract date",
-              "date of award"],
+    # "award authority obtained date" is the awarded-contracts date field (the
+    # date the award authority was obtained); "contract date" is the
+    # non-competitive award date. Specific phrases first.
+    "award": ["award authority obtained date", "award date", "awarded date",
+              "date awarded", "contract date", "date of award"],
     "issue": ["issue date", "issued date", "posting date", "posted date",
               "published date", "start date", "publication date"],
     "vendor": ["awarded supplier", "successful supplier", "supplier name",
                "awarded to", "vendor name", "recipient", "supplier", "vendor"],
+    # "reason" is the non-competitive sole-source justification: the signal
+    # this dataset uniquely carries, so it stands in as the description there.
     "description": ["solicitation document description", "document description",
                     "solicitation name", "description", "title", "subject",
-                    "commodity", "name of solicitation"],
+                    "commodity", "name of solicitation", "reason"],
     "division": ["client division", "buyer division", "division", "client",
                  "buyer name", "buyer", "department"],
     "category": ["high level category", "category", "commodity type"],
@@ -214,6 +226,16 @@ def _row_date(rec: dict, cols: dict, date_role: str) -> Optional[str]:
     return None
 
 
+def _primary_key(rec: dict, cols: dict, ds: dict) -> Optional[str]:
+    """The row's stable per-record business key: the solicitation Document
+    Number for open and awarded rows, the Workspace Number for non-competitive
+    rows (which have no solicitation). Used for the identity hash and the
+    validation coverage metric; never the CKAN _id (unstable across refreshes)."""
+    col = cols.get("workspace") if ds["non_competitive"] else cols.get("reference")
+    val = _clean(rec.get(col)) if col else ""
+    return val or None
+
+
 def _row_body(rec: dict, cols: dict, ds: dict) -> str:
     """Human-readable content assembled from the mapped columns, plus any
     unmapped columns appended as labeled lines so nothing meaningful is
@@ -222,11 +244,12 @@ def _row_body(rec: dict, cols: dict, ds: dict) -> str:
     if ds["non_competitive"]:
         lines.append("NON-COMPETITIVE (sole-source) contract.")
     ordered = ["description", "division", "category", "vendor", "value",
-               "reference", "close", "award", "issue", "url"]
+               "reference", "workspace", "close", "award", "issue", "url"]
     labels = {"description": "Description", "division": "Division",
               "category": "Category", "vendor": "Supplier", "value": "Value",
-              "reference": "Reference", "close": "Closing date",
-              "award": "Award date", "issue": "Issue date", "url": "Notice"}
+              "reference": "Reference", "workspace": "Contract ref",
+              "close": "Closing date", "award": "Award date",
+              "issue": "Issue date", "url": "Notice"}
     shown: set[str] = set()
     for role in ordered:
         col = cols.get(role)
@@ -253,25 +276,29 @@ def build_payload(rec: dict, cols: dict, ds: dict, source_id: Optional[str],
         title = f"Non-competitive: {title}"
     body = _row_body(rec, cols, ds)
     published_on = _row_date(rec, cols, ds["date_role"])
+    key = _primary_key(rec, cols, ds)
+    vendor = _clean(rec.get(cols["vendor"])) if cols.get("vendor") else ""
 
-    # Identity: Toronto's own reference is the hard key (namespaced 'toronto',
-    # never the CKAN _id, which is not stable across dataset refreshes). Rows
-    # with no reference (some non-competitive contracts have no solicitation)
-    # fall back to a stable composite of the business fields so a re-run
-    # dedupes; the composite is namespaced separately so it can never collide
-    # with a referenced row.
-    if ref:
-        identity = f"toronto:{ref}"
+    # Identity (content_hash), namespaced per doc_type, never the CKAN _id
+    # (unstable across dataset refreshes):
+    #  - tender_notice: the solicitation Document Number is unique per row and
+    #    is the whole identity, excluding the close date on purpose so an
+    #    amended Submission Deadline refreshes the same row (Windsor pattern).
+    #  - award_notice: awarded-contracts carries MANY rows per Document Number
+    #    (one per successful supplier), so the identity is the key PLUS supplier
+    #    PLUS award date; keying on the Document Number alone would collapse
+    #    every award under a solicitation into one row. Non-competitive rows key
+    #    on Workspace Number the same way, in their own namespace.
+    if ds["doc_type"] == "tender_notice":
+        identity = f"toronto:{key or (desc + '|' + (published_on or ''))}"
     else:
-        composite = "|".join([
-            _clean(rec.get(cols["vendor"])) if cols.get("vendor") else "",
-            desc, div, published_on or ""])
-        identity = f"toronto-nc:{composite}"
+        ns = "toronto-nc" if ds["non_competitive"] else "toronto-award"
+        identity = f"{ns}:" + "|".join([key or "", vendor, published_on or ""])
 
     url = _clean(rec.get(cols["url"])) if cols.get("url") else ""
     if not url:
         base = PORTAL_DATASET.format(slug=ds["slug"])
-        url = f"{base}#{quote(ref)}" if ref else base
+        url = f"{base}#{quote(key)}" if key else base
 
     result = evaluate(title, body, "", keywords)
     return {
@@ -335,7 +362,11 @@ def collect_dataset(ds: dict, fetcher: PoliteFetcher, source_id: Optional[str],
     slug = ds["slug"]
     resource_id = resolve_resource_id(fetcher, slug)
     tval = {"rows_seen": 0, "new": 0, "date_parsed": 0, "ref_parsed": 0,
-            "pages": 0, "total": None, "cols": {}, "non_competitive_marked": 0}
+            "key_parsed": 0, "pages": 0, "total": None, "cols": {},
+            "non_competitive_marked": 0}
+    # The row's identity-key role: Workspace Number for non-competitive
+    # (sole-source, no solicitation reference), else the solicitation reference.
+    key_role = "workspace" if ds["non_competitive"] else "reference"
 
     offset = 0
     known_pages = 0
@@ -352,7 +383,7 @@ def collect_dataset(ds: dict, fetcher: PoliteFetcher, source_id: Optional[str],
             tval["cols"] = {k: v for k, v in cols.items() if v}
             log.info("[toronto %s] fields=%s", slug, field_ids)
             log.info("[toronto %s] resolved columns: %s", slug, tval["cols"])
-            missing = [r for r in ("reference", ds["date_role"], "description")
+            missing = [r for r in (key_role, ds["date_role"], "description")
                        if not cols.get(r)]
             if missing:
                 log.warning("[toronto %s] UNMAPPED semantic roles: %s "
@@ -375,6 +406,8 @@ def collect_dataset(ds: dict, fetcher: PoliteFetcher, source_id: Optional[str],
             payload = build_payload(rec, cols, ds, source_id, keywords)
             if payload["reference_number"]:
                 tval["ref_parsed"] += 1
+            if _primary_key(rec, cols, ds):
+                tval["key_parsed"] += 1
             if payload["published_on"]:
                 tval["date_parsed"] += 1
             if ds["non_competitive"]:
@@ -414,9 +447,9 @@ def collect_dataset(ds: dict, fetcher: PoliteFetcher, source_id: Optional[str],
         offset += PAGE_LIMIT
 
     n = tval["rows_seen"] or 1
-    log.info("[toronto %s] rows=%d total=%s new=%d ref=%d (%d%%) date=%d (%d%%)",
+    log.info("[toronto %s] rows=%d total=%s new=%d key=%d (%d%%) date=%d (%d%%)",
              slug, tval["rows_seen"], tval["total"], tval["new"],
-             tval["ref_parsed"], round(100 * tval["ref_parsed"] / n),
+             tval["key_parsed"], round(100 * tval["key_parsed"] / n),
              tval["date_parsed"], round(100 * tval["date_parsed"] / n))
     return tval
 
@@ -437,17 +470,21 @@ def collect(dry_run: bool = True) -> dict:
         stats["per_dataset"][ds["slug"]] = tval
 
     # The enablement bar reads this line (docs/toronto-ckan-design.md section
-    # 5). One VALIDATION line per dataset: reference + date parse rates against
-    # the 90% bar, plus the resolved column mapping so the pin is visible.
+    # 5). One VALIDATION line per dataset: identity-key + date parse rates
+    # against the 90% bar, plus the resolved column mapping so the pin is
+    # visible. key_parsed is the row's identity key (solicitation Document
+    # Number, or Workspace Number for non-competitive); ref_parsed is the
+    # solicitation reference specifically (0% for non-competitive by nature).
     for ds in DATASETS:
         tval = stats["per_dataset"][ds["slug"]]
         n = tval["rows_seen"] or 1
         extra = ""
         if ds["non_competitive"]:
             extra = f" non_competitive_marked={tval['non_competitive_marked']}"
-        log.info("VALIDATION [toronto:%s]: rows=%d total=%s ref_parsed=%d (%d%%) "
-                 "date_parsed=%d (%d%%) columns=%s%s",
+        log.info("VALIDATION [toronto:%s]: rows=%d total=%s key_parsed=%d (%d%%) "
+                 "ref_parsed=%d (%d%%) date_parsed=%d (%d%%) columns=%s%s",
                  ds["slug"], tval["rows_seen"], tval["total"],
+                 tval["key_parsed"], round(100 * tval["key_parsed"] / n),
                  tval["ref_parsed"], round(100 * tval["ref_parsed"] / n),
                  tval["date_parsed"], round(100 * tval["date_parsed"] / n),
                  tval["cols"], extra)
