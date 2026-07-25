@@ -192,6 +192,37 @@ publicly and collectably (no login, robots-compatible)? Standard
 discipline: read-only, no accounts; public-and-collectable surfaces get a
 design-first proposal, walled ones get recorded verdicts.
 
+## Toronto procurement: GREEN via CKAN open data (verdict 2026-07-25)
+
+Toronto's SAP Ariba front end is closed to automation, and that is
+irrelevant. The City of Toronto publishes its bids, awards, and
+non-competitive contracts as public open data through its CKAN API, the
+same publisher-open-data route the Windsor collector already rides.
+
+Probe evidence (CI job 89676754793, read-only, 2026-07-25):
+package_search on the documented CKAN host
+`ckan0.cf.opendata.inter.prod-toronto.ca` for bids / tenders / procurement
+/ purchasing returned City of Toronto datasets:
+
+- `tobids-all-open-solicitations` (Toronto Bids Solicitations), CSV/JSON/XML
+- `tobids-awarded-contracts`, CSV/JSON/XML
+- `tobids-non-competitive-contracts`, CSV/JSON/XML
+- XML feeds: `call-documents-for-the-purchase-of-goods-and-services`,
+  `competitive-call-award-results`, `non-competitive-contracts`; plus a
+  `procurement-pipeline` index stub (0 resources at probe time).
+
+Endpoint error ruled out: the earlier 404 came from querying
+`open.toronto.ca` (the web host, not the API host), which 404s every
+package_search. The 404 was the wrong host, not an absence.
+
+`tobids-non-competitive-contracts` is the standout. Sole-source awards are
+demand signal we collect from no other source; competitive-only feeds miss
+them entirely. Provenance is publisher-published by definition (the city's
+own open-data catalogue).
+
+Build queued design-first: `docs/toronto-ckan-design.md` (Windsor pattern,
+propose-then-approve, collector not started).
+
 ## Parked / waiting
 
 - **TPSB board minutes** — parked in `src/board_minutes.py`: tpsb.ca's WAF
