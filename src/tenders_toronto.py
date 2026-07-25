@@ -53,9 +53,12 @@ import logging
 import os
 import re
 import sys
+import time
 from datetime import datetime, timezone
 from typing import Optional
 from urllib.parse import quote
+
+import requests
 
 from . import supabase_client
 from .board_minutes import PoliteFetcher
@@ -348,6 +351,36 @@ def build_payload(rec: dict, cols: dict, ds: dict, source_id: Optional[str],
     }
 
 
+# Supabase read-timeouts are a known transient on this project (they redden
+# daily-collect intermittently). A single blip must not abort a multi-thousand
+# row backfill, so per-row DB ops retry with backoff before counting toward the
+# error budget.
+_TRANSIENT_DB = (requests.exceptions.Timeout, requests.exceptions.ConnectionError)
+
+
+def _db_retry(fn, what: str, slug: str, attempts: int = 4):
+    for a in range(attempts):
+        try:
+            return fn()
+        except _TRANSIENT_DB as e:
+            if a == attempts - 1:
+                raise
+            wait = 2 ** a
+            log.warning("[toronto %s] transient DB error on %s (%s); retry "
+                        "%d/%d in %ds", slug, what, type(e).__name__, a + 1,
+                        attempts - 1, wait)
+            time.sleep(wait)
+
+
+def _idempotent_insert(payload: dict) -> None:
+    """Insert only if the content_hash is not already present. Safe to retry: a
+    retry after a timeout whose write actually committed re-checks first and
+    does not double-insert (content_hash is not uniqueness-enforced in the DB,
+    so the app-layer check is the guard)."""
+    if not supabase_client.get_document_by_hash(payload["content_hash"]):
+        supabase_client.insert_document(payload)
+
+
 def resolve_resource_id(fetcher: PoliteFetcher, slug: str) -> Optional[str]:
     """The datastore-active resource id for a dataset slug, via package_show.
     None only if the dataset has no datastore-active resource (the caller
@@ -392,6 +425,12 @@ def collect_dataset(ds: dict, fetcher: PoliteFetcher, source_id: Optional[str],
     # past the steady-state PAGE_MAX to reach the full history (awarded is 7500+
     # rows). +5 pages of headroom past the cap.
     page_ceiling = max(PAGE_MAX, cap // PAGE_LIMIT + 5)
+    # Backfill mode (a raised cap) must page the WHOLE dataset to `total`, so
+    # the KNOWN_PAGE_STOP early-out is disabled: already-collected rows sit at
+    # the front (from prior runs) while the un-collected history is deeper, so
+    # stopping at the first all-known pages would leave the tail undrained.
+    # Steady state keeps the early-out (it stops once it catches up).
+    backfill = cap > NEW_PER_DATASET
     tval = {"rows_seen": 0, "new": 0, "date_parsed": 0, "ref_parsed": 0,
             "key_parsed": 0, "pages": 0, "total": None, "cols": {},
             "non_competitive_marked": 0}
@@ -444,14 +483,15 @@ def collect_dataset(ds: dict, fetcher: PoliteFetcher, source_id: Optional[str],
             if ds["non_competitive"]:
                 tval["non_competitive_marked"] += 1
             chash = payload["content_hash"]
-            if supabase_client.get_document_by_hash(chash):
-                stats["skipped_duplicate"] += 1
-                continue
-            page_new += 1
-            if tval["new"] >= cap:
-                continue
-            tval["new"] += 1
             try:
+                if _db_retry(lambda: supabase_client.get_document_by_hash(chash),
+                             "hash-check", slug):
+                    stats["skipped_duplicate"] += 1
+                    continue
+                page_new += 1
+                if tval["new"] >= cap:
+                    continue
+                tval["new"] += 1
                 if dry_run:
                     if sample_logged < 3:
                         log.info("[dry-run] %-13s ref=%-18s date=%s :: %s",
@@ -459,11 +499,11 @@ def collect_dataset(ds: dict, fetcher: PoliteFetcher, source_id: Optional[str],
                                  payload["published_on"], payload["title"][:60])
                         sample_logged += 1
                 else:
-                    supabase_client.insert_document(payload)
+                    _db_retry(lambda: _idempotent_insert(payload), "insert", slug)
                 stats["inserted"] += 1
             except Exception:
                 stats["errors"] += 1
-                log.exception("[toronto %s] row insert failed (ref=%s); continuing",
+                log.exception("[toronto %s] row failed (ref=%s); continuing",
                               slug, payload.get("reference_number"))
                 if stats["errors"] > ERROR_BUDGET:
                     raise RuntimeError(
@@ -471,7 +511,7 @@ def collect_dataset(ds: dict, fetcher: PoliteFetcher, source_id: Optional[str],
                         f"failures): systemic, not transient. Aborting.")
 
         known_pages = known_pages + 1 if page_new == 0 else 0
-        if known_pages >= KNOWN_PAGE_STOP or tval["new"] >= cap:
+        if tval["new"] >= cap or (not backfill and known_pages >= KNOWN_PAGE_STOP):
             break
         if tval["total"] is not None and offset + PAGE_LIMIT >= tval["total"]:
             break
