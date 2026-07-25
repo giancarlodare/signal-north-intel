@@ -57,11 +57,26 @@ and whether OPP / Solicitor General buys are namable:
   publisher-official provenance anchor; its links point to the SCO /
   Vendor-of-Record / marketplace resources. The earlier 404s were wrong slugs.
 
-**Probe pass 3 (next):** crawl the ontario.ca doing-business hub for its links
-to the SCO / VOR / marketplace opportunity + award surfaces, and follow them to
-the actual listing endpoint; confirm robots + server-side + whether OPP/SolGen
-is isolable there. If the listings prove to be a JS search-app, the front joins
-the render-capable evaluation with a proxy line, per section 3.
+**Probe pass 3 (2026-07-25, CI job 89698092521):** the hub's real procurement
+links point to **Supply Ontario** (`supplyontario.ca`, the provincial
+procurement authority, formerly Supply Chain Ontario):
+
+- `supplyontario.ca/become-a-vendor/`: 200, 78 KB, rich procurement markers
+  (tender, opportunity, award, closing date, vendor of record, procurement)
+  AND **`OPP` is namable in the text** (isolation looks feasible).
+- `supplyontario.ca/procurement-bulletins/`: linked as the procurement
+  bulletins surface, the likely opportunity/award LISTING feed.
+- `doingbusiness.mgs.gov.on.ca/.../psb.nsf/...`: a Lotus Notes .nsf app, 200,
+  server-side, procurement marker (legacy buyer info).
+- `intra.ontario.ca` VOR page: robots DISALLOWED (OPS intranet); OTP Jaggaer
+  `/esop` login: robots-disallowed tree (the standing OTP park).
+
+**Verdict: the collectable provincial surface is Supply Ontario, not the dead
+marketplace.** Pass 4 (next): probe `supplyontario.ca/procurement-bulletins/`
+(and any feed it links) for the actual opportunity/award listings, robots
+posture, server-side vs JS, and whether a buyer/ministry field isolates OPP /
+SolGen. If server-side, this is a requests collector on the Windsor/IO pattern;
+if a JS app, it joins the render-capable evaluation with a proxy line.
 
 Open questions the verdict still answers: which surfaces publish
 opportunities/awards collectably; whether OPP/SolGen buys are isolable; JS-app
