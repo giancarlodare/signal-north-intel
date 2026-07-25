@@ -147,6 +147,11 @@ ORG_SEED = [
     ("City of Windsor",
      ["Windsor", "The Corporation of the City of Windsor"],
      ["municipality"], "municipal", "ON"),
+    # Toronto CKAN open-data collector (docs/toronto-ckan-design.md):
+    # tenders_toronto writes this exact name to documents.buyer_name.
+    ("City of Toronto",
+     ["Toronto", "The Corporation of the City of Toronto"],
+     ["municipality"], "municipal", "ON"),
     # IO newsroom collector (docs/merx-windsor-design.md section 9): the
     # delivering agency, so it resolves when an announcement names it. The
     # client organizations (hospitals, Metrolinx, CAMH) resolve separately.

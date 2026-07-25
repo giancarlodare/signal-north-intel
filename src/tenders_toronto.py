@@ -50,6 +50,7 @@ truth.
 """
 import argparse
 import logging
+import os
 import re
 import sys
 from datetime import datetime, timezone
@@ -76,11 +77,33 @@ PORTAL_DATASET = "https://open.toronto.ca/dataset/{slug}/"
 
 MAX_STORED_CHARS = 20000
 PAGE_LIMIT = 100        # rows per datastore_search page
-NEW_PER_DATASET = 100   # per-run cap on NEW rows (no per-row fetch, so larger
-                        # than MERX's 25; extraction self-throttles at 50/run)
-PAGE_MAX = 60           # 60 x 100 bounds the initial history at ~6000 rows/ds
+# Per-run cap on NEW rows per dataset. award_notice rows never touch the daily
+# forward-extraction budget (they drain via extract-backfill.yml), and each row
+# arrives whole in the page (no per-row fetch), so this only paces our own DB
+# writes. Steady state at 100 is plenty; a one-time backfill raises it via
+# TORONTO_NEW_PER_DATASET to drain the multi-year awarded history (7500+ rows)
+# in a few runs. Collection is free (CKAN reads); the awarded extraction cost
+# is separate and controlled by the extract-backfill cap.
+NEW_PER_DATASET = 100
+PAGE_MAX = 60           # safety page ceiling for the steady-state cap
 KNOWN_PAGE_STOP = 2     # stop paging after this many all-known pages (steady state)
 ERROR_BUDGET = 25       # per-row failures tolerated before loud abort
+
+
+def _cap() -> int:
+    """Effective per-run NEW-row cap: the TORONTO_NEW_PER_DATASET env override
+    (one-time backfill) or the steady-state default. Guards against a garbage
+    override silently disabling the cap."""
+    raw = os.environ.get("TORONTO_NEW_PER_DATASET", "").strip()
+    if raw:
+        try:
+            v = int(raw)
+            if v > 0:
+                return v
+        except ValueError:
+            log.warning("TORONTO_NEW_PER_DATASET=%r is not a positive int; "
+                        "using default %d", raw, NEW_PER_DATASET)
+    return NEW_PER_DATASET
 
 # Each dataset: slug, doc_type, which date the row's published_on carries,
 # and whether it is the sole-source (non-competitive) feed.
@@ -357,10 +380,15 @@ def datastore_page(fetcher: PoliteFetcher, resource_id: str, offset: int,
 
 
 def collect_dataset(ds: dict, fetcher: PoliteFetcher, source_id: Optional[str],
-                    keywords: Keywords, dry_run: bool, stats: dict) -> dict:
+                    keywords: Keywords, dry_run: bool, stats: dict,
+                    cap: int) -> dict:
     """Collect one dataset. Returns a per-dataset validation dict."""
     slug = ds["slug"]
     resource_id = resolve_resource_id(fetcher, slug)
+    # The page ceiling must cover the cap: a large backfill cap needs to page
+    # past the steady-state PAGE_MAX to reach the full history (awarded is 7500+
+    # rows). +5 pages of headroom past the cap.
+    page_ceiling = max(PAGE_MAX, cap // PAGE_LIMIT + 5)
     tval = {"rows_seen": 0, "new": 0, "date_parsed": 0, "ref_parsed": 0,
             "key_parsed": 0, "pages": 0, "total": None, "cols": {},
             "non_competitive_marked": 0}
@@ -372,7 +400,7 @@ def collect_dataset(ds: dict, fetcher: PoliteFetcher, source_id: Optional[str],
     known_pages = 0
     cols: dict = {}
     sample_logged = 0   # cap the per-row dry-run print (first few rows suffice)
-    while offset < PAGE_MAX * PAGE_LIMIT:
+    while offset < page_ceiling * PAGE_LIMIT:
         result = datastore_page(fetcher, resource_id, offset, PAGE_LIMIT)
         tval["pages"] += 1
         if tval["total"] is None:
@@ -417,7 +445,7 @@ def collect_dataset(ds: dict, fetcher: PoliteFetcher, source_id: Optional[str],
                 stats["skipped_duplicate"] += 1
                 continue
             page_new += 1
-            if tval["new"] >= NEW_PER_DATASET:
+            if tval["new"] >= cap:
                 continue
             tval["new"] += 1
             try:
@@ -440,7 +468,7 @@ def collect_dataset(ds: dict, fetcher: PoliteFetcher, source_id: Optional[str],
                         f"failures): systemic, not transient. Aborting.")
 
         known_pages = known_pages + 1 if page_new == 0 else 0
-        if known_pages >= KNOWN_PAGE_STOP or tval["new"] >= NEW_PER_DATASET:
+        if known_pages >= KNOWN_PAGE_STOP or tval["new"] >= cap:
             break
         if tval["total"] is not None and offset + PAGE_LIMIT >= tval["total"]:
             break
@@ -464,9 +492,13 @@ def collect(dry_run: bool = True) -> dict:
         raise RuntimeError(
             f"no sources row for {SOURCE_URL}; apply the Toronto CKAN sources seed first")
 
+    cap = _cap()
+    if cap != NEW_PER_DATASET:
+        log.info("[toronto] one-time backfill cap in effect: %d new rows/dataset "
+                 "(default %d)", cap, NEW_PER_DATASET)
     stats = {"inserted": 0, "skipped_duplicate": 0, "errors": 0, "per_dataset": {}}
     for ds in DATASETS:
-        tval = collect_dataset(ds, fetcher, source_id, keywords, dry_run, stats)
+        tval = collect_dataset(ds, fetcher, source_id, keywords, dry_run, stats, cap)
         stats["per_dataset"][ds["slug"]] = tval
 
     # The enablement bar reads this line (docs/toronto-ckan-design.md section

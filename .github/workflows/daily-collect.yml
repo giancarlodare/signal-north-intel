@@ -84,6 +84,20 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python -m src.tenders_merx
 
+      # City of Toronto CKAN open data (docs/toronto-ckan-design.md): bids,
+      # awards, and non-competitive (sole-source) contracts via the ckan0 API
+      # host, on the Windsor open-data pattern. Light requests collector, no
+      # Chromium; fails loudly on an empty open-solicitations page. award_notice
+      # rows drain via extract-backfill, not the daily forward budget. A
+      # one-time history backfill is a manual dispatch with TORONTO_NEW_PER_DATASET
+      # set high; the daily run keeps the steady-state cap.
+      - name: Run Toronto CKAN tenders collector
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.tenders_toronto
+
       - name: Run newsroom RSS collector
         if: steps.guard.outputs.should_run == 'true'
         env:
