@@ -1,0 +1,60 @@
+# Wave 3: subscriber portal (staged-dark design)
+
+Status: DESIGN for operator approval (sprint front 7, 2026-07-25). STAGED-DARK
+by contract: everything below is built behind auth and feature flags, nothing
+is public, no marketing claim ships, Stripe stays in test mode until the
+operator flips it live in a separate decision.
+
+## Scope
+
+A founding-member-facing portal over the existing corpus and prediction
+ledger. Five pieces, in dependency order:
+
+1. **Marketing site (dark).** A static landing page describing the product
+   (predictive government-procurement intelligence, provable track record).
+   Built and deployable but behind a noindex/robots-disallow and not linked
+   from anywhere public until launch. No pricing claims, no testimonials, no
+   fabricated numbers; copy uses only figures the ledger can substantiate.
+2. **Auth.** Email + magic-link (or password) via Supabase Auth, which the
+   stack already provides. Row-level security scopes every read to the
+   member's own account. Founding-member accounts are provisioned manually
+   (no open signup while dark).
+3. **Dashboard + tags.** The read-only member view over signals/procurements:
+   the same event-date-first, provenance-linked rows the internal review page
+   shows, filtered to what a subscriber may see (published briefs, not raw
+   triage). Tag chips (defence_relevant, jurisdiction, buyer, timing path)
+   drive filtering. Renders month-precision dates as "Apr 2026", never a
+   fabricated day (the standing date-precision rule).
+4. **Functional watchlist with event logging.** A member follows buyers /
+   vendors / keywords; the watchlist stores the follow and LOGS every match
+   event (what fired, when, which signal) to an append-only table. The event
+   log is the substrate for later "we told you first" evidence and for
+   usage analytics; it is provenance-clean (each event points at a real
+   signal + its publisher URL).
+5. **Stripe (test mode).** Checkout and subscription plumbing wired against
+   Stripe test keys only. No live charge is possible while dark. The billing
+   seam is isolated so going live is a key swap plus an operator decision,
+   reviewable on its own.
+
+## Firewall and legal alignment (already recorded, restated here)
+
+- The investor-facing export seam (docs/legal-seam-investor.md) stays dark and
+  gated; the portal is the SELLER audience, isolated at the export layer.
+- Synapse Advisory (docs/ROADMAP.md) consumes the portal's published outputs
+  as any subscriber; no reverse flow. The founding-member Synapse benefit is
+  a cross-entity perk with separate paper (September counsel question).
+
+## What is deliberately NOT in this wave
+
+- No public signup, no live billing, no marketing distribution, no investor
+  surface, no auto-generated claims. Predictions are shown as the ledger
+  records them (confirmed/probable/speculative), never as advice.
+
+## Build shape on approval
+
+Design-first still applies: this doc is the proposal. On go, the build is a
+staged sequence (auth + RLS, then dashboard read, then watchlist + event-log
+table migration, then Stripe-test), each its own PR with tests, all behind a
+`PORTAL_ENABLED` flag defaulting off so nothing renders publicly until the
+operator flips it. The event-log table is the one schema addition; everything
+else reads the existing corpus.

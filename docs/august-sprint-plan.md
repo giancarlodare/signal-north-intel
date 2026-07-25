@@ -25,7 +25,7 @@ the chat to an empty queue.
 
 | # | Front | Method | Deliverable and date |
 |---|---|---|---|
-| 1 | Provincial layer | data.ontario.ca CKAN search for OTP/tender datasets (IN FLIGHT Jul 21; first run hit a transient 502 on robots, rerun queued with retry) + IO deep crawl: sitemap plus project and vendor-resources pages, grepping for the MERX link both earlier checks missed | Verdict on both by **Jul 23** |
+| 1 | Provincial layer | IO deep crawl DONE (no MERX link; IO newsroom collector built + live instead, covering awards). data.ontario.ca OTP-dataset probe PARKED 2026-07-25: host unreachable Jul 21/22/23/25 (502, all retries), undetermined; revival on host recovery; proxy = IO newsroom awards + grants/budget. Details in docs/ROADMAP.md OPP entry. | DONE (IO) / PARKED (OTP) |
 | 2 | Toronto (Ariba) | Public-surface probe before assuming hard: toronto.ca procurement pages (WAF risk noted, operator browser as fallback) + SAP Ariba no-login discovery paths + robots posture | Verdict by **Jul 24** |
 | 3 | Ontario Hansard | Probe ola.org document structure (Hansard transcripts, committee estimates), then a requests-based collector design: intent extraction over committee estimates and SolGen / infrastructure statements | Design doc PR by **Jul 25** |
 | 4 | bids&tenders saturation prep | Full-Ontario tenant enumeration (directory discovery plus systematic subdomain checks) then batched provenance crawls of each municipality's official site | Enablement-ready table by **Jul 26** |

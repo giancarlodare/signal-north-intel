@@ -222,6 +222,16 @@ design-first proposal, walled ones get recorded verdicts.
     human-research-only. A future probe candidate that routes around this
     honestly: whether data.ontario.ca publishes an OTP tender dataset
     (publisher open data, like Windsor's).
+  - **data.ontario.ca open-dataset probe: PARKED 2026-07-25 (verdict
+    earned).** The host was unreachable across four probe attempts on Jul
+    21, 22, 23, and 25 (robots.txt 502 / connection failures, all retries
+    exhausted, three separate CI runners). The OTP open-dataset question is
+    UNDETERMINED, not answered: a sustained-down host is not a "no". REVIVAL
+    when the host recovers: re-run the CKAN package_search on
+    data.ontario.ca for a tender/procurement dataset. PROXY COVERAGE while
+    parked: provincial procurement signal rests on the IO newsroom awards
+    leg (live) plus grants/budget signal; OTP tender feed stays undetermined
+    pending host recovery.
   - **OPP procurement IS publicly reachable via merx.com/
     infrastructureontario** (OPP Modernization Phase Three visible on its
     awarded tab), on the platform the tenders_merx collector already
