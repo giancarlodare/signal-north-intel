@@ -79,6 +79,35 @@ significance gate still governs what is labeled published vs pending; pooling
 only stabilizes the estimate, it never manufactures confidence. This is a later
 addition, noted here so the schema and gate anticipate it.
 
+## 0c. Backward historical reconstruction (operator reframe, 2026-07-26)
+
+The path to statistical significance is BACKWARD RECONSTRUCTION, not forward
+accumulation. Complete demand arcs already exist in the historical record:
+past procurements (opened and closed), historical budgets, archived board and
+council minutes, old announcements. A 2021 incident -> council pressure ->
+budget line -> 2023 tender -> award is a fully-formed, measurable arc sitting
+in the archives NOW. The binding constraint on significance is EXTRACTION
+DEPTH and HISTORICAL REACH, not time. Program, per service (and provincial /
+federal entity):
+
+1. **Inventory**: how far back each source actually goes (bids&tenders award
+   history, board minutes archives, council minutes archives, newsroom
+   archives, budget documents) vs how much we have COLLECTED and EXTRACTED.
+   Report the collected-vs-available gap (`scripts/inventory_corpus_depth.py`
+   is the collected/extracted side; archive-reach probes fill the available
+   side).
+2. **Deepen**: where archives extend past our collection, deepen the backfill
+   to the full available history, prioritizing sources richest in linkable
+   arc events (budgets, board capital plans, closed procurements with
+   references).
+3. **Re-run the engine** against the deepened history; per-service n per
+   transition should climb sharply once years of history extract instead of a
+   recent slice.
+4. **Coverage report**: n, CI width, significance verdict per service x
+   transition. The test: with full historical extraction, how many cells
+   reach significance? That number, not the passage of time, is the
+   predictive floor, and it tells us where to point more collection.
+
 ## 1. What it computes
 
 For each award, walk BACKWARD along the procurement_id spine to the earliest
