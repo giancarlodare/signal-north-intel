@@ -49,6 +49,14 @@ STOPWORDS = {
     "chief", "member", "members", "new", "update", "expansion", "project",
     "phase", "annual", "quarterly", "fleet", "system", "systems",
     "tps", "prp", "yrp", "wrps", "gsps", "drps", "hrps", "tpsb", "ppsb",
+    # civic/structure generics that falsely join distinct instruments (found
+    # in the first staging: 'division' joined 11 Division EV charging to 23
+    # Division construction)
+    "division", "divisions", "council", "centre", "center", "station",
+    "stations", "facility", "facilities", "building", "buildings", "street",
+    "streets", "road", "roads", "avenue", "headquarters", "hall", "north",
+    "south", "east", "west", "canada", "ontario", "america", "community",
+    "general", "management", "team", "technology",
 }
 
 
@@ -75,6 +83,8 @@ def instrument_tokens(title: str) -> set:
             continue
         if bare.lower() in STOPWORDS:
             continue
+        if re.fullmatch(r"\d+(?:\.\d+)?[km]", bare.lower()):
+            continue          # a bare dollar amount is not an instrument
         if bare[0].isupper() or any(ch.isdigit() for ch in bare) or "&" in bare:
             out.add(bare.lower())
     return out
