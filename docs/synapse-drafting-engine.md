@@ -239,6 +239,29 @@ funding paths, may not be CSP-local eligible) and joint-board services (one
 board, multiple municipalities) so the denominator is not over- or
 under-counted.
 
+**CSPA probe findings (2026-07-25, CI job 89747971489):**
+
+- The local-priorities formula stream IS cleanly isolable: the ledger table
+  "Projects receiving local priorities funding" carries 88 projects. Numerator
+  (who claimed) is in hand; DENOMINATOR (the full eligible roster) is not.
+- The CSPA roster was NOT found: all seven candidate ontario.ca URLs 404'd and
+  oiprd.on.ca is robots-disallowed. Finding the authoritative Inspectorate of
+  Policing / SolGen services list (possibly a different host or a PDF) is the
+  outstanding blocker for the absentee count.
+- REVISION to the OPP-municipality assumption: OPP-contracted municipalities DO
+  claim local-priorities allocations (Caledon, Collingwood, Kenora, Orillia,
+  and ~20 more appear as "Town/City/County of X (OPP)"). They are not
+  automatically non-leads; the lead is whoever files the spending plan (the
+  service board for standalone services, the municipality for OPP-policed
+  ones). The denominator must therefore include both, tagged by type.
+- Parser fix needed: recipient and project titles are concatenated in the cell
+  (Peel appears 7 times, Toronto 4), so distinct-SERVICE dedupe needs a
+  service-vs-project split before the diff.
+
+Next: locate the CSPA roster source, split service from project, dedupe to
+distinct services present, then diff for the absentee list. The formula (if
+published) converts each absence to a forfeited-dollar figure.
+
 ### 5d. Next steps (design-first, still gated, no sprint change)
 
 1. Probe the CSPA services roster URL + the CSP local allocation formula /
