@@ -78,9 +78,32 @@ posture, server-side vs JS, and whether a buyer/ministry field isolates OPP /
 SolGen. If server-side, this is a requests collector on the Windsor/IO pattern;
 if a JS app, it joins the render-capable evaluation with a proxy line.
 
-Open questions the verdict still answers: which surfaces publish
-opportunities/awards collectably; whether OPP/SolGen buys are isolable; JS-app
-vs requests-collectable per surface.
+**Probe pass 4 (2026-07-25, CI job 89746865936), FINAL:**
+`supplyontario.ca/bulletins/` is 200, server-side (85 KB), procurement markers,
+and lists **19 item-shaped bulletins**. But the items are enterprise-wide
+Vendor-of-Record ARRANGEMENTS (Employee Assistance, barriers, learning
+management, mental-health data sets, boats/motors/trailers, fleet management,
+furniture), NOT service-specific opportunities or awards. **OPP is not isolable
+here:** the bulletins show province-wide VOR CATEGORIES, not who is buying what.
+
+## OPP OPERATIONAL COVERAGE VERDICT (final, 2026-07-25; stop probing)
+
+Operational OPP procurement is NOT cleanly isolable through public provincial
+surfaces, and further probing for a service-level provincial feed is closed
+(the feed may not exist publicly):
+
+- Capital / facilities: COVERED via the IO newsroom collector (live).
+- Operational: NOT cleanly isolable. The Ontario Tenders Portal (the actual
+  solicitation/award system) is robots-walled (/esop Disallow, human-research
+  only); Supply Ontario is publicly collectable but only at the province-wide
+  VOR CATEGORY level, not service-isolated buys; the legacy .nsf buyer info is
+  not an opportunity/award feed.
+
+PROXY-COVERAGE LINE: "OPP capital signal via IO newsroom awards (live);
+operational procurement not cleanly isolable through public provincial surfaces
+(OTP robots-walled, Supply Ontario category-level only). Federal grants/awards
+and ontario.ca news carry residual OPP signal." Revive only if a service-level
+provincial award feed becomes public.
 
 ## 3. Collector shape (conditional on the verdict)
 
