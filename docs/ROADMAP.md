@@ -255,6 +255,13 @@ endpoints:
 
 ## Parked / waiting
 
+- **Extractor max_tokens bump for large docs (known-class fix, banked
+  2026-07-26)** — two drain batch-1 docs failed with truncated model JSON
+  ("Unterminated string" / "Expecting value"): the structured output hit the
+  4096 max_tokens cap mid-response on signal-dense docs (a MERX award, a TPSB
+  agenda). Fix when convenient: raise max_tokens (or chunk oversized docs) in
+  src/signal_extractor.py; the two docs stay status=failed until then and
+  re-extract after the fix.
 - **TPSB board minutes** — parked in `src/board_minutes.py`: tpsb.ca's WAF
   415s the collector site-wide despite an allow-all robots.txt. Unpark via
   board-office contact or WAF change.
