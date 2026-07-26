@@ -128,6 +128,68 @@ awards + the boards' minutes are already in its scope, running on cadence);
 (3) the engine (with the v2 bootstrap CI + significance gate, built
 2026-07-26) emits the pilot coverage report.
 
+## 0d. Two claims and the convergence indicator (client-facing product design, operator 2026-07-26)
+
+Status: BANKED, design-thinking only. Gated on the pilot (section 0c) proving
+significance on Toronto + Peel. Nothing here is built, wired, or shown to a
+client ahead of that gate.
+
+The claim "we have a statistically significant predictive tool" needs the
+next sentence: predicting WHAT, and what does the client DO with it. The
+answer is two claims of different precision, sold as one credibility system:
+
+**Claim 1: the specific hard prediction (the ledger).** "Service X will issue
+a tender for Y within window Z." Precise, dated, reconcilable against
+actuals, anchored (Phase B ledger + OpenTimestamps). Rare by nature: the gate
+publishes a hard call only when a cell is significant AND a live upstream
+signal sits on a measured horizon. Claim 1 is not the volume product; it is
+the PROOF product. Its verified track record (hit-rate, lead-time error
+against settled actuals) is what makes Claim 2 credible.
+
+**Claim 2: the convergence / movement prediction (the client-facing
+feature).** "Independent upstream sources are converging on [service] +
+[domain]; based on that service's measured demand rhythm, expect movement in
+roughly N months, confidence X." Makeable far more often than Claim 1,
+because it predicts movement in a domain, not a named instrument. This is
+what the subscriber watches daily. The two claims reinforce: Claim 1's
+audited ledger is the reason a client believes Claim 2's softer call; Claim 2
+is the reason the product is useful between rare hard calls.
+
+**The convergence indicator (the dashboard / Weekly Signal feature):** a
+per-service, per-domain indicator with these properties, all mandatory:
+
+- **Rises on independent stacking.** The indicator strengthens as upstream
+  signals from INDEPENDENT sources (board minutes, council minutes, budget
+  lines, Hansard, newsroom, tender pre-signals) stack on the same
+  service + domain pair. Independence matters: five echoes of one press
+  release are one signal, not five.
+- **Never a black box.** The indicator always shows the specific converging
+  signals behind it, each provenance-linked to its publisher document, the
+  same way every other surface works. A subscriber can click through and
+  read exactly what is converging.
+- **Attaches the expected window.** The window comes from the service's
+  measured demand-arc lag for the relevant transition (the section 0 cell),
+  with that cell's CI as the confidence band and its significance verdict
+  governing whether a window is shown at all. A pending cell means the
+  indicator can show convergence but NOT a window: honest gaps carry through
+  to the client surface.
+- **Sharpens progressively.** As more signals land, the indicator sharpens
+  the predicted INSTRUMENT: from "movement" to grant vs tender vs
+  legislation vs program change, narrowing as the signal mix disambiguates
+  (a budget line + board capital item points at a tender; a ministry
+  announcement + formula stream points at a grant). Progressive sharpening
+  IS the product experience: the subscriber watches a prediction come into
+  focus, and each sharpening step is dated and logged.
+
+**Where it lands when the gate opens:** (a) the Wave 3 subscriber dashboard
+(docs/wave3-portal-design.md) gains the indicator as a first-class view next
+to the watchlist, with match events feeding the same append-only event log;
+(b) the Weekly Signal brief (docs/published-brief-design.md) gains a
+convergence section reporting the week's risers and sharpenings, under the
+same honesty rules (explicit n, CI, pending cells shown as pending). Both are
+folded into those designs as banked cross-references now, built only after
+the pilot proves significance and the operator approves the surface.
+
 ## 1. What it computes
 
 For each award, walk BACKWARD along the procurement_id spine to the earliest

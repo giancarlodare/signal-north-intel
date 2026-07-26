@@ -239,3 +239,25 @@ Open questions for the operator:
    `editor_note`), or should the generator propose a draft implication the editor
    refines? Recommendation: operator-written now; generator-proposed later.
 5. **Masthead name:** confirm the brief's reader-facing title.
+
+## 9. Banked post-pilot: the convergence section (operator 2026-07-26)
+
+When the predictive layer reaches significance (pilot gate and the two-claims
+product design in docs/demand-arc-backtest-design.md section 0d), the brief
+gains a CONVERGENCE section between the supporting items (§2.4) and the
+standing exhibits (§2.5): the week's per-service, per-domain convergence
+movements. Each entry reports:
+
+- the service + domain the independent upstream signals are stacking on,
+  with the specific converging signals listed and provenance-linked (the §1
+  rules apply unchanged, never a black box);
+- the expected movement window from that service's measured demand-arc lag,
+  with the cell's CI as the confidence band and explicit n; a pending cell is
+  reported as "converging, window pending (n=X)", never a soft window;
+- any sharpening this week: the predicted instrument narrowing (movement ->
+  grant / tender / legislation / program change), dated.
+
+This is the reader-facing form of Claim 2 (convergence / movement); the
+ledger's verified track record (Claim 1) is cited alongside as the
+credibility anchor. Design-thinking only, recorded so the format anticipates
+it; nothing renders ahead of the pilot gate and the operator's go.

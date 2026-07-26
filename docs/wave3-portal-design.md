@@ -58,3 +58,24 @@ table migration, then Stripe-test), each its own PR with tests, all behind a
 `PORTAL_ENABLED` flag defaulting off so nothing renders publicly until the
 operator flips it. The event-log table is the one schema addition; everything
 else reads the existing corpus.
+
+## Banked post-pilot: the convergence indicator (operator 2026-07-26)
+
+When the predictive layer's pilot proves significance (Toronto + Peel; gate
+and full spec in docs/demand-arc-backtest-design.md section 0d), the
+dashboard (piece 3) gains a per-service, per-domain CONVERGENCE INDICATOR as
+a first-class view next to the watchlist:
+
+- rises as independent upstream signals stack on the same service + domain;
+- always shows the specific converging signals, each provenance-linked
+  (never a black box);
+- attaches the expected movement window from that service's measured
+  demand-arc lag, with the cell's CI as the confidence band; a pending cell
+  shows convergence WITHOUT a window (honest gaps reach the client surface);
+- sharpens the predicted instrument (grant / tender / legislation / program
+  change) as more signals land; each sharpening step is dated and logged to
+  the same append-only event log as watchlist matches.
+
+Design-thinking only: recorded here so the dashboard and event-log schema
+anticipate it. NOT built ahead of the pilot gate, and its build is its own
+operator-approved stage when the gate opens.
