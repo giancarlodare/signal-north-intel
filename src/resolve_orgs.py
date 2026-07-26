@@ -65,6 +65,38 @@ ORG_SEED = [
     ("York Regional Police",
      ["YRP", "York Regional Police Service"],
      ["police_service"], "municipal", "ON"),
+    # Big 12 tier 2 buyers (docs/tier2-enablement.md, operator go
+    # 2026-07-26): the tier-2 bids&tenders config rows write these exact
+    # names to documents.buyer_name.
+    ("City of Hamilton",
+     ["Hamilton", "The Corporation of the City of Hamilton"],
+     ["municipality"], "municipal", "ON"),
+    ("City of Brampton",
+     ["Brampton", "The Corporation of the City of Brampton"],
+     ["municipality"], "municipal", "ON"),
+    ("City of Markham",
+     ["Markham", "The Corporation of the City of Markham"],
+     ["municipality"], "municipal", "ON"),
+    ("City of Mississauga",
+     ["Mississauga", "The Corporation of the City of Mississauga"],
+     ["municipality"], "municipal", "ON"),
+    ("City of Kitchener",
+     ["Kitchener", "The Corporation of the City of Kitchener"],
+     ["municipality"], "municipal", "ON"),
+    ("Niagara Region",
+     ["Regional Municipality of Niagara", "The Regional Municipality of Niagara",
+      "Region of Niagara"],
+     ["municipality"], "municipal", "ON"),
+    ("City of Vaughan",
+     ["Vaughan", "The Corporation of the City of Vaughan"],
+     ["municipality"], "municipal", "ON"),
+    ("Halton Region",
+     ["Regional Municipality of Halton", "The Regional Municipality of Halton",
+      "Region of Halton"],
+     ["municipality"], "municipal", "ON"),
+    ("Town of Halton Hills",
+     ["Halton Hills", "The Corporation of the Town of Halton Hills"],
+     ["municipality"], "municipal", "ON"),
     # Big 12 board minutes phase 2 (docs/big12-boards-design.md): every
     # enabled board AND its police service resolves canonically from day one.
     # The CSPA (2024) renamed many "Police Services Boards" to "Police

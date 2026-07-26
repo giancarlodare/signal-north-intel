@@ -286,23 +286,6 @@ def _procurement_by_signal():
     return out
 
 
-def _peel_recent_award_count() -> int | None:
-    """Sum of municipal (Region of Peel) award notices over the last four
-    quarters, for the one honest scale fact The Read may cite. Returns None if
-    the exhibit view is unavailable, so a missing number is never faked as zero."""
-    try:
-        rows = supabase_client.fetch_rows_where(
-            "award_volume_by_quarter", "quarter_start,awards",
-            {"jurisdiction": "eq.municipal", "order": "quarter_start.desc"},
-            limit=4)
-    except Exception as e:  # the view may be absent in a given environment
-        log.warning("  peel award count unavailable: %s", e)
-        return None
-    if not rows:
-        return None
-    return sum(int(r.get("awards") or 0) for r in rows)
-
-
 def run(dry_run: bool = True, today: date | None = None, force: bool = False) -> dict:
     today = today or date.today()
     week_start = monday_of(today)
@@ -430,11 +413,10 @@ def _apply(week_start, clusters, excluded, breakdown, force) -> dict:
     # intro, and a per-item vendor read as each item's editor_note. Deterministic
     # from what we hold, never fabricated; the draft is the scaffold, the edits
     # are the value.
-    peel_recent = _peel_recent_award_count()
     # The Read describes the draft's DEFAULT selection; lens-held items only
     # enter the story if the operator pulls them back in.
     intro = brief_copy.draft_the_read(
-        [c for c in clusters if c.get("included", True)], peel_recent)
+        [c for c in clusters if c.get("included", True)])
     # The lens-held count rides exclusion_breakdown (shown as a chip in the
     # editor header, same pattern as the below-bar counts); the held items
     # themselves are in the draft as included=false rows the editor can toggle.
