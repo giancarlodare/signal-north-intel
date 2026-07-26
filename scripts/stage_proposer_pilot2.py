@@ -85,6 +85,8 @@ def instrument_tokens(title: str) -> set:
             continue
         if re.fullmatch(r"\d+(?:\.\d+)?[km]", bare.lower()):
             continue          # a bare dollar amount is not an instrument
+        if re.fullmatch(r"(?:19|20)\d{2}(?:-(?:19|20)\d{2})?", bare):
+            continue          # a year or year range is not an instrument
         if bare[0].isupper() or any(ch.isdigit() for ch in bare) or "&" in bare:
             out.add(bare.lower())
     return out
