@@ -64,6 +64,9 @@ Spec now:
 - The engine then aggregates arcs across all services under a ministry into the
   ministry row, using the SAME bootstrap + gate. Partial pooling (below) lets a
   ministry row exist before every child service is significant.
+- The rollup aggregates WITHIN a track (section 0e): political-signal-fed
+  and operational-signal-fed arcs under the same ministry never blend into
+  one ministry number.
 - Because the rollup is an org-resolution attribute, not a demand-arc concept,
   the ministry table needs no engine rewrite: it is the service engine grouped
   by `parent_ministry` instead of `organization_id`.
@@ -199,6 +202,55 @@ convergence section reporting the week's risers and sharpenings, under the
 same honesty rules (explicit n, CI, pending cells shown as pending). Both are
 folded into those designs as banked cross-references now, built only after
 the pilot proves significance and the operator approves the surface.
+
+## 0e. Terminal-action profiles keyed to the arc's nature, not the entity (operator, 2026-07-26)
+
+Status: BANKED, design-only. Folds into the engine's aggregation; gated on
+the pilot like the rest of section 0. (The per-buyer terminal-action profile
+had lived only in discussion until now; this section records the concept and
+its correction together, with the keying right from the start.)
+
+**The profile.** For each buyer, the engine learns what its arcs TERMINATE
+in (grant, procurement/tender, legislation, program change) and at what
+rhythm. This is what the convergence indicator's progressive sharpening
+(section 0d) reads: the sharpened instrument is the terminal action the
+buyer's measured history says this kind of arc ends in.
+
+**The correction: key on the ARC'S NATURE, not just the entity name.** One
+entity can host multiple distinct arc types, and averaging them produces a
+blended muddy number that predicts neither. SOLGEN is the proof, with TWO
+separate predictive tracks that must never be averaged together:
+
+1. **SOLGEN-as-ministry (the minister's own actions).** Politically driven.
+   Fed by POLITICAL signals: Hansard, premier and minister statements,
+   budget priorities. Terminates in GRANTS and LEGISLATION.
+2. **SOLGEN-as-procurement-channel (operational buying flowing through it,
+   including the OPP).** Operationally driven. Fed by OPERATIONAL signals:
+   capacity needs, capital plans, equipment cycles. Terminates in
+   PROCUREMENT.
+
+Same entity, two arcs, two rhythms, two terminal profiles. A prediction
+therefore reads "SOLGEN ministry track -> grant likely in ~N months" or
+"SOLGEN/OPP operational track -> procurement likely in ~M months", never a
+blend of the two.
+
+**Design consequences (for the engine, when the pilot gate opens):**
+
+- The profile key is (buyer, TRACK), where the track is classified from the
+  NATURE of the feeding signals (political-signal-fed vs
+  operational-signal-fed), not from the entity name. Most municipal buyers
+  have one track; an entity hosting more than one gets one profile per
+  track.
+- Aggregation, the bootstrap CI, and the significance gate all apply PER
+  TRACK: each track has its own n and its own CI. A thin track is pending
+  on its own merits; tracks are never merged to reach N_MIN, because a
+  merged n would be confidence manufactured from two different processes.
+- The ministry rollup (section 0a) inherits the same rule: a ministry row
+  aggregates arcs within a track, so SOLGEN's political rhythm and the
+  operational rhythm of services under it never blend in the rollup either.
+- Track classification follows the standing discipline: proposed from the
+  signal mix, operator-confirmable, never silently guessed where the mix is
+  ambiguous.
 
 ## 1. What it computes
 

@@ -289,7 +289,10 @@ independent upstream signals stack, always shows the converging signals
 (never a black box), attaches the expected window from the measured
 demand-arc lag with its CI, and progressively sharpens the predicted
 instrument (grant / tender / legislation / program change) as signals land.
-Full spec: docs/demand-arc-backtest-design.md section 0d; folded as banked
+Instrument sharpening reads the per-buyer terminal-action profile, keyed
+to the arc's nature rather than the entity (one entity can host multiple
+tracks; the SOLGEN ministry vs SOLGEN/OPP operational split is the proof;
+section 0e). Full spec: docs/demand-arc-backtest-design.md section 0d; folded as banked
 cross-references into docs/wave3-portal-design.md (dashboard) and
 docs/published-brief-design.md section 9 (Weekly Signal). GATED on the
 Toronto + Peel pilot proving significance; design-thinking only, nothing
