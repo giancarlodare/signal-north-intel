@@ -180,12 +180,38 @@ Working split, to confirm against each stream's program rules before any pitch:
   (these may be allocation-shaped or invitation-based; do not assume). A
   competitive stream must never be pitched as guaranteed money.
 
+### 5e. The denominator: the CSPA police-services roster (operator 2026-07-25)
+
+The absentee count's denominator is the OFFICIAL roster of police services under
+the Community Safety and Policing Act (CSPA), maintained by the Solicitor
+General / Inspectorate of Policing. NOT a municipality list (OPP-contracted
+municipalities have no service to fund and are not leads) and NOT our corpus
+roster. Only entities on this list are eligible to claim a local-priorities
+allocation, so it is the correct denominator that survives a skeptical chief.
+
+The count method:
+1. Find the authoritative CSPA services list on ontario.ca / SolGen sources.
+2. Parse the recipient page, isolate the CSP LOCAL-priorities recipients
+   specifically (the formula stream), separate from provincial-priorities.
+3. Diff the CSPA roster against the local-priorities recipients.
+4. Output: the number and NAMED list of CSPA services absent from the
+   local-priorities stream (the forfeited-allocation Tier-1 lead list), stated
+   with the method + denominator so it is defensible.
+5. If the local-priorities ALLOCATION FORMULA is published on ontario.ca,
+   compute per-service entitlement so each absence converts to a precise
+   forfeited-dollar figure.
+
+Special handling to flag in the roster: First Nations police services (distinct
+funding paths, may not be CSP-local eligible) and joint-board services (one
+board, multiple municipalities) so the denominator is not over- or
+under-counted.
+
 ### 5d. Next steps (design-first, still gated, no sprint change)
 
-1. Probe for the CSP local allocation formula / per-service allocation table.
-2. Build the Ontario municipal police service universe (the View B roster).
-3. Fix v1 aggregation (canonical rollup) and re-run the entitlement-vs-claimed
-   table as the primary Tier-1 artifact, competitive gaps as the secondary
-   capacity-bounded layer.
+1. Probe the CSPA services roster URL + the CSP local allocation formula /
+   per-service allocation table on ontario.ca / SolGen.
+2. Isolate the local-priorities recipients from the ledger; diff against the
+   CSPA roster for the forfeited-allocation lead list.
+3. Fix v1 aggregation (canonical rollup) for the capture totals.
 4. The `grants_solgen_recipients.py` collector (section 4c) turns this into a
    maintained feed once the analysis is validated.
