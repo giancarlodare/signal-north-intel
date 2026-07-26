@@ -108,6 +108,26 @@ federal entity):
    reach significance? That number, not the passage of time, is the
    predictive floor, and it tells us where to point more collection.
 
+**PILOT-FIRST (operator 2026-07-26): Toronto + Peel before the fleet.** The
+biggest services pilot the method: densest history = where significance is
+actually reachable and where the hard arc-linking problems surface cheapest.
+Sequence: pilot Toronto + Peel (York/Ottawa as secondaries) -> deepen their
+history -> reconstruct arcs -> re-run the engine -> their per-transition
+n / CI / significance verdict. The pilot answers three things at once: how
+hard arc reconstruction actually is; whether significance is achievable on
+dense data at all; and a sellable demo result. The full-fleet historical
+extraction spend is approved only AFTER the pilot proves the method and the
+real per-service cost is known: validate on two services before committing
+across thirty.
+
+Pilot pipeline (all existing machinery): (1) the extract-backfill drain
+converts the pilot's captured history into graded signals (Toronto's 9.7k
+awards + the boards' minutes are already in its scope, running on cadence);
+(2) the procurement proposer links signals to procurements
+(propose-then-approve: the operator confirms links, nothing auto-merges);
+(3) the engine (with the v2 bootstrap CI + significance gate, built
+2026-07-26) emits the pilot coverage report.
+
 ## 1. What it computes
 
 For each award, walk BACKWARD along the procurement_id spine to the earliest

@@ -22,6 +22,13 @@ create table if not exists demand_arc_profiles (
   lag_p25          integer not null,
   lag_p75          integer not null,
   lag_p90          integer not null,
+  -- v2 cells (north-star spec): percentile-bootstrap CI on the median and
+  -- the significance verdict (published only when n >= MIN_N and the CI
+  -- half-width clears the width gate; otherwise pending).
+  ci_low           integer not null default 0,
+  ci_high          integer not null default 0,
+  significance     text not null default 'pending'
+                     check (significance in ('published','pending')),
   computed_at      timestamptz not null default now(),
   check (to_grade > from_grade)
 );
