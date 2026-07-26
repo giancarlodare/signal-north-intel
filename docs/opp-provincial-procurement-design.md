@@ -57,15 +57,53 @@ and whether OPP / Solicitor General buys are namable:
   publisher-official provenance anchor; its links point to the SCO /
   Vendor-of-Record / marketplace resources. The earlier 404s were wrong slugs.
 
-**Probe pass 3 (next):** crawl the ontario.ca doing-business hub for its links
-to the SCO / VOR / marketplace opportunity + award surfaces, and follow them to
-the actual listing endpoint; confirm robots + server-side + whether OPP/SolGen
-is isolable there. If the listings prove to be a JS search-app, the front joins
-the render-capable evaluation with a proxy line, per section 3.
+**Probe pass 3 (2026-07-25, CI job 89698092521):** the hub's real procurement
+links point to **Supply Ontario** (`supplyontario.ca`, the provincial
+procurement authority, formerly Supply Chain Ontario):
 
-Open questions the verdict still answers: which surfaces publish
-opportunities/awards collectably; whether OPP/SolGen buys are isolable; JS-app
-vs requests-collectable per surface.
+- `supplyontario.ca/become-a-vendor/`: 200, 78 KB, rich procurement markers
+  (tender, opportunity, award, closing date, vendor of record, procurement)
+  AND **`OPP` is namable in the text** (isolation looks feasible).
+- `supplyontario.ca/procurement-bulletins/`: linked as the procurement
+  bulletins surface, the likely opportunity/award LISTING feed.
+- `doingbusiness.mgs.gov.on.ca/.../psb.nsf/...`: a Lotus Notes .nsf app, 200,
+  server-side, procurement marker (legacy buyer info).
+- `intra.ontario.ca` VOR page: robots DISALLOWED (OPS intranet); OTP Jaggaer
+  `/esop` login: robots-disallowed tree (the standing OTP park).
+
+**Verdict: the collectable provincial surface is Supply Ontario, not the dead
+marketplace.** Pass 4 (next): probe `supplyontario.ca/procurement-bulletins/`
+(and any feed it links) for the actual opportunity/award listings, robots
+posture, server-side vs JS, and whether a buyer/ministry field isolates OPP /
+SolGen. If server-side, this is a requests collector on the Windsor/IO pattern;
+if a JS app, it joins the render-capable evaluation with a proxy line.
+
+**Probe pass 4 (2026-07-25, CI job 89746865936), FINAL:**
+`supplyontario.ca/bulletins/` is 200, server-side (85 KB), procurement markers,
+and lists **19 item-shaped bulletins**. But the items are enterprise-wide
+Vendor-of-Record ARRANGEMENTS (Employee Assistance, barriers, learning
+management, mental-health data sets, boats/motors/trailers, fleet management,
+furniture), NOT service-specific opportunities or awards. **OPP is not isolable
+here:** the bulletins show province-wide VOR CATEGORIES, not who is buying what.
+
+## OPP OPERATIONAL COVERAGE VERDICT (final, 2026-07-25; stop probing)
+
+Operational OPP procurement is NOT cleanly isolable through public provincial
+surfaces, and further probing for a service-level provincial feed is closed
+(the feed may not exist publicly):
+
+- Capital / facilities: COVERED via the IO newsroom collector (live).
+- Operational: NOT cleanly isolable. The Ontario Tenders Portal (the actual
+  solicitation/award system) is robots-walled (/esop Disallow, human-research
+  only); Supply Ontario is publicly collectable but only at the province-wide
+  VOR CATEGORY level, not service-isolated buys; the legacy .nsf buyer info is
+  not an opportunity/award feed.
+
+PROXY-COVERAGE LINE: "OPP capital signal via IO newsroom awards (live);
+operational procurement not cleanly isolable through public provincial surfaces
+(OTP robots-walled, Supply Ontario category-level only). Federal grants/awards
+and ontario.ca news carry residual OPP signal." Revive only if a service-level
+provincial award feed becomes public.
 
 ## 3. Collector shape (conditional on the verdict)
 
