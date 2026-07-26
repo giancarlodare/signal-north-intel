@@ -185,6 +185,12 @@ per-service, per-domain indicator with these properties, all mandatory:
 claims cross to a client only through that gate; a prediction requires a
 PUBLISHED cell AND every underlying signal itself gate-cleared.
 
+**Flagship visualization (banked):** the interactive prediction pathway
+(docs/wave3-portal-design.md), a click-to-expand timeline of the
+reconstructed arc with the measured rhythm above it and the projection as
+a widening CI cone. Strictly downstream of this engine: it renders only
+verified arcs and PUBLISHED cells.
+
 **Where it lands when the gate opens:** (a) the Wave 3 subscriber dashboard
 (docs/wave3-portal-design.md) gains the indicator as a first-class view next
 to the watchlist, with match events feeding the same append-only event log;

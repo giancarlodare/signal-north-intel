@@ -84,3 +84,47 @@ a first-class view next to the watchlist:
 Design-thinking only: recorded here so the dashboard and event-log schema
 anticipate it. NOT built ahead of the pilot gate, and its build is its own
 operator-approved stage when the gate opens.
+
+## Banked post-pilot: the interactive prediction pathway (flagship visualization, operator 2026-07-26)
+
+The flagship visualization of the predictive layer. GATED on the predictive
+engine being solid: the pilot must prove arcs reconstruct cleanly, the
+demand-arc rhythms must be real (PUBLISHED cells), and per-node provenance
+must verify. Build the engine first, then this window onto it. NOT built
+ahead of that; recorded here as design intent so the dashboard anticipates
+it.
+
+Click a prediction and it expands into an interactive horizontal timeline of
+the reconstructed arc, three layers:
+
+- **(a) The real events, in sequence.** Each node is a real event from the
+  arc, categorized by intel type (news -> council motion -> premier comment
+  -> councillor statements -> council resolution -> city budget line ->
+  police budget line), and each node CLICKS THROUGH to the real source
+  document. Provenance is the credibility: the client can read every
+  underlying document themselves.
+- **(b) The measured rhythm, above the flow.** Between each phase, the
+  statistically significant average lag from the demand-arc engine (the
+  PUBLISHED cell for that transition), so the client sees the service's
+  historical rhythm and that THIS arc is tracking it.
+- **(c) The projection, extending into the future.** A line continuing past
+  the last real event to the predicted outcome, with confidence drawn as a
+  WIDENING CONE. The cone IS the confidence interval: uncertainty is
+  visualized, not caveated, exactly per the client-facing gate's
+  withhold-not-caveat corollary.
+
+Why it is the flagship: the prediction becomes self-justifying (the UI shows
+its work), and it displays the multi-source, multi-year provenance trail
+competitors cannot replicate without the corpus and the linking machinery
+behind it.
+
+STRICTLY DOWNSTREAM by design. It visualizes the linked arc; it computes
+nothing of its own. Hard prerequisites, all three: (1) verified arc
+reconstruction (the propose-then-approve proposer loop, operator-confirmed
+links); (2) real significance rhythms (PUBLISHED demand-arc cells for the
+transitions shown; a pending transition shows no rhythm number); (3)
+per-node provenance verification at render time. A node linking a wrong
+source is worse than no timeline: one bad click-through discredits the whole
+surface (the trust asymmetry in docs/client-facing-gate.md), so every node
+passes the signal gate before the timeline renders, and an arc with an
+unverifiable node renders no timeline at all.

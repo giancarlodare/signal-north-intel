@@ -253,6 +253,18 @@ endpoints:
    subscriber, read-only, rate-limited fairly, never a back-channel. Flagged
    for the September counsel package's neutrality-wall terms.
 
+## Interactive prediction pathway (banked 2026-07-26; Wave 3 flagship visualization)
+
+Click a prediction, it expands into an interactive horizontal timeline of
+the reconstructed arc: real events in sequence by intel type, each node
+clicking through to its source document; the measured significant lag per
+phase above the flow; the projection extending forward as a widening
+confidence cone (the cone IS the CI). Self-justifying prediction, and a
+provenance trail competitors cannot replicate. Strictly downstream of the
+engine: requires verified arc reconstruction, PUBLISHED rhythms, and
+per-node provenance verification. Full spec: docs/wave3-portal-design.md.
+Design intent only; nothing built ahead of the pilot.
+
 ## The client-facing gate (doctrine, 2026-07-26)
 
 Governing doctrine for everything client-facing: an explicit backend ->
