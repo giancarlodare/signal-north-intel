@@ -58,9 +58,22 @@ def test_scope_sections_keeps_matching_paragraphs_with_context():
 
 
 def test_scope_sections_empty_when_no_match():
-    kept, hits, n_kept, n_total = h.scope_sections(
+    kept, hits, n_kept, _n_total = h.scope_sections(
         "Agriculture.\nTransit.\nZoning.")
-    assert kept == "" and hits == [] and n_kept == 0 and n_total == 3
+    assert kept == "" and hits == [] and n_kept == 0
+
+
+def test_split_sections_chunks_newline_free_text():
+    # Newline-free long text (the ola.org html_to_text shape) must split into
+    # multiple sentence-boundary chunks, not one giant section.
+    text = ("The member spoke about roads. " * 60
+            + "The Solicitor General announced police funding. "
+            + "Further debate on agriculture followed. " * 60)
+    sections = h._split_sections(text)
+    assert len(sections) > 3
+    kept, hits, n_kept, n_total = h.scope_sections(text)
+    assert "solicitor general" in hits
+    assert 0 < n_kept < n_total          # real compression now
 
 
 def test_scope_sections_marks_gaps_between_runs():

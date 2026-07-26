@@ -21,7 +21,10 @@ SERVICES = [
     ("Toronto (city procurement)", "buyer", "City of Toronto"),
     ("Ottawa (MERX)", "buyer", "City of Ottawa"),
     ("Windsor (open data)", "buyer", "City of Windsor"),
-    ("Peel (tenders+awarded)", "buyer", "Region of Peel"),
+    # URL marker, not buyer_name: early Peel rows pre-date the buyer_name
+    # column (the 0-docs finding 2026-07-26), so the portal subdomain is the
+    # reliable key.
+    ("Peel (tenders+awarded)", "url", "peelregion.bidsandtenders"),
     ("TPSB", "url", "tpsb.ca"),
     ("Peel Police Board", "url", "peelpoliceboard.ca"),
     ("York Police Board", "url", "yrpsb.ca"),

@@ -95,9 +95,49 @@ def board_docs(url_marker: str, n: int) -> list:
     return [r for r in rows if (r.get("content") or "").strip()][:n]
 
 
+# Wave A label -> honest taxonomy signal_type (grades via src/taxonomy.py):
+# board docs authorizing/reporting acquisitions ARE board decisions (3);
+# budget/capital funding is budget_allocation (3); pressure is chatter (1).
+LABEL_TO_SIGNAL_TYPE = {
+    "procurement_intent": "board_decision",
+    "funding_intent": "budget_allocation",
+    "pressure_signal": "political_pressure",
+}
+STAMP = "upstream-intent@v1"
+
+
+def _write_signal(doc: dict, board_name: str, c: dict, resolve_org) -> bool:
+    """Insert one Wave A signal via the production payload builder (grades,
+    org resolution, unresolved flagging all reused). Idempotent per
+    (document, title): a re-run skips existing rows."""
+    from .signal_extractor import build_signal_payload
+    title = f"{c['label']}: {(doc.get('title') or '')[:150]}"
+    existing = supabase_client.fetch_rows_where(
+        "signals", "id", {"document_id": f"eq.{doc['id']}",
+                          "title": f"eq.{title[:200]}"}, limit=1)
+    if existing:
+        return False
+    raw = {
+        "signal_type": LABEL_TO_SIGNAL_TYPE[c["label"]],
+        "title": title,
+        "summary": c.get("rationale") or "",
+        "quote_or_line": (c.get("evidence") or "")[:500],
+        "organization_name": board_name,
+        "confidence": "probable",
+    }
+    payload = build_signal_payload(raw, doc["id"], STAMP, resolve_org,
+                                   lambda s: None, doc_type="board_minutes")
+    supabase_client.insert_signal(payload)
+    return True
+
+
 def run(per_board: int, dry_run: bool = True) -> dict:
     import anthropic
+    from .signal_extractor import build_resolver
     client = anthropic.Anthropic()
+    resolve_org = build_resolver(
+        supabase_client.fetch_rows("organizations", "id,canonical_name,aliases"),
+        key_fields=("canonical_name",), alias_field="aliases")
     totals = Counter()
     per = defaultdict(Counter)
     for name, marker in BOARDS:
@@ -118,6 +158,15 @@ def run(per_board: int, dry_run: bool = True) -> dict:
                       f":: {(d.get('title') or '')[:70]}")
                 print(f"    evidence: {c.get('evidence','')[:160]}")
                 print(f"    url: {(d.get('url') or '')[:110]}")
+                if not dry_run:
+                    try:
+                        if _write_signal(d, name, c, resolve_org):
+                            totals["written"] += 1
+                        else:
+                            totals["skipped_existing"] += 1
+                    except Exception as e:
+                        print(f"    WRITE ERROR: {type(e).__name__}: {str(e)[:140]}")
+                        totals["write_error"] += 1
     print("=" * 72)
     for name, _ in BOARDS:
         c = per[name]
@@ -133,8 +182,10 @@ def run(per_board: int, dry_run: bool = True) -> dict:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Wave A corpus intent pass")
     parser.add_argument("--per-board", type=int, default=8)
-    parser.add_argument("--dry-run", action="store_true", default=True)
+    parser.add_argument("--apply", action="store_true",
+                        help="write signals (operator-approved 2026-07-26); "
+                             "default is dry-run")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    run(per_board=args.per_board, dry_run=True)
+    run(per_board=args.per_board, dry_run=not args.apply)
     sys.exit(0)

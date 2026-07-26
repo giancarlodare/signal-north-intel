@@ -87,15 +87,41 @@ def matches_scope(text: str) -> list:
     return [t for t in SCOPE_TERMS if t in low]
 
 
+CHUNK_CHARS = 1200   # section granularity when the text carries no newlines
+
+
+def _split_sections(body: str) -> list:
+    """Paragraphs when the text has newline structure; otherwise fixed-size
+    chunks split at sentence boundaries. html_to_text flattens ola.org pages
+    to nearly newline-free text (CI diagnostic 2026-07-26: sections_kept=22/22
+    because each transcript arrived as ONE paragraph), so newline splitting
+    alone cannot compress; the chunk fallback restores real granularity."""
+    paras = [p.strip() for p in (body or "").split("\n") if p.strip()]
+    if len(paras) > 3:
+        return paras
+    text = " ".join(paras)
+    out, start = [], 0
+    while start < len(text):
+        end = min(start + CHUNK_CHARS, len(text))
+        if end < len(text):
+            dot = text.rfind(". ", start + CHUNK_CHARS // 2, end)
+            if dot != -1:
+                end = dot + 1
+        out.append(text[start:end].strip())
+        start = end
+    return [c for c in out if c]
+
+
 def scope_sections(body: str, context: int = 1) -> tuple:
     """SECTION-LEVEL filter (operator 2026-07-26): a full sitting day almost
     always mentions 'police' somewhere, so document-level scope keeps ~every
-    day and blows the extraction budget. Instead, split the transcript into
-    paragraphs and keep only the scope-matching ones plus `context` neighbors
-    on each side (contiguous runs merged). Returns (kept_text, hits,
-    kept_paras, total_paras): the stored document is the policing/capital
-    passages, not 200 pages of unrelated debate."""
-    paras = [p.strip() for p in (body or "").split("\n") if p.strip()]
+    day and blows the extraction budget. Split into sections (paragraphs, or
+    sentence-boundary chunks when the text is newline-free) and keep only the
+    scope-matching ones plus `context` neighbors on each side (contiguous
+    runs merged). Returns (kept_text, hits, kept_paras, total_paras): the
+    stored document is the policing/capital passages, not 200 pages of
+    unrelated debate."""
+    paras = _split_sections(body)
     keep = set()
     hits: list = []
     for i, p in enumerate(paras):
