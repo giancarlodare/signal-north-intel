@@ -37,3 +37,42 @@ and Halton's is RECORDED SECONDARY (halton.ca names bids&tenders as its
 channel; see the table). Sudbury remains the live MERX candidate. All
 other tier-2 slug guesses 404 (London, Hamilton, Peel, York, Durham,
 Waterloo, and city-name variants).
+
+## Tier-3 batch: operator-browser provenance (2026-07-26), QUEUED
+
+Provenance established by OPERATOR BROWSER 2026-07-26: each city's
+official procurement page links its bidsandtenders tenant. The
+globaltenders.com links seen alongside are AGGREGATORS and are ignored
+as sources, per the standing provenance rule. Machine candidates had
+404'd on stale page paths (the go-batch sweep); the operator's browser
+found the moved pages.
+
+QUEUE DISCIPLINE (operator instruction): these do NOT displace the
+proposer confirm pass (pilot critical path) or the Monday tier-2 wave.
+They run through the standard CI validation dry-run (reference parse /
+date parse / awarded check, tier-1 bars) when those two clear, then
+enable on the operator's go.
+
+| Buyer | Tenant | Provenance evidence | Verdict |
+|---|---|---|---|
+| City of Niagara Falls | niagarafalls.bidsandtenders.ca | niagarafalls.ca/building-planning-and-business/procurement-services/bid-opportunities/ links the tenant | PASS (operator browser) |
+| City of St. Catharines | stcatharines.bidsandtenders.ca | stcatharines.ca/business-and-economic-development/vendor-and-purchasing-opportunities/ links the tenant | PASS (operator browser) |
+| City of Thunder Bay | thunderbay.bidsandtenders.ca | thunderbay.ca/en/business/tenders-and-proposals.aspx links the tenant | PASS (operator browser) |
+| Town of Whitby | whitby.bidsandtenders.ca | whitby.ca/business-and-economy/bid-opportunities/ links the tenant | PASS (operator browser) |
+| City of Burlington | burlington.bidsandtenders.ca | burlington.ca/en/business-in-burlington/bid-opportunities.aspx links the tenant | PASS (operator browser) |
+| City of Sarnia | sarnia.bidsandtenders.ca | sarnia.ca/working-here/bids-and-tenders/ links the tenant | PASS (operator browser) |
+| City of London | london.bidsandtenders.ca | london.ca/business-development/procurement-supply links the tenant | PASS (operator browser) |
+
+Already covered by the Monday tier-2 wave (no new rows needed):
+Hamilton and Mississauga passed provenance 2026-07-21 and sit in the
+tier-2 table above. CAVEAT carried to validation time: the go-batch
+sweep saw a robots/500 shape on a Hamilton endpoint; confirm
+hamilton.bidsandtenders.ca itself is collectable (robots + probe)
+before its row enables.
+
+HIGH-VALUE PROBE, QUEUED: London Police Service has its OWN bids page,
+londonpolice.ca/about/bids-and-tenders/ (operator find, 2026-07-26). A
+police-service-direct procurement channel outranks a city feed for the
+niche. Probe when the queue clears: platform identification,
+collectability (robots, rendering), provenance confirmation, then
+design-first if collectable.
