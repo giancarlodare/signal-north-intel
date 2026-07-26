@@ -38,6 +38,24 @@ channel; see the table). Sudbury remains the live MERX candidate. All
 other tier-2 slug guesses 404 (London, Hamilton, Peel, York, Durham,
 Waterloo, and city-name variants).
 
+## Tier-2 wave GO + first-multi-buyer-week watch flags (operator 2026-07-26)
+
+The Sunday Jul 26 brief gate PASSED: machinery correct (dates, provenance,
+lens, honest exclusion accounting); the brief's thinness was diagnostic of
+single-buyer concentration (the lens correctly held 21 already-featured Peel
+items), which this wave fixes. The nine buyers enable Monday Jul 28.
+
+WATCH FLAGS for the first multi-buyer week, both checked at the next Sunday
+gate (Aug 2):
+
+1. **Brief thickness**: with tier-2 buyers feeding the lens fresh material,
+   next week's brief should be MATERIALLY thicker. Still-thin after tier-2
+   is a real editorial problem to diagnose, not a quiet week.
+2. **Lens scaling**: the previously-featured lens did its job but starved
+   the brief under one dominant buyer. Confirm the lens logic scales
+   sensibly across many buyers in the first multi-buyer week (per-item
+   keys, no cross-buyer suppression surprises).
+
 ## Tier-3 batch: operator-browser provenance (2026-07-26), QUEUED
 
 Provenance established by OPERATOR BROWSER 2026-07-26: each city's

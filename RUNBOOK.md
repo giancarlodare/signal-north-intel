@@ -395,3 +395,11 @@ with 90-day expiry. To rotate:
 
 The token lives in **cron-job.org and Bitwarden only** — never in the repo,
 never in any chat or transcript.
+
+---
+
+## Standing URLs (operator-recorded 2026-07-26)
+
+- **Brief editor**: https://signal-north-intel.vercel.app/brief (the /brief
+  route of the Vercel deployment; review pages live on the same host:
+  /corpus, /procurements, /predictions, /discovery, /prospects).
