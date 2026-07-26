@@ -9,13 +9,9 @@ from src import supabase_client
 ROWS = [
     ("City of Hamilton Bids and Tenders portal", "https://hamilton.bidsandtenders.ca/Module/Tenders/en"),
     ("City of Brampton Bids and Tenders portal", "https://brampton.bidsandtenders.ca/Module/Tenders/en"),
-    ("City of Markham Bids and Tenders portal", "https://markham.bidsandtenders.ca/Module/Tenders/en"),
-    ("City of Mississauga Bids and Tenders portal", "https://mississauga.bidsandtenders.ca/Module/Tenders/en"),
     ("City of Kitchener Bids and Tenders portal", "https://kitchener.bidsandtenders.ca/Module/Tenders/en"),
-    ("Niagara Region Bids and Tenders portal", "https://niagararegion.bidsandtenders.ca/Module/Tenders/en"),
     ("City of Vaughan Bids and Tenders portal", "https://vaughan.bidsandtenders.ca/Module/Tenders/en"),
     ("Halton Region Bids and Tenders portal", "https://haltonregion.bidsandtenders.ca/Module/Tenders/en"),
-    ("Town of Halton Hills Bids and Tenders portal", "https://haltonhills.bidsandtenders.ca/Module/Tenders/en"),
 ]
 
 def main() -> int:

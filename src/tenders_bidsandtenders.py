@@ -80,15 +80,27 @@ MUNICIPALITIES = [
     # Tier 2 (docs/tier2-enablement.md, provenance 9/9, operator go
     # 2026-07-26 after the Sunday brief gate passed): each row's official
     # city/region page links its tenant, evidence recorded in the doc.
+    # Of the nine provenance-cleared tier-2 tenants, FIVE cleared the CI
+    # validation bars (run 30211978378: ref_parsed 100%, date_parsed 100%,
+    # awarded history rich) and enable here:
     {"org_key": "hamilton", "subdomain": "hamilton", "name": "City of Hamilton"},
     {"org_key": "brampton", "subdomain": "brampton", "name": "City of Brampton"},
-    {"org_key": "markham", "subdomain": "markham", "name": "City of Markham"},
-    {"org_key": "mississauga", "subdomain": "mississauga", "name": "City of Mississauga"},
     {"org_key": "kitchener", "subdomain": "kitchener", "name": "City of Kitchener"},
-    {"org_key": "niagara", "subdomain": "niagararegion", "name": "Niagara Region"},
     {"org_key": "vaughan", "subdomain": "vaughan", "name": "City of Vaughan"},
     {"org_key": "halton", "subdomain": "haltonregion", "name": "Halton Region"},
-    {"org_key": "haltonhills", "subdomain": "haltonhills", "name": "Town of Halton Hills"},
+    # FOUR are HELD below bar (same run), per diagnose-and-extend (never
+    # enable-and-hope); enabling any of these now would loud-fail daily:
+    #  - markham: OPEN grid 0 rows (dead grid; gated or tenant variant).
+    #  - niagara (niagararegion): OPEN grid 0 rows (same shape).
+    #  - haltonhills: grid RENDERED 29 rows but 0 parsed (markup variant;
+    #    parser extension needed, the most fixable of the four).
+    #  - mississauga: OPEN parsed 1/1 but the awarded replay returned 0
+    #    rows (awarded endpoint variant; open-only enable would still raise
+    #    on the awarded loud-failure guard).
+    # {"org_key": "markham", "subdomain": "markham", "name": "City of Markham"},
+    # {"org_key": "niagara", "subdomain": "niagararegion", "name": "Niagara Region"},
+    # {"org_key": "haltonhills", "subdomain": "haltonhills", "name": "Town of Halton Hills"},
+    # {"org_key": "mississauga", "subdomain": "mississauga", "name": "City of Mississauga"},
 ]
 
 # A real desktop Chrome UA. The headless UA is gated to an empty grid, so this

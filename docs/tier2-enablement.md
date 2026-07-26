@@ -56,6 +56,28 @@ gate (Aug 2):
    sensibly across many buyers in the first multi-buyer week (per-item
    keys, no cross-buyer suppression surprises).
 
+## Tier-2 CI validation verdict (run 30211978378, 2026-07-26): 5 enable, 4 held
+
+Standard bars (reference parse, date parse, awarded check), Chromium
+dry-run across all 14 config rows; tier-1 all healthy in the same run.
+
+| Buyer | open rows | ref parsed | date parsed | awarded rows | Verdict |
+|---|---|---|---|---|---|
+| City of Hamilton | 7 | 100% | 100% | 1,374 | ENABLE |
+| City of Brampton | 10 | 100% | 100% | 1,674 | ENABLE |
+| City of Kitchener | 6 | 100% | 100% | 1,299 | ENABLE |
+| City of Vaughan | 12 | 100% | 100% | 1,715 | ENABLE |
+| Halton Region | 17 | 100% | 100% | 1,377 | ENABLE |
+| City of Markham | 0 | n/a | n/a | 0 | HELD: dead OPEN grid |
+| Niagara Region | 0 | n/a | n/a | 0 | HELD: dead OPEN grid |
+| Town of Halton Hills | 0 of 29 rendered | n/a | n/a | 0 | HELD: markup variant (grid rendered, parser missed; most fixable) |
+| City of Mississauga | 1 | 100% | 100% | 0 | HELD: awarded replay empty (endpoint variant) |
+
+Diagnose-and-extend applies to the four holds: each needs its own probe
+(markup variant for Halton Hills, tenant/gating check for Markham and
+Niagara, awarded-endpoint variant for Mississauga) before a follow-up
+enable PR. Their provenance stands; only collectability is open.
+
 ## Tier-3 batch: operator-browser provenance (2026-07-26), QUEUED
 
 Provenance established by OPERATOR BROWSER 2026-07-26: each city's
