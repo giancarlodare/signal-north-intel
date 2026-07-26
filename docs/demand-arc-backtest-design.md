@@ -79,6 +79,55 @@ significance gate still governs what is labeled published vs pending; pooling
 only stabilizes the estimate, it never manufactures confidence. This is a later
 addition, noted here so the schema and gate anticipate it.
 
+## 0c. Backward historical reconstruction (operator reframe, 2026-07-26)
+
+The path to statistical significance is BACKWARD RECONSTRUCTION, not forward
+accumulation. Complete demand arcs already exist in the historical record:
+past procurements (opened and closed), historical budgets, archived board and
+council minutes, old announcements. A 2021 incident -> council pressure ->
+budget line -> 2023 tender -> award is a fully-formed, measurable arc sitting
+in the archives NOW. The binding constraint on significance is EXTRACTION
+DEPTH and HISTORICAL REACH, not time. Program, per service (and provincial /
+federal entity):
+
+1. **Inventory**: how far back each source actually goes (bids&tenders award
+   history, board minutes archives, council minutes archives, newsroom
+   archives, budget documents) vs how much we have COLLECTED and EXTRACTED.
+   Report the collected-vs-available gap (`scripts/inventory_corpus_depth.py`
+   is the collected/extracted side; archive-reach probes fill the available
+   side).
+2. **Deepen**: where archives extend past our collection, deepen the backfill
+   to the full available history, prioritizing sources richest in linkable
+   arc events (budgets, board capital plans, closed procurements with
+   references).
+3. **Re-run the engine** against the deepened history; per-service n per
+   transition should climb sharply once years of history extract instead of a
+   recent slice.
+4. **Coverage report**: n, CI width, significance verdict per service x
+   transition. The test: with full historical extraction, how many cells
+   reach significance? That number, not the passage of time, is the
+   predictive floor, and it tells us where to point more collection.
+
+**PILOT-FIRST (operator 2026-07-26): Toronto + Peel before the fleet.** The
+biggest services pilot the method: densest history = where significance is
+actually reachable and where the hard arc-linking problems surface cheapest.
+Sequence: pilot Toronto + Peel (York/Ottawa as secondaries) -> deepen their
+history -> reconstruct arcs -> re-run the engine -> their per-transition
+n / CI / significance verdict. The pilot answers three things at once: how
+hard arc reconstruction actually is; whether significance is achievable on
+dense data at all; and a sellable demo result. The full-fleet historical
+extraction spend is approved only AFTER the pilot proves the method and the
+real per-service cost is known: validate on two services before committing
+across thirty.
+
+Pilot pipeline (all existing machinery): (1) the extract-backfill drain
+converts the pilot's captured history into graded signals (Toronto's 9.7k
+awards + the boards' minutes are already in its scope, running on cadence);
+(2) the procurement proposer links signals to procurements
+(propose-then-approve: the operator confirms links, nothing auto-merges);
+(3) the engine (with the v2 bootstrap CI + significance gate, built
+2026-07-26) emits the pilot coverage report.
+
 ## 1. What it computes
 
 For each award, walk BACKWARD along the procurement_id spine to the earliest

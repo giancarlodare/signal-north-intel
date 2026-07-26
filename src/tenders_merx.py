@@ -62,7 +62,20 @@ TABS = [
     ("bidresults-bids", "award_notice"),
 ]
 
-NEW_PER_TAB = 25        # per-run cap on NEW abstracts (board-minutes style)
+import os as _os
+
+# Per-run cap on NEW abstracts (board-minutes style). MERX_NEW_PER_TAB
+# overrides for a one-time history deepening (operator 2026-07-26, the
+# backward-reconstruction program); a raised cap also disables the known-page
+# early-stop below so the pager reaches history past the already-collected
+# front pages (the Toronto backfill lesson).
+_DEFAULT_NEW_PER_TAB = 25
+try:
+    NEW_PER_TAB = max(1, int(_os.environ.get("MERX_NEW_PER_TAB",
+                                             _DEFAULT_NEW_PER_TAB)))
+except ValueError:
+    NEW_PER_TAB = _DEFAULT_NEW_PER_TAB
+BACKFILL_MODE = NEW_PER_TAB > _DEFAULT_NEW_PER_TAB
 PAGE_MAX_PER_TAB = 40   # 40 pages x 25 ids bounds the initial history ~1000
 KNOWN_PAGE_STOP = 2     # stop paging a tab after this many all-known pages
 ERROR_BUDGET = 25       # abstract failures tolerated before loud abort
@@ -225,8 +238,10 @@ def collect(dry_run: bool = True) -> dict:
             known_pages = known_pages + 1 if page_new == 0 else 0
             # The tabs list newest activity first, so consecutive all-known
             # pages mean the rest of the history is already collected; the
-            # steady state reads one page per tab.
-            if (known_pages >= KNOWN_PAGE_STOP or len(queue) >= NEW_PER_TAB
+            # steady state reads one page per tab. BACKFILL_MODE pages past
+            # known front pages to reach the uncollected deep history.
+            if ((not BACKFILL_MODE and known_pages >= KNOWN_PAGE_STOP)
+                    or len(queue) >= NEW_PER_TAB
                     or not has_next_page(resp.text, listing_url(tab, page), tab, page)):
                 break
             page += 1

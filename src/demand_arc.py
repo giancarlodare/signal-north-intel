@@ -18,6 +18,7 @@ below MIN_N a horizon is labeled insufficient, never a fabricated number.
 """
 import argparse
 import logging
+import random
 import sys
 from collections import defaultdict
 from datetime import date, datetime, timezone
@@ -29,7 +30,44 @@ log = logging.getLogger(__name__)
 
 GRADE_LABEL = {1: "chatter", 2: "intent", 3: "commitment", 4: "in_market",
                5: "awarded"}
-MIN_N = 8   # below this a per-transition horizon is "insufficient", not reported as fact
+# Significance gate (north-star spec section 0): a cell PUBLISHES only when
+# n >= MIN_N AND the bootstrap CI half-width is at most CI_WIDTH_FRAC of the
+# median; otherwise it shows "pending, n=X". Operator-tunable constants.
+MIN_N = 8
+CI_WIDTH_FRAC = 0.5
+BOOTSTRAP_ITERS = 2000
+BOOTSTRAP_SEED = 42   # deterministic runs: same corpus -> same CI
+
+
+def bootstrap_median_ci(lags: list, iters: int = BOOTSTRAP_ITERS,
+                        lo_pct: float = 10.0, hi_pct: float = 90.0) -> tuple:
+    """(ci_low, ci_high): percentile-bootstrap CI on the MEDIAN. Lags are
+    right-skewed and heavy-tailed, so no normal-theory interval and never a
+    bare mean (north-star spec). Deterministic via a fixed seed."""
+    if not lags:
+        return (0, 0)
+    if len(lags) == 1:
+        return (lags[0], lags[0])
+    rng = random.Random(BOOTSTRAP_SEED)
+    n = len(lags)
+    medians = []
+    for _ in range(iters):
+        sample = sorted(rng.choice(lags) for _ in range(n))
+        medians.append(_percentile(sample, 0.5))
+    medians.sort()
+    return (_percentile(medians, lo_pct / 100.0),
+            _percentile(medians, hi_pct / 100.0))
+
+
+def significance(n: int, median: int, ci_low: int, ci_high: int) -> str:
+    """'published' when n >= MIN_N AND the CI half-width <= CI_WIDTH_FRAC of
+    the median; else 'pending'. A gap is an honest not-yet, never soft-filled."""
+    if n < MIN_N:
+        return "pending"
+    half = (ci_high - ci_low) / 2.0
+    if median > 0 and half <= CI_WIDTH_FRAC * median:
+        return "published"
+    return "pending"
 
 
 def _iso_day(value) -> Optional[str]:
@@ -97,18 +135,23 @@ def _percentile(sorted_vals: list, p: float) -> int:
 
 
 def aggregate(per_org_transition: dict) -> list:
-    """{(org_id, from, to): [lags]} -> profile rows with n + percentiles."""
+    """{(org_id, from, to): [lags]} -> profile rows with n, percentiles, the
+    bootstrap CI on the median, and the significance verdict (v2 cells)."""
     rows = []
     for (org_id, g, h), lags in per_org_transition.items():
         sv = sorted(lags)
+        med = _percentile(sv, 0.5)
+        ci_low, ci_high = bootstrap_median_ci(sv)
         rows.append({
             "organization_id": org_id,
             "from_grade": g, "to_grade": h,
             "n": len(sv),
-            "lag_median_days": _percentile(sv, 0.5),
+            "lag_median_days": med,
             "lag_p25": _percentile(sv, 0.25),
             "lag_p75": _percentile(sv, 0.75),
             "lag_p90": _percentile(sv, 0.90),
+            "ci_low": ci_low, "ci_high": ci_high,
+            "significance": significance(len(sv), med, ci_low, ci_high),
         })
     return rows
 
@@ -187,10 +230,12 @@ def _report(profiles: list, coverage: dict) -> None:
         for r in sorted(rows, key=lambda r: (r["from_grade"], r["to_grade"])):
             tr = f"{GRADE_LABEL.get(r['from_grade'], r['from_grade'])}->" \
                  f"{GRADE_LABEL.get(r['to_grade'], r['to_grade'])}"
-            note = "" if r["n"] >= MIN_N else "  [INSUFFICIENT n<%d]" % MIN_N
-            log.info("    %-22s n=%-4d median=%-5s p25=%-5s p75=%-5s p90=%-5s days%s",
-                     tr, r["n"], r["lag_median_days"], r["lag_p25"], r["lag_p75"],
-                     r["lag_p90"], note)
+            verdict = (r["significance"].upper() if r["significance"] == "published"
+                       else f"pending, n={r['n']}")
+            log.info("    %-22s n=%-4d median=%-5s CI[%s,%s] p25=%-5s p75=%-5s "
+                     "p90=%-5s days  [%s]",
+                     tr, r["n"], r["lag_median_days"], r["ci_low"], r["ci_high"],
+                     r["lag_p25"], r["lag_p75"], r["lag_p90"], verdict)
 
 
 def run(dry_run: bool = True) -> dict:

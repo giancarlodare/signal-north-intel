@@ -48,5 +48,5 @@ jobs:
           EXTRACTION_MODEL: claude-opus-4-8
         run: >
           python -m src.signal_extractor
-          --doc-types award_notice,board_minutes
+          --doc-types award_notice,board_minutes,news_release
           --newest-first --limit ${{ inputs.limit }}

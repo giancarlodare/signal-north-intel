@@ -72,6 +72,33 @@ def test_compute_attributes_to_buyer_and_walks():
     assert row["n"] == 1 and row["lag_median_days"] == 90
 
 
+def test_bootstrap_ci_brackets_median_and_is_deterministic():
+    lags = [30, 45, 50, 55, 60, 70, 90, 120, 150, 200]
+    lo1, hi1 = da.bootstrap_median_ci(lags)
+    lo2, hi2 = da.bootstrap_median_ci(lags)
+    assert (lo1, hi1) == (lo2, hi2)          # fixed seed -> deterministic
+    med = da._percentile(sorted(lags), 0.5)
+    assert lo1 <= med <= hi1
+    assert da.bootstrap_median_ci([42]) == (42, 42)
+    assert da.bootstrap_median_ci([]) == (0, 0)
+
+
+def test_significance_gate_min_n_and_width():
+    # n below MIN_N: pending regardless of width
+    assert da.significance(3, 100, 90, 110) == "pending"
+    # n ok, tight CI: published (half-width 10 <= 0.5*100)
+    assert da.significance(10, 100, 90, 110) == "published"
+    # n ok, CI too wide: pending (half-width 80 > 50)
+    assert da.significance(10, 100, 20, 180) == "pending"
+
+
+def test_aggregate_carries_ci_and_verdict():
+    per = {("org-A", 2, 5): [30, 60, 90]}
+    row = da.aggregate(per)[0]
+    assert {"ci_low", "ci_high", "significance"} <= set(row)
+    assert row["significance"] == "pending"   # n=3 < MIN_N
+
+
 def test_compute_falls_back_to_signal_org_when_no_buyer():
     buyer = {"p1": None}
     links = [

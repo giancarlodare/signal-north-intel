@@ -12,8 +12,9 @@ scaling.
 Read-only against the sources (robots honored, 2s politeness); the only writes
 are Claude API calls. Prints a table, stores nothing.
 
-    python scripts/prove_intent_peel.py           # default sample
-    python scripts/prove_intent_peel.py --limit 30
+    python scripts/prove_intent_peel.py                    # news/statements only
+    python scripts/prove_intent_peel.py --board-docs 12    # fold in corpus board
+                                                           # budget/agenda docs
 """
 import argparse
 import json
@@ -23,6 +24,7 @@ from urllib.parse import urlparse
 
 sys.path.insert(0, ".")
 
+from src import supabase_client
 from src.board_minutes import PoliteFetcher, extract_links, html_to_text
 
 LISTINGS = [
@@ -131,7 +133,29 @@ def _classify(client, post):
     return json.loads(text)
 
 
-def main(limit):
+def _corpus_board_docs(n):
+    """Peel board budget/agenda docs already in the corpus (board_minutes
+    collector output): the doc mix where real buys first surface. Newest
+    first, nonzero content."""
+    rows = supabase_client.fetch_rows_where(
+        "documents", "id,title,url,content,published_on",
+        {"doc_type": "eq.board_minutes", "url": "ilike.*peelpoliceboard*",
+         "content": "not.is.null"},
+        limit=n * 3)
+    rows.sort(key=lambda r: str(r.get("published_on") or ""), reverse=True)
+    out = []
+    for r in rows:
+        body = (r.get("content") or "").strip()
+        if not body:
+            continue
+        out.append({"url": r.get("url") or "", "title": (r.get("title") or "")[:120],
+                    "body": body[:MAX_BODY], "listing": "PPSB board docs (corpus)"})
+        if len(out) >= n:
+            break
+    return out
+
+
+def main(limit, board_docs):
     import anthropic
     fetcher = PoliteFetcher()
     per_listing = max(3, limit // len(LISTINGS) + 1)
@@ -148,6 +172,10 @@ def main(limit):
                 break
         if len(posts) >= limit:
             break
+    if board_docs:
+        docs = _corpus_board_docs(board_docs)
+        print(f"[PPSB board docs (corpus)] {len(docs)} docs folded in")
+        posts.extend(docs)
 
     print("=" * 74)
     print(f"CLASSIFYING {len(posts)} Peel posts (model={MODEL})")
@@ -175,9 +203,11 @@ def main(limit):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Peel intent-extraction precision proof")
-    parser.add_argument("--limit", type=int, default=24, help="posts to classify")
+    parser.add_argument("--limit", type=int, default=24, help="news/statement posts to classify")
+    parser.add_argument("--board-docs", type=int, default=0,
+                        help="also classify N Peel board budget/agenda docs from the corpus")
     args = parser.parse_args()
     import logging
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    main(args.limit)
+    main(args.limit, args.board_docs)
     sys.exit(0)
