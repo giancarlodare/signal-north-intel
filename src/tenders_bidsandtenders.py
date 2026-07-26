@@ -77,6 +77,18 @@ MUNICIPALITIES = [
     # (docs/big12-boards-design.md section 10), where a police service's
     # full public bid history with awards is now its highest-value target.
     # {"org_key": "drps", "subdomain": "drps", "name": "Durham Regional Police Service"},
+    # Tier 2 (docs/tier2-enablement.md, provenance 9/9, operator go
+    # 2026-07-26 after the Sunday brief gate passed): each row's official
+    # city/region page links its tenant, evidence recorded in the doc.
+    {"org_key": "hamilton", "subdomain": "hamilton", "name": "City of Hamilton"},
+    {"org_key": "brampton", "subdomain": "brampton", "name": "City of Brampton"},
+    {"org_key": "markham", "subdomain": "markham", "name": "City of Markham"},
+    {"org_key": "mississauga", "subdomain": "mississauga", "name": "City of Mississauga"},
+    {"org_key": "kitchener", "subdomain": "kitchener", "name": "City of Kitchener"},
+    {"org_key": "niagara", "subdomain": "niagararegion", "name": "Niagara Region"},
+    {"org_key": "vaughan", "subdomain": "vaughan", "name": "City of Vaughan"},
+    {"org_key": "halton", "subdomain": "haltonregion", "name": "Halton Region"},
+    {"org_key": "haltonhills", "subdomain": "haltonhills", "name": "Town of Halton Hills"},
 ]
 
 # A real desktop Chrome UA. The headless UA is gated to an empty grid, so this
