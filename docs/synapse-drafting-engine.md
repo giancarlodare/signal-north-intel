@@ -121,11 +121,71 @@ canonical services. Validation dry-run with a per-stream recipient/amount parse
 bar before enablement. This is the collector that turns the one-off analysis
 into a maintained ledger that refreshes when the ministry updates the page.
 
-### 4d. Status of the run
+### 4d. Analysis v1 run (2026-07-25) and what it exposed
 
-The analysis runs NOW off the fetched page, no new collection needed to start
-(`scripts/analyze_solgen_grants.py`): it builds the per-service capture table
-(total, streams, projects, eligible-but-absent) and two ranked views (money on
-the table; roster services absent from the ledger = warmest Tier-1 leads). The
-formula-vs-competition flag keeps the ROI model peer-cohort relative. The
-collector above productizes it for the maintained Tier-1 targeting feed.
+`scripts/analyze_solgen_grants.py` fetched and parsed the ledger. Nine streams
+present: Projects receiving LOCAL priorities, Projects receiving PROVINCIAL
+priorities, Mobile Crisis Response Team Enhancement, Bail Compliance and Warrant
+Apprehension, Preventing Auto Thefts, Proceeds of Crime Front-Line, Victim
+Support, Safer and Vital Communities, Fire Protection. Two v1 defects to fix
+before the table is trustworthy:
+
+- Aggregation grouped per RAW recipient row, so a multi-detachment force (OPP)
+  fragmented into dozens of rows instead of one per-service total. Fix:
+  aggregate by CANONICAL service (roll detachments up), summing across streams.
+- The cross-reference roster is our ~15 seeded police orgs, several NON-Ontario
+  (Calgary, RCMP, Surete du Quebec), and mixes service-vs-board names. Fix:
+  build the real universe of Ontario municipal police services (View B is only
+  as good as that roster) and match service names, not board names.
+
+## 5. Refinements (operator 2026-07-25): the CSP-local formula is the Tier-1 wedge
+
+### 5a. MAJOR reframe: CSP local-priorities is a FORMULA ALLOCATION, not a competition
+
+Every police service has a PRE-DETERMINED CSP local-priorities entitlement; the
+only requirement to receive it is submitting an application specifying how the
+money will be spent. Not applying = FORFEITING money already allocated to them.
+This is the cleanest Tier-1 product case: no ROI uncertainty, no absorptive-
+capacity caveat, a binary claim-or-forfeit. The pitch is "you forfeited $X in
+already-allocated money; this tool files the compliant spending plan in an
+afternoon." Re-prioritize the analysis around it:
+
+1. Determine whether the CSP local-priorities ALLOCATION FORMULA (or the
+   per-service allocation table) is public (grant guidelines / ministry
+   allocation schedule). If so, compute each service's entitlement.
+2. Cross-reference entitlement against the recipient page to flag services that
+   did NOT claim, claimed PARTIALLY, or claimed LATE. These are the highest-
+   value, easiest-sell Tier-1 leads.
+3. Keep the competitive-stream gap (provincial priorities, Proceeds of Crime,
+   Victim Support, Safer and Vital, and the targeted streams) as the SECONDARY,
+   capacity-bounded ROI layer (5b).
+
+### 5b. Competitive-stream ROI is CAPACITY-bounded, not writing-skill-bounded
+
+A 40-officer service cannot deliver a $13M project regardless of application
+quality. Competitive-stream ROI claims must be peer-cohort relative where the
+cohort is defined by size AND delivery capacity: "services of your size and
+capacity capture $X, you are at $Y." Never fantasy-relative ("you could get
+Toronto money"). This keeps the pitch credible.
+
+### 5c. Formula-vs-competitive split (confirm per stream, never mis-pitch)
+
+Working split, to confirm against each stream's program rules before any pitch:
+
+- FORMULA / ENTITLEMENT: CSP local-priorities (the wedge above).
+- COMPETITION / DISCRETIONARY: CSP provincial-priorities, Proceeds of Crime
+  Front-Line, Victim Support, Safer and Vital Communities.
+- TARGETED (confirm each): Mobile Crisis Response Team Enhancement, Bail
+  Compliance and Warrant Apprehension, Preventing Auto Thefts, Fire Protection
+  (these may be allocation-shaped or invitation-based; do not assume). A
+  competitive stream must never be pitched as guaranteed money.
+
+### 5d. Next steps (design-first, still gated, no sprint change)
+
+1. Probe for the CSP local allocation formula / per-service allocation table.
+2. Build the Ontario municipal police service universe (the View B roster).
+3. Fix v1 aggregation (canonical rollup) and re-run the entitlement-vs-claimed
+   table as the primary Tier-1 artifact, competitive gaps as the secondary
+   capacity-bounded layer.
+4. The `grants_solgen_recipients.py` collector (section 4c) turns this into a
+   maintained feed once the analysis is validated.
