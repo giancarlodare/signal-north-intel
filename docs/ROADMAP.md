@@ -253,6 +253,17 @@ endpoints:
    subscriber, read-only, rate-limited fairly, never a back-channel. Flagged
    for the September counsel package's neutrality-wall terms.
 
+## The client-facing gate (doctrine, 2026-07-26)
+
+Governing doctrine for everything client-facing: an explicit backend ->
+frontend gate; nothing a client sees crosses until it is defensible to a
+skeptic. Withhold, never caveat forward. Three engineered gap types
+(coverage, confidence, correctness) and per-surface gate tests for
+signals, predictions, and drafted applications. Full doctrine:
+docs/client-facing-gate.md; bound into the Wave 3 dashboard, Weekly
+Signal, Grant Engine, and API designs. Design principle, not a build
+item.
+
 ## Convergence indicator (banked 2026-07-26; client-facing predictive product, pilot-gated)
 
 The client-facing product design for the predictive layer. Two claims: Claim

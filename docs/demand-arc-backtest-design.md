@@ -181,6 +181,10 @@ per-service, per-domain indicator with these properties, all mandatory:
   IS the product experience: the subscriber watches a prediction come into
   focus, and each sharpening step is dated and logged.
 
+**Bound by the client-facing gate (docs/client-facing-gate.md):** both
+claims cross to a client only through that gate; a prediction requires a
+PUBLISHED cell AND every underlying signal itself gate-cleared.
+
 **Where it lands when the gate opens:** (a) the Wave 3 subscriber dashboard
 (docs/wave3-portal-design.md) gains the indicator as a first-class view next
 to the watchlist, with match events feeding the same append-only event log;

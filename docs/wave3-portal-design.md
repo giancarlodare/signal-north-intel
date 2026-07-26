@@ -5,6 +5,11 @@ by contract: everything below is built behind auth and feature flags, nothing
 is public, no marketing claim ships, Stripe stays in test mode until the
 operator flips it live in a separate decision.
 
+Governing doctrine: THE CLIENT-FACING GATE (docs/client-facing-gate.md)
+binds every member-visible surface here. The dashboard read layer shows
+only gate-cleared items; not-confident-enough means withheld, never
+caveated forward.
+
 ## Scope
 
 A founding-member-facing portal over the existing corpus and prediction

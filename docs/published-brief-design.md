@@ -39,6 +39,10 @@ chrome, no stock photography.
    news week so we never reach for filler items.
 5. None beats a wrong chart: an exhibit that would mislead on thin data is left
    out, with the reason recorded, until the data supports it (§4).
+6. The client-facing gate (docs/client-facing-gate.md) is the backend half
+   of these rules: coverage-bounded claims, PUBLISHED-only predictions,
+   and source re-verification before an item crosses into the brief.
+   Withhold, do not caveat.
 
 ## 2. Structure of the published brief
 
