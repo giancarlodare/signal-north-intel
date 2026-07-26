@@ -64,6 +64,9 @@ Spec now:
 - The engine then aggregates arcs across all services under a ministry into the
   ministry row, using the SAME bootstrap + gate. Partial pooling (below) lets a
   ministry row exist before every child service is significant.
+- The rollup aggregates WITHIN a track (section 0e): political-signal-fed
+  and operational-signal-fed arcs under the same ministry never blend into
+  one ministry number.
 - Because the rollup is an org-resolution attribute, not a demand-arc concept,
   the ministry table needs no engine rewrite: it is the service engine grouped
   by `parent_ministry` instead of `organization_id`.
@@ -127,6 +130,152 @@ awards + the boards' minutes are already in its scope, running on cadence);
 (propose-then-approve: the operator confirms links, nothing auto-merges);
 (3) the engine (with the v2 bootstrap CI + significance gate, built
 2026-07-26) emits the pilot coverage report.
+
+## 0d. Two claims and the convergence indicator (client-facing product design, operator 2026-07-26)
+
+Status: BANKED, design-thinking only. Gated on the pilot (section 0c) proving
+significance on Toronto + Peel. Nothing here is built, wired, or shown to a
+client ahead of that gate.
+
+The claim "we have a statistically significant predictive tool" needs the
+next sentence: predicting WHAT, and what does the client DO with it. The
+answer is two claims of different precision, sold as one credibility system:
+
+**Claim 1: the specific hard prediction (the ledger).** "Service X will issue
+a tender for Y within window Z." Precise, dated, reconcilable against
+actuals, anchored (Phase B ledger + OpenTimestamps). Rare by nature: the gate
+publishes a hard call only when a cell is significant AND a live upstream
+signal sits on a measured horizon. Claim 1 is not the volume product; it is
+the PROOF product. Its verified track record (hit-rate, lead-time error
+against settled actuals) is what makes Claim 2 credible.
+
+**Claim 2: the convergence / movement prediction (the client-facing
+feature).** "Independent upstream sources are converging on [service] +
+[domain]; based on that service's measured demand rhythm, expect movement in
+roughly N months, confidence X." Makeable far more often than Claim 1,
+because it predicts movement in a domain, not a named instrument. This is
+what the subscriber watches daily. The two claims reinforce: Claim 1's
+audited ledger is the reason a client believes Claim 2's softer call; Claim 2
+is the reason the product is useful between rare hard calls.
+
+**The convergence indicator (the dashboard / Weekly Signal feature):** a
+per-service, per-domain indicator with these properties, all mandatory:
+
+- **Rises on independent stacking.** The indicator strengthens as upstream
+  signals from INDEPENDENT sources (board minutes, council minutes, budget
+  lines, Hansard, newsroom, tender pre-signals) stack on the same
+  service + domain pair. Independence matters: five echoes of one press
+  release are one signal, not five.
+- **Never a black box.** The indicator always shows the specific converging
+  signals behind it, each provenance-linked to its publisher document, the
+  same way every other surface works. A subscriber can click through and
+  read exactly what is converging.
+- **Attaches the expected window.** The window comes from the service's
+  measured demand-arc lag for the relevant transition (the section 0 cell),
+  with that cell's CI as the confidence band and its significance verdict
+  governing whether a window is shown at all. A pending cell means the
+  indicator can show convergence but NOT a window: honest gaps carry through
+  to the client surface.
+- **Sharpens progressively.** As more signals land, the indicator sharpens
+  the predicted INSTRUMENT: from "movement" to grant vs tender vs
+  legislation vs program change, narrowing as the signal mix disambiguates
+  (a budget line + board capital item points at a tender; a ministry
+  announcement + formula stream points at a grant). Progressive sharpening
+  IS the product experience: the subscriber watches a prediction come into
+  focus, and each sharpening step is dated and logged.
+
+**Bound by the client-facing gate (docs/client-facing-gate.md):** both
+claims cross to a client only through that gate; a prediction requires a
+PUBLISHED cell AND every underlying signal itself gate-cleared.
+
+**Flagship visualization (banked):** the interactive prediction pathway
+(docs/wave3-portal-design.md), a click-to-expand timeline of the
+reconstructed arc with the measured rhythm above it and the projection as
+a widening CI cone. Strictly downstream of this engine: it renders only
+verified arcs and PUBLISHED cells.
+
+**Where it lands when the gate opens:** (a) the Wave 3 subscriber dashboard
+(docs/wave3-portal-design.md) gains the indicator as a first-class view next
+to the watchlist, with match events feeding the same append-only event log;
+(b) the Weekly Signal brief (docs/published-brief-design.md) gains a
+convergence section reporting the week's risers and sharpenings, under the
+same honesty rules (explicit n, CI, pending cells shown as pending). Both are
+folded into those designs as banked cross-references now, built only after
+the pilot proves significance and the operator approves the surface.
+
+## 0e. Terminal-action profiles keyed to the arc's nature, not the entity (operator, 2026-07-26)
+
+Status: BANKED, design-only. Folds into the engine's aggregation; gated on
+the pilot like the rest of section 0. (The per-buyer terminal-action profile
+had lived only in discussion until now; this section records the concept and
+its correction together, with the keying right from the start.)
+
+**The profile.** For each buyer, the engine learns what its arcs TERMINATE
+in (grant, procurement/tender, legislation, program change) and at what
+rhythm. This is what the convergence indicator's progressive sharpening
+(section 0d) reads: the sharpened instrument is the terminal action the
+buyer's measured history says this kind of arc ends in.
+
+**The correction: key on the ARC'S NATURE, not just the entity name.** One
+entity can host multiple distinct arc types, and averaging them produces a
+blended muddy number that predicts neither. SOLGEN is the proof, with TWO
+separate predictive tracks that must never be averaged together:
+
+1. **SOLGEN-as-ministry (the minister's own actions).** Politically driven.
+   Fed by POLITICAL signals: Hansard, premier and minister statements,
+   budget priorities. Terminates in GRANTS and LEGISLATION.
+2. **SOLGEN-as-procurement-channel (operational buying flowing through it,
+   including the OPP).** Operationally driven. Fed by OPERATIONAL signals:
+   capacity needs, capital plans, equipment cycles. Terminates in
+   PROCUREMENT.
+
+Same entity, two arcs, two rhythms, two terminal profiles. A prediction
+therefore reads "SOLGEN ministry track -> grant likely in ~N months" or
+"SOLGEN/OPP operational track -> procurement likely in ~M months", never a
+blend of the two.
+
+**Design consequences (for the engine, when the pilot gate opens):**
+
+- The profile key is (buyer, TRACK), where the track is classified from the
+  NATURE of the feeding signals (political-signal-fed vs
+  operational-signal-fed), not from the entity name. Most municipal buyers
+  have one track; an entity hosting more than one gets one profile per
+  track.
+- Aggregation, the bootstrap CI, and the significance gate all apply PER
+  TRACK: each track has its own n and its own CI. A thin track is pending
+  on its own merits; tracks are never merged to reach N_MIN, because a
+  merged n would be confidence manufactured from two different processes.
+- The ministry rollup (section 0a) inherits the same rule: a ministry row
+  aggregates arcs within a track, so SOLGEN's political rhythm and the
+  operational rhythm of services under it never blend in the rollup either.
+- Track classification follows the standing discipline: proposed from the
+  signal mix, operator-confirmable, never silently guessed where the mix is
+  ambiguous.
+
+## 0f. Domain rhythms vs traced arcs (operator doctrine, 2026-07-26)
+
+The pilot's first staging measured arc-linking difficulty directly: zero
+cross-rung links formed on a hard key (board documents never quote tender
+references), so every cross-rung cluster stood on the coarse buyer+scope
+basis. The operator's linking doctrine, from that finding:
+
+1. **Domain-thread linking (Option 1) is the pilot's rhythm instrument, and
+   its output is RENAMED accordingly.** What it produces are DOMAIN RHYTHMS
+   ("TPS fleet-domain budget->award lag ~X months"), never specific causal
+   arcs. Every output, significance verdict, and label downstream says
+   domain-rhythm measurement; the word "arc" is reserved for traced chains.
+2. **Traced arcs require per-instrument accuracy (Option 2) and are
+   deferred.** Anything client-facing that shows a traced chain (the
+   interactive prediction pathway, any Claim-1 prediction) REQUIRES
+   Option-2 per-instrument reconstruction. Banked as the mandatory
+   approach; domain rhythms never masquerade as traced chains.
+3. **Coherence before measurement.** A domain thread only measures rhythm
+   if the cluster is a coherent domain: clusters mixing distinct
+   instruments are split before confirmation, and advocacy / pressure
+   signals NEVER link to a specific award at any granularity (a fabricated
+   link). Pressure feeds rung 1 as a domain-pressure indicator only.
+   Uncategorized-scope clusters are incoherent by construction and are
+   excluded until categorized.
 
 ## 1. What it computes
 

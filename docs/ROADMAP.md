@@ -253,6 +253,51 @@ endpoints:
    subscriber, read-only, rate-limited fairly, never a back-channel. Flagged
    for the September counsel package's neutrality-wall terms.
 
+## Interactive prediction pathway (banked 2026-07-26; Wave 3 flagship visualization)
+
+Click a prediction, it expands into an interactive horizontal timeline of
+the reconstructed arc: real events in sequence by intel type, each node
+clicking through to its source document; the measured significant lag per
+phase above the flow; the projection extending forward as a widening
+confidence cone (the cone IS the CI). Self-justifying prediction, and a
+provenance trail competitors cannot replicate. Strictly downstream of the
+engine: requires verified arc reconstruction, PUBLISHED rhythms, and
+per-node provenance verification. Full spec: docs/wave3-portal-design.md.
+Design intent only; nothing built ahead of the pilot.
+
+## The client-facing gate (doctrine, 2026-07-26)
+
+Governing doctrine for everything client-facing: an explicit backend ->
+frontend gate; nothing a client sees crosses until it is defensible to a
+skeptic. Withhold, never caveat forward. Three engineered gap types
+(coverage, confidence, correctness) and per-surface gate tests for
+signals, predictions, and drafted applications. Full doctrine:
+docs/client-facing-gate.md; bound into the Wave 3 dashboard, Weekly
+Signal, Grant Engine, and API designs. Design principle, not a build
+item.
+
+## Convergence indicator (banked 2026-07-26; client-facing predictive product, pilot-gated)
+
+The client-facing product design for the predictive layer. Two claims: Claim
+1 is the specific hard prediction (the ledger: precise, dated, rare, its
+verified track record is the proof); Claim 2 is the convergence / movement
+prediction ("independent sources converging on service + domain, expect
+movement in ~N months, confidence X"), makeable far more often and the
+feature subscribers watch. Claim 1's audited record makes Claim 2 credible.
+The surface is a per-service, per-domain convergence indicator that rises as
+independent upstream signals stack, always shows the converging signals
+(never a black box), attaches the expected window from the measured
+demand-arc lag with its CI, and progressively sharpens the predicted
+instrument (grant / tender / legislation / program change) as signals land.
+Instrument sharpening reads the per-buyer terminal-action profile, keyed
+to the arc's nature rather than the entity (one entity can host multiple
+tracks; the SOLGEN ministry vs SOLGEN/OPP operational split is the proof;
+section 0e). Full spec: docs/demand-arc-backtest-design.md section 0d; folded as banked
+cross-references into docs/wave3-portal-design.md (dashboard) and
+docs/published-brief-design.md section 9 (Weekly Signal). GATED on the
+Toronto + Peel pilot proving significance; design-thinking only, nothing
+built ahead of that.
+
 ## Parked / waiting
 
 - **Extractor max_tokens bump for large docs (known-class fix, banked

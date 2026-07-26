@@ -7,6 +7,13 @@ data crossing the firewall, zero SN branding. The four-layer engine spec lives
 in docs/ROADMAP.md ("Synapse Advisory drafting engine"); this doc records how
 it goes to market.
 
+Governing doctrine: THE CLIENT-FACING GATE (docs/client-facing-gate.md).
+A drafted application crosses to a client only when every claim traces to
+a real source document or verifiable public fact, no hallucinated
+statistics, rubric-scored against the funder's criteria, and
+human-reviewed before anything is marked client-ready. The gate is a
+required component of the engine's build when it triggers.
+
 ## 1. One engine, three tiers (differentiated by how much human judgment wraps it)
 
 The same scored-draft engine serves BOTH the enterprise and small-service
