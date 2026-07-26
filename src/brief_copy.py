@@ -9,6 +9,7 @@ is derived from keywords IN the title and stated as a reading, not a claim of
 fact. No LLM, so it is deterministic and unit-testable. No em dashes.
 """
 from collections import Counter
+from datetime import date
 
 
 def _fmt_amount(n) -> str | None:
@@ -126,30 +127,71 @@ def draft_item_note(*, doc_type: str | None, timing_path: str | None,
     return " ".join(s)
 
 
-def draft_the_read(clusters: list, peel_recent_awards: int | None = None) -> str:
-    """One paragraph tying the week's items to a view, from the item mix and one
-    corpus scale fact. The operator rewrites this into real editorial voice."""
+def _window_phrase(c: dict) -> str:
+    """', closes Sep 1, 2026' style clause from the cluster's own event date,
+    or empty when there is no date (never fabricate one)."""
+    raw = c.get("soonest_date")
+    if not raw:
+        return ""
+    try:
+        d = date.fromisoformat(str(raw)[:10])
+    except ValueError:
+        return ""
+    if c.get("timing_path") != "imminent":
+        # A recent item's date may be month-precision (stored day=01); naming
+        # the day here could fabricate one. The item row below renders it with
+        # the correct precision label, so The Read names no date for these.
+        return ""
+    when = f"{d.strftime('%b')} {d.day}, {d.year}"
+    verb = ("applications close" if c.get("doc_type") == "grant_program"
+            else "closes")
+    return f", {verb} {when}"
+
+
+def _lead_phrase(c: dict) -> str:
+    title = (c.get("lead_title") or "the item below").strip()
+    if len(title) > 90:
+        title = title[:87] + "..."
+    org = c.get("org")
+    who = f" ({org})" if org and org.lower() not in title.lower() else ""
+    return f"{title}{who}{_window_phrase(c)}"
+
+
+def draft_the_read(clusters: list) -> str:
+    """One paragraph on the reader's market this week: the lead opportunity
+    first, then the shape of the week. EDITORIAL POV RULE (operator
+    2026-07-26, the client-facing gate applied to editorial): the brief shows
+    the client their world and our conclusions, never our machinery. No
+    bars, thresholds, item counts as process, or corpus totals here;
+    selection accounting lives in the methodology footnote."""
     n = len(clusters)
     if n == 0:
-        return ("A quiet week for new signals. The standing exhibit below carries the "
-                "through-line; nothing timing-relevant cleared our materiality bar.")
-    imminent = sum(1 for c in clusters if c.get("timing_path") == "imminent")
+        return ("No new timing-relevant movement in your market this week. "
+                "The standing exhibits below carry the through-line; a quiet "
+                "week is reported as one, never padded.")
+    imminent = [c for c in clusters if c.get("timing_path") == "imminent"]
+    lead = imminent[0] if imminent else clusters[0]
+    parts: list[str] = []
+    if len(imminent) == 1:
+        parts.append(f"One imminent opportunity: {_lead_phrase(lead)}.")
+    elif len(imminent) > 1:
+        parts.append(f"{len(imminent)} windows are open or closing this week, "
+                     f"led by {_lead_phrase(lead)}.")
+    else:
+        parts.append(f"The week's movement has settled. Most recent: "
+                     f"{_lead_phrase(lead)}.")
     buyers = Counter(c.get("org") for c in clusters if c.get("org"))
-    parts: list[str] = [
-        f"{n} item{'s' if n != 1 else ''} cleared the bar this week, "
-        f"{imminent} of them acting or closing soon."
-    ]
     if buyers:
         top, cnt = buyers.most_common(1)[0]
-        if cnt >= 2:
-            parts.append(f"{top} is the dominant buyer, with {cnt} of them.")
-    if imminent >= n - imminent:
-        parts.append("The week is forward-leaning: the read is to act inside the windows below, "
-                     "not to review what has already closed.")
-    else:
-        parts.append("The week is retrospective: most of what moved has settled, so the value "
-                     "is in what the awards signal about the next cycle.")
-    if peel_recent_awards and peel_recent_awards > 0:
-        parts.append(f"For scale, Region of Peel has closed {peel_recent_awards} contracts over "
-                     "the last four quarters, so its municipal cadence is steady.")
+        if cnt >= 2 and cnt < n:
+            parts.append(f"{top} is the most active buyer this week, behind "
+                         f"{cnt} of the {n} developments.")
+        elif cnt >= 2:
+            parts.append(f"All of this week's movement is {top}'s.")
+    if imminent and len(imminent) >= n - len(imminent):
+        parts.append("The read is to act inside the windows below, not to "
+                     "review what has already closed.")
+    elif not imminent:
+        parts.append("The value is in what the settled awards signal about "
+                     "the next cycle.")
     return " ".join(parts)

@@ -55,6 +55,7 @@ interface ItemRow {
 interface DocRow {
   doc_type: string | null;
   url: string | null;
+  title: string | null;
   published_on: string | null;
   date_precision: string | null;
 }
@@ -64,6 +65,22 @@ interface SignalRow {
   amount_max_cad: number | null;
   documents: DocRow | DocRow[] | null;
   organizations: { canonical_name: string | null } | { canonical_name: string | null }[] | null;
+}
+
+// Deep-link a publisher record to its exact content (operator 2026-07-26,
+// premium-feel standard): when the URL has no fragment of its own, append a
+// URL text fragment (#:~:text=) built from the PUBLISHER'S OWN document
+// title, so the browser lands scrolled to the item instead of the page top.
+// Publisher text only (our rewritten headlines may not appear on the page);
+// no title means no fragment, never a guessed one. An unmatched fragment
+// degrades gracefully to the page top. Dashes are escaped because "-" is the
+// text-fragment prefix/suffix separator.
+function deepLink(url: string | null, publisherTitle: string | null): string | null {
+  if (!url) return null;
+  if (url.includes("#")) return url;
+  const words = (publisherTitle ?? "").trim().split(/\s+/).slice(0, 8).join(" ");
+  if (words.length < 12) return url;
+  return url + "#:~:text=" + encodeURIComponent(words).replace(/-/g, "%2D");
 }
 
 function toRenderItem(it: ItemRow, sig: SignalRow | undefined): RenderItem | null {
@@ -81,33 +98,55 @@ function toRenderItem(it: ItemRow, sig: SignalRow | undefined): RenderItem | nul
     // onto a month-precision date, never a label that mismatches the linked doc).
     doc: {
       doc_type: doc?.doc_type ?? null,
-      url: doc?.url ?? null,
+      url: deepLink(doc?.url ?? null, doc?.title ?? null),
       published_on: doc?.published_on ?? null,
       date_precision: doc?.date_precision ?? null,
     },
   };
 }
 
+// Standing exhibit: PUBLIC-SAFETY-relevant award activity by quarter.
+// Replaces the all-Peel contract-volume chart (operator 2026-07-26): raw
+// corpus volume is our machinery, not intelligence for the reader; the
+// exhibit now counts only defence/public-safety-relevant award notices
+// across the monitored buyers. Paged reads (PostgREST caps a single page);
+// zero rows renders no exhibit rather than an empty chart.
 async function buildAwardExhibit(supabase: SupabaseClient): Promise<Exhibit[]> {
-  const { data } = await supabase
-    .from("award_volume_by_quarter")
-    .select("jurisdiction, quarter_start, quarter_label, awards")
-    .eq("jurisdiction", "municipal")
-    .order("quarter_start", { ascending: true });
-  const rows = (data ?? []) as { quarter_start: string; quarter_label: string; awards: number }[];
-  if (rows.length === 0) return [];
-  const total = rows.reduce((a, r) => a + (r.awards ?? 0), 0);
-  const curQ = currentQuarterStart();
-  const recent = rows.slice(-8).map((r) => ({
-    label: r.quarter_label,
-    value: r.awards ?? 0,
-    note: (r.quarter_start ?? "").slice(0, 10) === curQ ? "partial" : undefined,
+  const dates: string[] = [];
+  for (let page = 0; page < 20; page++) {
+    const { data, error } = await supabase
+      .from("documents")
+      .select("published_on")
+      .eq("doc_type", "award_notice")
+      .eq("defence_relevant", true)
+      .not("published_on", "is", null)
+      .order("published_on", { ascending: true })
+      .range(page * 1000, page * 1000 + 999);
+    if (error || !data || data.length === 0) break;
+    for (const r of data as { published_on: string }[]) dates.push(r.published_on);
+    if (data.length < 1000) break;
+  }
+  if (dates.length === 0) return [];
+  const byQuarter = new Map<string, number>();
+  for (const d of dates) {
+    const q = Math.floor((Number(d.slice(5, 7)) - 1) / 3) + 1;
+    byQuarter.set(d.slice(0, 4) + "-Q" + q, (byQuarter.get(d.slice(0, 4) + "-Q" + q) ?? 0) + 1);
+  }
+  const keys = [...byQuarter.keys()].sort();
+  const now = new Date();
+  const curQ = now.getUTCFullYear() + "-Q" + (Math.floor(now.getUTCMonth() / 3) + 1);
+  const lbl = (k: string) => "Q" + k.slice(6) + " " + k.slice(0, 4);
+  const recent = keys.slice(-8).map((k) => ({
+    label: lbl(k),
+    value: byQuarter.get(k) ?? 0,
+    note: k === curQ ? "partial" : undefined,
   }));
   return [{
-    title: "Peel municipal contract awards by quarter",
-    basis: `${total.toLocaleString("en-CA")} award notices, ${rows[0].quarter_label} to `
-      + `${rows[rows.length - 1].quarter_label} (current quarter partial). `
-      + `Source: Region of Peel bids and tenders portal.`,
+    title: "Public-safety contract awards by quarter",
+    basis: dates.length.toLocaleString("en-CA") + " public-safety-relevant award "
+      + "notices across monitored buyers, " + lbl(keys[0]) + " to "
+      + lbl(keys[keys.length - 1]) + " (current quarter partial). "
+      + "Source: publisher portals and open-data records.",
     format: "count",
     rows: recent,
   }];
@@ -150,7 +189,7 @@ export async function buildBriefView(
   if (ids.length) {
     const { data: sigs } = await supabase
       .from("signals")
-      .select("id, title, amount_max_cad, documents(doc_type,url,published_on,date_precision), organizations(canonical_name)")
+      .select("id, title, amount_max_cad, documents(doc_type,url,published_on,date_precision,title), organizations(canonical_name)")
       .in("id", ids);
     for (const s of (sigs ?? []) as unknown as SignalRow[]) sigById.set(s.id, s);
   }

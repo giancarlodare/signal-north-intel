@@ -39,6 +39,19 @@ chrome, no stock photography.
    news week so we never reach for filler items.
 5. None beats a wrong chart: an exhibit that would mislead on thin data is left
    out, with the reason recorded, until the data supports it (§4).
+5a. EDITORIAL POV (operator 2026-07-26; the client-facing gate applied to
+   editorial): the brief shows the client THEIR world and OUR conclusions,
+   never our machinery. Language about bars, thresholds, item counts as
+   process, or corpus totals is internal; it lives in the methodology
+   footnote or gets cut. Three standing corrections implemented under this
+   rule: (a) The Read leads with substance (the lead opportunity and its
+   window), never selection accounting; (b) the standing exhibit counts
+   PUBLIC-SAFETY-relevant awards only, because raw corpus volume is us
+   admiring our own data; (c) every publisher-record link deep-links to the
+   exact content (its own fragment, else a #:~:text= URL text fragment
+   built from the publisher's own document title), landing the reader on
+   the item, not the page top. The deep link is a premium-feel standard,
+   computed in the render pipeline that feeds both web and email.
 6. The client-facing gate (docs/client-facing-gate.md) is the backend half
    of these rules: coverage-bounded claims, PUBLISHED-only predictions,
    and source re-verification before an item crosses into the brief.

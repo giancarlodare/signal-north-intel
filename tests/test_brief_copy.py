@@ -27,7 +27,7 @@ def test_no_em_dash_in_any_item_note():
 def test_no_em_dash_in_the_read():
     clusters = [{"timing_path": "imminent", "org": "Region of Peel"},
                 {"timing_path": "recent", "org": "Region of Peel"}]
-    assert "—" not in bc.draft_the_read(clusters, peel_recent_awards=326)
+    assert "—" not in bc.draft_the_read(clusters)
     assert "—" not in bc.draft_the_read([])
 
 
@@ -126,28 +126,49 @@ def test_note_does_not_restate_the_title():
     assert note.count("Region of Peel") == 1  # buyer named once; title not echoed
 
 
-# --- The Read: item mix + optional corpus scale fact ---------------------------
-def test_the_read_empty_week_fallback():
+# --- The Read: client POV, lead with substance (operator 2026-07-26) ----------
+def test_the_read_empty_week_names_no_machinery():
     read = bc.draft_the_read([])
-    assert "quiet week" in read.lower()
-    assert str  # sanity
+    assert "movement" in read.lower()
+    for banned in ("bar", "threshold", "cleared", "corpus", "item"):
+        assert banned not in read.lower()
 
 
-def test_the_read_counts_items_and_imminent():
-    clusters = [{"timing_path": "imminent", "org": "Region of Peel"},
-                {"timing_path": "imminent", "org": "Region of Peel"},
-                {"timing_path": "recent", "org": "City of Brampton"}]
+def test_the_read_leads_with_the_opportunity_not_process():
+    clusters = [{"timing_path": "imminent", "org": "Ministry of the Solicitor General",
+                 "lead_title": "Ontario Fire Protection Grant 2026-27",
+                 "doc_type": "grant_program", "soonest_date": "2026-09-01"}]
     read = bc.draft_the_read(clusters)
-    assert "3 items" in read
-    assert "Region of Peel is the dominant buyer" in read
+    assert read.startswith("One imminent opportunity: Ontario Fire Protection Grant")
+    assert "applications close Sep 1, 2026" in read
+    assert "Ministry of the Solicitor General" in read
+    for banned in ("cleared the bar", "materiality", "corpus"):
+        assert banned not in read.lower()
 
 
-def test_the_read_peel_fact_only_when_provided():
-    clusters = [{"timing_path": "recent", "org": "City"}]
-    assert "Region of Peel has closed" not in bc.draft_the_read(clusters, None)
-    assert "Region of Peel has closed 326 contracts" in bc.draft_the_read(clusters, 326)
-    # a zero/None count is never rendered as a fake scale fact
-    assert "Region of Peel has closed" not in bc.draft_the_read(clusters, 0)
+def test_the_read_multi_item_shape_and_buyer_concentration():
+    clusters = [{"timing_path": "imminent", "org": "Region of Peel",
+                 "lead_title": "SCADA integration prequalification",
+                 "doc_type": "tender_notice", "soonest_date": "2026-08-04"},
+                {"timing_path": "imminent", "org": "Region of Peel",
+                 "lead_title": "Watermain construction", "doc_type": "tender_notice"},
+                {"timing_path": "recent", "org": "City of Brampton",
+                 "lead_title": "HVAC award"}]
+    read = bc.draft_the_read(clusters)
+    assert read.startswith("2 windows are open or closing this week")
+    assert "closes Aug 4, 2026" in read
+    assert "Region of Peel is the most active buyer" in read
+    assert "cleared the bar" not in read
+
+
+def test_the_read_recent_item_never_names_a_day():
+    # A recent item's date may be month-precision; The Read must not render it.
+    clusters = [{"timing_path": "recent", "org": "Peel Police Service Board",
+                 "lead_title": "Body-worn camera contract decision",
+                 "doc_type": "board_minutes", "soonest_date": "2026-07-01"}]
+    read = bc.draft_the_read(clusters)
+    assert "Jul 1" not in read and "2026-07-01" not in read
+    assert read.startswith("The week's movement has settled.")
 
 
 def test_grant_note_enumerates_streams_of_one_program():
