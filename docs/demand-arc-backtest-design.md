@@ -252,6 +252,31 @@ blend of the two.
   signal mix, operator-confirmable, never silently guessed where the mix is
   ambiguous.
 
+## 0f. Domain rhythms vs traced arcs (operator doctrine, 2026-07-26)
+
+The pilot's first staging measured arc-linking difficulty directly: zero
+cross-rung links formed on a hard key (board documents never quote tender
+references), so every cross-rung cluster stood on the coarse buyer+scope
+basis. The operator's linking doctrine, from that finding:
+
+1. **Domain-thread linking (Option 1) is the pilot's rhythm instrument, and
+   its output is RENAMED accordingly.** What it produces are DOMAIN RHYTHMS
+   ("TPS fleet-domain budget->award lag ~X months"), never specific causal
+   arcs. Every output, significance verdict, and label downstream says
+   domain-rhythm measurement; the word "arc" is reserved for traced chains.
+2. **Traced arcs require per-instrument accuracy (Option 2) and are
+   deferred.** Anything client-facing that shows a traced chain (the
+   interactive prediction pathway, any Claim-1 prediction) REQUIRES
+   Option-2 per-instrument reconstruction. Banked as the mandatory
+   approach; domain rhythms never masquerade as traced chains.
+3. **Coherence before measurement.** A domain thread only measures rhythm
+   if the cluster is a coherent domain: clusters mixing distinct
+   instruments are split before confirmation, and advocacy / pressure
+   signals NEVER link to a specific award at any granularity (a fabricated
+   link). Pressure feeds rung 1 as a domain-pressure indicator only.
+   Uncategorized-scope clusters are incoherent by construction and are
+   excluded until categorized.
+
 ## 1. What it computes
 
 For each award, walk BACKWARD along the procurement_id spine to the earliest

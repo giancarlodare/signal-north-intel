@@ -60,6 +60,11 @@ only what cleared the gate.)
   internal state, never a client-visible one), and a real date (the
   date-precision rules; a NULL date is shown honestly or the item is held,
   never a fabricated day).
+- **Traced chains** (the interactive prediction pathway, any surface
+  showing a signal-to-award chain) cross only when built by
+  per-instrument reconstruction (Option 2 in the demand-arc design,
+  section 0f). A domain-rhythm measurement never renders as a traced
+  chain.
 - **Predictions** cross only when: the significance gate is cleared
   (PUBLISHED cell) AND every underlying signal in the arc has itself passed
   the signal gate. A published cell built on ungated signals does not
