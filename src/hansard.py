@@ -87,6 +87,34 @@ def matches_scope(text: str) -> list:
     return [t for t in SCOPE_TERMS if t in low]
 
 
+def scope_sections(body: str, context: int = 1) -> tuple:
+    """SECTION-LEVEL filter (operator 2026-07-26): a full sitting day almost
+    always mentions 'police' somewhere, so document-level scope keeps ~every
+    day and blows the extraction budget. Instead, split the transcript into
+    paragraphs and keep only the scope-matching ones plus `context` neighbors
+    on each side (contiguous runs merged). Returns (kept_text, hits,
+    kept_paras, total_paras): the stored document is the policing/capital
+    passages, not 200 pages of unrelated debate."""
+    paras = [p.strip() for p in (body or "").split("\n") if p.strip()]
+    keep = set()
+    hits: list = []
+    for i, p in enumerate(paras):
+        h = matches_scope(p)
+        if h:
+            hits.extend(x for x in h if x not in hits)
+            for j in range(max(0, i - context), min(len(paras), i + context + 1)):
+                keep.add(j)
+    if not keep:
+        return "", [], 0, len(paras)
+    out, prev = [], None
+    for i in sorted(keep):
+        if prev is not None and i > prev + 1:
+            out.append("[...]")
+        out.append(paras[i])
+        prev = i
+    return "\n".join(out), hits, len(keep), len(paras)
+
+
 def dated_debate_urls(html: str, base_url: str) -> list:
     """(iso_date, absolute_url) pairs from the session index, newest first."""
     out, seen = [], set()
@@ -103,10 +131,9 @@ def dated_debate_urls(html: str, base_url: str) -> list:
     return out
 
 
-def committee_doc_urls(html: str, base_url: str, cap: int = 40) -> list:
-    """(title_text, absolute_url) for committee-document links on the index.
-    Committee pages carry no date in the URL; the page date is parsed after
-    fetch (and published_on stays NULL when genuinely absent, never invented)."""
+def _committee_links(html: str, base_url: str, cap: int = 40) -> list:
+    """ola.org committee links on a page: (text, url), /documents index and
+    off-site excluded."""
     out, seen = [], set()
     for url, text in extract_links(html, base_url):
         path = urlparse(url).path
@@ -121,6 +148,31 @@ def committee_doc_urls(html: str, base_url: str, cap: int = 40) -> list:
         if len(out) >= cap:
             break
     return out
+
+
+def committee_doc_urls(fetcher: PoliteFetcher, cap: int = 40) -> list:
+    """(title, url) committee DOCUMENT links. The committee-documents index
+    links parliament-level index pages, not documents (CI diagnostic
+    2026-07-26), so this follows one extra hop: index -> parliament pages ->
+    the actual estimates/report documents. Committee docs carry no URL date;
+    the page date is parsed after fetch (NULL when genuinely absent)."""
+    resp = fetcher.get(COMMITTEE_INDEX)
+    if resp is None:
+        return []
+    first = _committee_links(resp.text or "", COMMITTEE_INDEX)
+    parl = [(t, u) for t, u in first if "parliament" in f"{t} {u}".lower()]
+    docs = [(t, u) for t, u in first if (t, u) not in parl]
+    for _t, purl in parl[:2]:     # current + previous parliament
+        presp = fetcher.get(purl)
+        if presp is None:
+            continue
+        for t, u in _committee_links(presp.text or "", purl):
+            if "parliament" in f"{t} {u}".lower():
+                continue
+            docs.append((t, u))
+            if len(docs) >= cap:
+                return docs
+    return docs[:cap]
 
 
 # The page's own date line, e.g. "Thursday 12 December 2024" or ISO in meta.
@@ -204,10 +256,7 @@ def collect(dry_run: bool = True) -> dict:
             f"URLs: parliament/session config stale or markup changed. "
             f"Refusing to record silence.")
 
-    committee: list = []
-    cresp = fetcher.get(COMMITTEE_INDEX)
-    if cresp is not None:
-        committee = committee_doc_urls(cresp.text or "", COMMITTEE_INDEX)
+    committee = committee_doc_urls(fetcher)
     stats["committee_links"] = len(committee)
 
     # Queue: committee docs FIRST (estimates are the highest-value target,
@@ -227,17 +276,24 @@ def collect(dry_run: bool = True) -> dict:
             if resp is None:
                 continue
             stats["new_fetched"] += 1
-            body = html_to_text(resp.text or "")
-            hits = matches_scope(body)
+            body_full = html_to_text(resp.text or "")
+            # SECTION-LEVEL SCOPE FILTER: keep only the scope-matching
+            # passages (+1 paragraph of context each side). A day with no
+            # matching passage is dropped entirely; a matching day stores the
+            # policing/capital sections, not the whole transcript. This is
+            # the cost control AND the extraction sharpener.
+            body, hits, kept_paras, total_paras = scope_sections(body_full)
             if not hits:
-                # SCOPE FILTER: off-topic sitting days are dropped by design
-                # (the Hansard exception to keep-all; the design's cost note).
                 stats["skipped_scope"] += 1
                 continue
             val["scope_kept"] += 1
+            val["paras_kept"] = val.get("paras_kept", 0) + kept_paras
+            val["paras_total"] = val.get("paras_total", 0) + total_paras
             m = DATED_URL.search(urlparse(url).path)
+            # Date from the FULL body: the sitting-date line may sit outside
+            # the scope-kept sections.
             published = (f"{m.group(1)}-{m.group(2)}-{m.group(3)}" if m
-                         else page_date(body))
+                         else page_date(body_full))
             if published:
                 val["date_parsed"] += 1
             if body.strip():
@@ -262,13 +318,16 @@ def collect(dry_run: bool = True) -> dict:
     # scope filter keeps a sane fraction, nonzero bodies; projected extraction
     # volume = scope_kept per run.
     k = val["scope_kept"] or 1
+    pt = val.get("paras_total", 0) or 1
     log.info("VALIDATION [hansard]: index_days=%d committee_links=%d "
              "new_fetched=%d scope_kept=%d scope_dropped=%d date_parsed=%d "
-             "(%d%%) nonzero_body=%d (%d%%)",
+             "(%d%%) nonzero_body=%d (%d%%) sections_kept=%d/%d (%d%%)",
              stats["index_days"], stats["committee_links"], stats["new_fetched"],
              val["scope_kept"], stats["skipped_scope"],
              val["date_parsed"], round(100 * val["date_parsed"] / k),
-             val["nonzero_body"], round(100 * val["nonzero_body"] / k))
+             val["nonzero_body"], round(100 * val["nonzero_body"] / k),
+             val.get("paras_kept", 0), val.get("paras_total", 0),
+             round(100 * val.get("paras_kept", 0) / pt))
     log.info("hansard: %s%s", stats, " (DRY RUN)" if dry_run else "")
     if not dry_run and source_id:
         supabase_client.update_source_last_collected(

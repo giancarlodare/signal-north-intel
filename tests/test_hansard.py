@@ -40,6 +40,36 @@ def test_scope_filter_keeps_solgen_and_capital_drops_offtopic():
         "Debate on the proposed amendments to the Farm Products Act.") == []
 
 
+def test_scope_sections_keeps_matching_paragraphs_with_context():
+    body = "\n".join([
+        "Routine proceedings on agriculture.",          # 0
+        "Zoning amendments were debated at length.",    # 1 (context of 2)
+        "The Solicitor General announced new police funding.",  # 2 match
+        "Members responded to the announcement.",       # 3 (context of 2)
+        "Debate moved to transit fares.",               # 4
+        "A question on farm subsidies.",                # 5
+    ])
+    kept, hits, n_kept, n_total = h.scope_sections(body)
+    assert "solicitor general" in hits and "police" in hits
+    assert n_total == 6 and n_kept == 3        # match + 1 neighbor each side
+    assert "Solicitor General announced" in kept
+    assert "transit fares" not in kept and "farm subsidies" not in kept
+    assert "[...]" not in kept                  # single contiguous run
+
+
+def test_scope_sections_empty_when_no_match():
+    kept, hits, n_kept, n_total = h.scope_sections(
+        "Agriculture.\nTransit.\nZoning.")
+    assert kept == "" and hits == [] and n_kept == 0 and n_total == 3
+
+
+def test_scope_sections_marks_gaps_between_runs():
+    body = "\n".join(["police item one", "filler a", "filler b", "filler c",
+                      "capital plan item two"])
+    kept, _hits, _k, _t = h.scope_sections(body)
+    assert "[...]" in kept                      # two separated runs marked
+
+
 def test_page_date_parses_textual_sitting_date():
     assert h.page_date("Thursday 12 December 2024, Legislative Assembly") == "2024-12-12"
     assert h.page_date("no date here") is None
