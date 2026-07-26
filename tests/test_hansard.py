@@ -13,11 +13,11 @@ KW = Keywords(general=("infrastructure",), defence=("police",))
 
 INDEX_HTML = """
 <html><body>
-<a href="/en/legislative-business/house-documents/parliament-43/session-1/2024-12-12/">December 12, 2024</a>
+<a href="/en/legislative-business/house-documents/parliament-43/session-1/2024-12-12/hansard">December 12, 2024</a>
 <a href="/en/legislative-business/house-documents/parliament-43/session-1/2025-03-05/">March 5, 2025</a>
 <a href="/en/legislative-business/house-documents/parliament-43/session-1/">index self-link</a>
 <a href="/en/members/some-mpp">not a debate</a>
-<a href="/en/legislative-business/house-documents/parliament-43/session-1/2024-12-12/">dup</a>
+<a href="/en/legislative-business/house-documents/parliament-43/session-1/2024-12-12/hansard">dup</a>
 </body></html>
 """
 

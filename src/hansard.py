@@ -62,9 +62,12 @@ MAX_STORED_CHARS = 60000   # sitting days are long; the scope filter has already
 NEW_PER_RUN = 25           # board-minutes style archive drain
 ERROR_BUDGET = 10          # per-item failures tolerated before loud abort
 
-# The dated per-day debate URL: .../parliament-43/session-1/2024-12-12/
+# The dated per-day transcript URL as ola.org actually links it (CI diagnostic
+# 2026-07-26, job 89795333961): .../parliament-43/session-1/2024-12-11/hansard
+# The bare dated directory also exists; both shapes match.
 DATED_URL = re.compile(
-    rf"/parliament-{PARLIAMENT}/session-{SESSION}/(\d{{4}})-(\d{{2}})-(\d{{2}})/?$")
+    rf"/parliament-{PARLIAMENT}/session-{SESSION}/"
+    rf"(\d{{4}})-(\d{{2}})-(\d{{2}})(?:/hansard)?/?$")
 
 # Scope terms (docs/hansard-design.md): SolGen / community-safety +
 # infrastructure / capital. A transcript is stored only if it matches one.
