@@ -70,6 +70,10 @@ _SCHEMA = {
         "evidence": {"type": "string"},
     },
     "required": ["label", "confidence", "rationale", "evidence"],
+    # Anthropic structured outputs require additionalProperties:false on every
+    # object (matches src/signal_extractor.py's schema); without it the API
+    # rejects output_config with a 400.
+    "additionalProperties": False,
 }
 
 
@@ -147,7 +151,7 @@ def main(limit):
         try:
             c = _classify(client, p)
         except Exception as e:
-            print(f"[{i}] CLASSIFY ERROR: {type(e).__name__}: {str(e)[:100]}")
+            print(f"[{i}] CLASSIFY ERROR: {type(e).__name__}: {str(e)[:300]}")
             continue
         counts[c["label"]] = counts.get(c["label"], 0) + 1
         print(f"[{i}] {c['label'].upper():18s} conf={c.get('confidence')} "
