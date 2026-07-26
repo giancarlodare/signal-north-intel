@@ -185,7 +185,14 @@ def collect(dry_run: bool = True) -> dict:
     days = dated_debate_urls(resp.text or "", SESSION_INDEX)
     stats["index_days"] = len(days)
     # LOUD FAILURE: the Assembly always has a current session with sittings.
+    # Before raising, log a sample of what the index DID link so the failure
+    # is diagnosable from the run log alone.
     if not days:
+        sample = [u for u, _ in extract_links(resp.text or "", SESSION_INDEX)][:25]
+        log.error("[hansard] index bytes=%d; sample of %d links found:",
+                  len(resp.text or ""), len(sample))
+        for u in sample:
+            log.error("  %s", u)
         raise RuntimeError(
             f"[hansard] session index {SESSION_INDEX} yielded 0 dated debate "
             f"URLs: parliament/session config stale or markup changed. "
