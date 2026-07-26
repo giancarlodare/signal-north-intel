@@ -39,6 +39,39 @@ identical engine output.
 - Every number above is a HYPOTHESIS to validate in post-October customer
   discovery, not a decision.
 
+## 2a. Grants-product pricing (banked hypotheses, distinct from the SN subscription)
+
+DISTINCT PRODUCT. The grants product and the Signal North intelligence
+subscription are kept separate: intelligence sells FORESIGHT (what is coming),
+the grants product sells CAPTURED MONEY (dollars actually recovered). They
+cross-sell but NEVER bundle. SN subscription pricing is a separate exercise, not
+folded in here. All numbers below are pre-validation HYPOTHESES to test in
+post-October customer discovery, not a price sheet.
+
+**Pricing principle: price as a fraction of the money the tool captures for the
+buyer** (order of ~1 to 7% of grant value), sliding DOWN as absolute dollars
+rise. This is why one engine spans $2K to $50K+ without being arbitrary: the
+percentage falls as the cheque grows.
+
+- **Tier 1 Self-serve, small services** (CSP local-allocation tier, ~$28K to
+  150K claims, chiefs self-filing): $1.5K to 4K/yr subscription OR $750 to
+  1,500/application. Self-serve, no Synapse human time. ALSO test a
+  SUCCESS-BASED model for the pure formula-allocation case (e.g. ~5% of the
+  otherwise-forfeited allocation recovered): removes buyer risk, an easier yes.
+- **Tier 2 Assisted, mid-size services** (mid-six-figure claims): $4K to
+  10K/application (software + associate review), or a $15 to 30K/yr retainer.
+- **Tier 3 Done-for-you, large services / enterprise** (Toronto / Peel / Ottawa
+  scale, $2M to 13M projects, including consultancies): $25K to 75K+ per
+  engagement, or consulting day rates. The client buys the outcome and the
+  accountability; the tool is an invisible internal accelerator. The
+  Peel-hiring-Giancarlo engagement lives here.
+
+**Sales-hurdle flag (validate in discovery):** the municipal budget-approval
+process (capital vs operating line) is itself a friction at Tier 1: a chief may
+have the allocation but not a simple line to buy software against. Test this
+directly in customer discovery; it may push Tier 1 toward the success-based or
+per-application model over a subscription.
+
 ## 3. Why the tiers compound (the strategic point)
 
 Small-service volume is not a low-margin distraction; it is the machine that
