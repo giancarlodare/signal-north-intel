@@ -96,6 +96,43 @@ Per-wave validation bar before the next wave: intent precision on a sampled
 adjudication >= the Peel rounds' standard, and the council relevance filter
 must not leak (sampled dropped items reviewed once per council at enablement).
 
+## 5a. The legislative layer: Hansard, provincial + federal (operator 2026-07-26)
+
+Hansard is the same intent layer one level up (legislative intent), folded
+into this build rather than banked. Status confirmed 2026-07-26: Ontario
+Hansard was DESIGNED (docs/hansard-design.md, #104) but never built; federal
+Hansard was not designed. Both are now on the ACTIVE build list:
+
+- **Ontario Hansard** (`src/hansard.py`, BUILT 2026-07-26 per its design,
+  validation-gated): daily transcripts + committee docs, committee estimates
+  prioritized, and the SAME relevance-filter-ahead-of-intent-filter approach
+  the council minutes use. Hansard is even noisier than council (mostly
+  non-policing debate), so the scope filter drops off-topic sitting days
+  before storage (the design's cost control).
+- **Federal House of Commons Hansard** (docs/hansard-federal-design.md,
+  DESIGN-FIRST): ourcommons.ca / LEGISinfo, prioritizing SECU (Public Safety
+  and National Security) and SECD (Senate defence) committees, where federal
+  public-safety and defence procurement intent surfaces. Probe-first; build
+  after design approval.
+
+## 7. Unified sequencing: the upstream-intent layer as one program
+
+The four source families are one layer at four altitudes, sequenced under the
+ceiling rule (dates are ceilings; each wave pulls forward when the prior
+clears its validation bar). Order is by cost-to-value and readiness:
+
+| Seq | Wave | What | Why this order | Gate |
+|---|---|---|---|---|
+| 1 | A: board docs (corpus) | Intent pass over the ALREADY-COLLECTED board docs of the six live boards + Peel | Zero new collection; proven 9/12 vein; immediate demand-arc rungs 1-3 fuel | Design go (asked); precision spot-check per board |
+| 2 | B: Ontario Hansard | `src/hansard.py` validation dry-run then enablement | Built today, design pre-approved (#104); provincial legislative intent (SolGen estimates); scope filter proven pattern | Validation table (>=90% date, sane scope-keep fraction, projected volume) then single go |
+| 3 | C: service newsrooms | Peel-pattern news feeds per covered service | Cheap requests collectors; lower intent yield (2/10) so behind boards/Hansard | Per-service listing probe + standard bars |
+| 4 | D: council minutes | One council at a time, Toronto + Peel first | Highest arc value (earliest pressure + budget approval) but noisiest and JS-risky; relevance filter validated per council | Per-council probe + relevance leak-check + intent precision |
+| 5 | E: federal Hansard | SECU/SECD per docs/hansard-federal-design.md | Federal arc closure; runs after Ontario proves the legislative pattern end-to-end | Probe -> design approval -> validation -> go |
+
+Parallelism rule: waves may overlap when capacity allows (a probe for wave
+N+1 can run while wave N drains), but no wave ENABLES before the prior wave's
+validation bar is met, and nothing enables without an operator go.
+
 ## 6. Budget note
 
 Wave A is bounded by the existing board corpus (hundreds of docs, one-time
