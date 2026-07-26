@@ -126,6 +126,17 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python -m src.io_newsroom
 
+      # Ontario Hansard (enabled 2026-07-26 after the final CI validation:
+      # dates 100%, bodies 100%, section-level scope compression real at
+      # 70% kept). Server-rendered ola.org, 2s politeness, section-scoped
+      # keep (the Hansard keep-all exception), loud-fail on zero dated URLs.
+      - name: Run Ontario Hansard collector
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.hansard
+
       # Dead-man's switch: ping healthchecks.io only after a real collection
       # run has SUCCEEDED. success() is false if any step above failed, so a
       # failed run sends no ping and healthchecks.io alerts on the miss. The
