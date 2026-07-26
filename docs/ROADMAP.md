@@ -223,6 +223,36 @@ own open-data catalogue).
 Build queued design-first: `docs/toronto-ckan-design.md` (Windsor pattern,
 propose-then-approve, collector not started).
 
+## API access (banked future capability, 2026-07-25; design-only, demand-pulled)
+
+Expose the Signal North corpus and prediction table via an authenticated API
+as a Tier-3 / enterprise offering. NOT a sprint item; not built until
+triggered.
+
+**Architecture note:** a thin authenticated READ layer over the existing
+Supabase data (Supabase auto-REST plus a small FastAPI / Edge-Function layer
+for clean endpoints), not a new product. Days of build, not months. Candidate
+endpoints:
+
+- `GET /signals`: query the corpus by buyer / category / date /
+  defence-relevance / grade.
+- `GET /predictions`: the demand-arc prediction table with CIs (the
+  crown-jewel endpoint).
+- `GET /solicitations`: open opportunities.
+- Watchlist WEBHOOKS: push notifications into a subscriber's own CRM /
+  pipeline. The highest-value pattern; drives enterprise stickiness.
+
+**Three gating conditions before any build:**
+1. Do NOT expose the prediction table until the confidence intervals and
+   significance gates are real (the north-star spec built) and the ledger has
+   a track record. An API over half-calibrated predictions is worse than none.
+2. Build only when a paying Tier-3 buyer requires it ("we sign if you have an
+   API"). Demand-pulled: an API is a standing uptime/support/stability
+   commitment, not a one-time build.
+3. Governance: API terms state it is the same neutral intelligence sold to any
+   subscriber, read-only, rate-limited fairly, never a back-channel. Flagged
+   for the September counsel package's neutrality-wall terms.
+
 ## Parked / waiting
 
 - **TPSB board minutes** — parked in `src/board_minutes.py`: tpsb.ca's WAF

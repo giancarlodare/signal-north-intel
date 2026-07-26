@@ -258,9 +258,27 @@ under-counted.
   (Peel appears 7 times, Toronto 4), so distinct-SERVICE dedupe needs a
   service-vs-project split before the diff.
 
-Next: locate the CSPA roster source, split service from project, dedupe to
-distinct services present, then diff for the absentee list. The formula (if
-published) converts each absence to a forfeited-dollar figure.
+**THESIS REVISION (operator 2026-07-25, from the broad-participation finding):**
+"didn't claim at all" is RARE among standalone services; nearly every standalone
+municipal service appears in the local-priorities stream. The real Tier-1
+opportunity is therefore:
+(a) UNDER-claims: services that claimed less than their formula entitlement;
+(b) OPP-contracted municipalities (they do claim, and whoever files the
+    spending plan is the buyer);
+(c) First Nations / very small services.
+This makes the ALLOCATION FORMULA the critical unlock, not just the roster:
+finding the published CSP local-priorities allocation formula/methodology
+(SolGen, the CSPA regulations, or the grant guidelines) lets us compute each
+service's entitlement and derive UNDER-CLAIM gaps. That converts the pitch from
+"you didn't apply" (mostly false) to "you under-claimed $X" (likely true and
+provable).
+
+Roster-hunt next candidates (the ontario.ca slugs 404'd, oiprd.on.ca is
+robots-blocked): the Inspectorate of Policing site (it replaced the OIPRD under
+the CSPA), the CSPA regulations/schedules themselves (which may list designated
+services), or a published SolGen services directory PDF. Plus the parser fix
+(split concatenated recipient+project, dedupe to distinct services) so the diff
+is clean once the roster lands.
 
 ### 5d. Next steps (design-first, still gated, no sprint change)
 
