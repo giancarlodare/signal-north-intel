@@ -82,6 +82,44 @@ significance gate still governs what is labeled published vs pending; pooling
 only stabilizes the estimate, it never manufactures confidence. This is a later
 addition, noted here so the schema and gate anticipate it.
 
+**What standing up partial pooling would take (operator-requested read,
+2026-07-27, after the pilot showed long-lag arcs are structurally scarce even
+on the densest services):** the pilot's finding is that drain volume alone
+will not fill the table, so pooling is the likely real route. Build shape:
+
+1. **A service taxonomy for the pooling groups.** Each service needs a
+   'kind' it can borrow from: police service, police board, municipality,
+   transit, etc., plus size band. This is an org-resolution attribute
+   (like parent_ministry, 0a), human-confirmed. Small effort; mostly data.
+2. **A hierarchical estimator per transition cell.** Replace the current
+   per-cell independent bootstrap with a partial-pooling model: each cell's
+   lag distribution is drawn toward its GROUP's distribution, weighted by
+   the cell's own n (a cell with n=1 leans mostly on the group; a cell with
+   n=8 barely moves). Two viable implementations: (a) a Bayesian
+   hierarchical model (PyMC/NumPyro) that is statistically clean but adds a
+   dependency and a fit step; (b) a lighter empirical-Bayes / James-Stein
+   shrinkage toward the group median that needs no new dependency and runs
+   in the existing engine. Recommend starting with (b): it captures most of
+   the benefit, is deterministic, and keeps the read-only cheap-to-run
+   property. (a) is a later upgrade if the credibility bar demands a full
+   posterior.
+3. **A pooled significance rule.** The gate must distinguish 'published on
+   the service's own data' from 'published with pooled strength' so the
+   client-facing gate never presents a borrowed estimate as a direct one.
+   Add a `basis` field (own | pooled) to the published cell; a pooled cell
+   is shown with wider bars and a note that it borrows from the cohort. This
+   is the honesty seam pooling requires.
+4. **Validation.** Backtest the pooled estimates against the few cells that
+   DO reach n>=8 on their own: the pooled estimate for a held-out dense cell
+   should land near its direct estimate. If it does, pooling is trustworthy;
+   if not, the groups are wrong. This is the go/no-go test for the method.
+
+Effort estimate: the empirical-Bayes path (b) is days, not weeks, and reuses
+the existing bootstrap machinery; the taxonomy is the main data task. The
+full Bayesian path (a) is a larger, later investment. Neither is approved;
+this is the read the operator asked for so the fleet-vs-pooling decision has
+a concrete alternative costed.
+
 ## 0c. Backward historical reconstruction (operator reframe, 2026-07-26)
 
 The path to statistical significance is BACKWARD RECONSTRUCTION, not forward
