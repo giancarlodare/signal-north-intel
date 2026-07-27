@@ -298,6 +298,47 @@ docs/published-brief-design.md section 9 (Weekly Signal). GATED on the
 Toronto + Peel pilot proving significance; design-thinking only, nothing
 built ahead of that.
 
+## Vendor news wire (banked 2026-07-27; design-first, queued behind Wave 3 + pilot)
+
+Broad vendor monitoring for the competitive field a vendor subscriber
+needs: all the big players AND the up-and-comers. The filter is for
+QUALITY (real market event vs PR puffery), never for narrowing coverage.
+Vendor newsrooms are publisher-official but SELF-INTERESTED sources:
+treated as CLAIMS under the client-facing gate, never as neutral fact.
+
+Starter probe list (collectability: server-side vs JS, robots, dated
+feeds) when this reaches the queue:
+- Vendor newsrooms: Motorola Solutions (motorolasolutions.com/newsroom,
+  operator-confirmed live/dated/server-rendered), Axon (confirm
+  newsroom/IR URL; dominant player), Skydio (skydio.com news), Flock
+  Safety (ALPR), Tyler Technologies, Mark43 (CAD/RMS; cloud-native
+  up-and-comer).
+- Industry aggregators (third-party, often less promotional): Police1,
+  PoliceMag, Police Chief Magazine, IWCE/Urgent Communications; wire
+  services (Business Wire, PR Newswire, GlobeNewswire) filtered to
+  public-safety. Aggregator vs publisher provenance to be resolved per
+  source in the design (wire services host the issuer's own release, so
+  they may qualify as publisher-official distribution; decide per the
+  provenance rule, do not assume).
+- SELF-PRIORITIZE off our own award data: vendors winning our tracked
+  Ontario contracts are the must-monitor set (query contract_awards /
+  vendors for the ranked list); expand outward to up-and-comers.
+
+Deliverable when queued: collectability probe results + a design doc
+(propose-then-approve) before any collector is built.
+
+## Competitive analysis: Civic IQ (banked 2026-07-27; before any sales conversations)
+
+Operator find: civiciq.com, a DIRECT competitor. Monitors 50,000+ US
+agencies and surfaces public-safety buying signals 6-18 months early,
+naming the same leading indicators we derived independently (consultant
+engagements -> grant applications -> budget lines). Not urgent; needed
+BEFORE any sales conversations. Deliverable: a real read on (1) how they
+position, (2) how they price, (3) where our edge is and holds: Canada
+first, deeper multi-source arc reconstruction, neutrality/transparency
+(the provable ledger + provenance discipline). Also: what they do better
+that we should learn from, stated honestly.
+
 ## Parked / waiting
 
 - **Extractor max_tokens bump for large docs (known-class fix, banked
