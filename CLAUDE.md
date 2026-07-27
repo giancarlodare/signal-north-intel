@@ -37,3 +37,12 @@ narration. Report honestly; a partial or failed night is stated as such.
 - Standing disciplines: probe-first, validation bars before enablement,
   loud failure, publisher-linked provenance, propose-then-approve; no em
   dashes in generated copy; never fabricate dates.
+- COST GATE (operator 2026-07-27): before ANY large historical backfill
+  or full-source drain runs, bring the operator the projected cost first
+  (doc count x measured per-doc rate, stated as an envelope like the
+  Toronto $63) and get the spike approved BEFORE dispatch. A drain
+  cadence never auto-extends past its approved envelope; new source
+  histories entering drain scope pause for approval, never spend
+  silently. Steady-state scheduled LLM spend is only the capped daily
+  forward pass plus the small weekly discovery and monthly calibration
+  jobs.
