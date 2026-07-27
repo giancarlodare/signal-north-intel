@@ -69,43 +69,6 @@ export async function listWatches(
   }));
 }
 
-export interface WatchEvent {
-  id: string;
-  eventType: "match" | "backfill" | "follow";
-  detail: string | null;
-  createdAt: string;
-  signalTitle: string | null;
-  buyer: string | null;
-}
-
-export interface SavedItem {
-  briefItemId: string;
-  savedAt: string;
-  headline: string | null;
-  buyer: string | null;
-}
-
-export async function listWatches(
-  supabase: SupabaseClient,
-): Promise<Watch[] | null> {
-  const { data, error } = await supabase
-    .from("member_watches")
-    .select("id, kind, keyword, organization_id, organizations(canonical_name)")
-    .order("created_at", { ascending: true });
-  if (error) return null;
-  return ((data ?? []) as unknown as Record<string, unknown>[]).map((w) => {
-    const org = one(w.organizations as
-      { canonical_name: string | null } | { canonical_name: string | null }[] | null);
-    return {
-      id: w.id as string,
-      kind: w.kind as "keyword" | "buyer",
-      keyword: (w.keyword as string) ?? null,
-      organizationId: (w.organization_id as string) ?? null,
-      buyerName: (org?.canonical_name as string) ?? null,
-    };
-  });
-}
-
 export async function listEvents(
   supabase: SupabaseClient,
   limit = 12,
