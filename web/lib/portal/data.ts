@@ -81,7 +81,7 @@ export async function getBriefItems(
   supabase: SupabaseClient,
   briefId: string,
 ): Promise<PortalItem[]> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("brief_items")
     .select(
       "id, rank, timing_path, headline_override, editor_note, included, " +
@@ -91,6 +91,7 @@ export async function getBriefItems(
     .eq("brief_id", briefId)
     .eq("included", true)
     .order("rank", { ascending: true });
+  if (error) console.error("[portal-data] getBriefItems:", error.message);
 
   return ((data ?? []) as unknown as ItemRow[])
     // Second barrier under the RLS clamp: even if an operator preview (which
