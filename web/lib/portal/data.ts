@@ -64,6 +64,7 @@ interface ItemRow {
     title: string | null;
     amount_max_cad: number | null;
     defence_relevant: boolean | null;
+    public_safety: boolean | null;
     organizations: { canonical_name: string | null } | { canonical_name: string | null }[] | null;
     documents: {
       url: string | null;
@@ -82,14 +83,24 @@ export async function getBriefItems(
     .from("brief_items")
     .select(
       "id, rank, timing_path, headline_override, editor_note, included, " +
-      "signals:lead_signal_id(title, amount_max_cad, defence_relevant, " +
+      "signals:lead_signal_id(title, amount_max_cad, defence_relevant, public_safety, " +
       "organizations(canonical_name), documents(url, published_on, date_precision))",
     )
     .eq("brief_id", briefId)
     .eq("included", true)
     .order("rank", { ascending: true });
 
-  return ((data ?? []) as unknown as ItemRow[]).map((it) => {
+  return ((data ?? []) as unknown as ItemRow[])
+    // Second barrier under the RLS clamp: even if an operator preview (which
+    // bypasses RLS) or a future composition path surfaced a non-public-safety
+    // item, the member dashboard shows only public-safety-relevant items. The
+    // RLS sn_public_safety_clamp is the real gate for a member session; this
+    // keeps the operator's preview faithful to what a member actually sees.
+    .filter((it) => {
+      const s = one(it.signals) as Record<string, unknown> | null;
+      return Boolean(s?.public_safety);
+    })
+    .map((it) => {
     const s = one(it.signals) as Record<string, unknown> | null;
     const org = one((s?.organizations ?? null) as
       { canonical_name: string | null } | { canonical_name: string | null }[] | null);
