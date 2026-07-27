@@ -72,7 +72,7 @@ export default async function WatchingPage() {
             <span className="t-label">Topics and keywords</span>
             {!live ? (
               <span style={{ fontSize: 14, color: "var(--faint)" }}>
-                Keyword watching arrives with the next portal stage.
+                Watching is temporarily unavailable; retry shortly.
               </span>
             ) : null}
             <div
@@ -97,7 +97,7 @@ export default async function WatchingPage() {
                 name="keyword"
                 placeholder="Add a keyword, e.g. dispatch"
                 disabled={!live}
-                title={live ? undefined : "Arrives with the next portal stage"}
+                title={live ? undefined : "Temporarily unavailable"}
                 style={{
                   flex: 1,
                   border: "1px solid var(--line)",
@@ -146,7 +146,7 @@ export default async function WatchingPage() {
             </span>
             {!live ? (
               <span style={{ fontSize: 14, color: "var(--faint)" }}>
-                Following buyers arrives with the next portal stage.
+                Watching is temporarily unavailable; retry shortly.
               </span>
             ) : (buyers ?? []).length === 0 ? (
               <span style={{ fontSize: 14, color: "var(--faint)" }}>
