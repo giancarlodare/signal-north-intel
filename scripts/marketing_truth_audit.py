@@ -37,8 +37,10 @@ def main():
     awards = supabase_client.fetch_all_rows_where(
         "contract_awards",
         "id,vendor_name,description,value_cad,awarded_on,end_on,final_end_on", {})
+    # sources has no enabled flag: a row existing IS registration (seeds are
+    # only inserted for enabled feeds; parked collectors gate in code).
     sources = supabase_client.fetch_all_rows_where(
-        "sources", "id,name,enabled", {})
+        "sources", "id,name,source_type,jurisdiction", {})
 
     org_by_id = {o["id"]: o for o in orgs}
     orgs_with_signal = {s["organization_id"] for s in signals
@@ -153,10 +155,9 @@ def main():
           f"{', '.join(boards + councils)}")
     print(f"    Ministries/departments ({len(ministries)}): {', '.join(ministries)}")
 
-    enabled = sorted((s.get("name") or "?") for s in sources if s.get("enabled"))
-    disabled = sum(1 for s in sources if not s.get("enabled"))
-    print(f"=== ENABLED SOURCES ({len(enabled)}; {disabled} disabled) ===")
-    for n in enabled:
+    names = sorted((s.get("name") or "?") for s in sources)
+    print(f"=== REGISTERED SOURCES ({len(names)}) ===")
+    for n in names:
         print(f"    {n}")
 
     doc_types = Counter((_one(s.get("documents")) or {}).get("doc_type") for s in signals)
