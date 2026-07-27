@@ -1,9 +1,40 @@
-# Public-safety relevance filter for regional-government feeds (scope, operator 2026-07-27)
+# Public-safety relevance filter for regional-government feeds (operator 2026-07-27)
 
-Status: SCOPED, not built. The filter that makes the vertical-depth claim
+Status: BUILT and validated (2026-07-27). src/public_safety.py is the pure
+predicate; the brief lens now gates on it; scripts/peel_public_safety_split.py
+is the before/after report. The filter that makes the vertical-depth claim
 true. GATE: this must land before the member portal goes live
 (PORTAL_ENABLED flip), because a member seeing mostly watermains would
 immediately doubt our public-safety depth.
+
+## Validation result (measured over the live Peel corpus, 2026-07-27)
+
+Ran scripts/peel_public_safety_split.py in CI against 1,262 resolved-to-Peel
+signals. The split is clean and cuts on the right line:
+
+- **Corpus split**: 668 public-safety / 594 general municipal.
+- **Resolved org_type distribution**: municipality 647, police_service 388,
+  police_board 227. The 615 police signals pass by org-type; ~53 more
+  municipality-typed items pass on the keyword/facility fallback (fire/EMS
+  text); the remaining 594 municipality items are correctly held.
+- **NO fire_service / ems / emergency_management org_types exist** in the
+  corpus: those services are DEPARTMENTS of the region, so they resolve to
+  `municipality` and are caught by the keyword/facility fallback, not the
+  org-type path. The org-type set lists them anyway (precision-safe) so a
+  future resolver that types one gates by construction.
+- **Precision confirmed on both sides**: HELD samples are all genuine general
+  municipal (steam jennys, tree planting, sewage pump stations, Cisco
+  networking, highway liners, LTC modifications); KEEP samples are all genuine
+  public-safety (31 Division staffing, Hate Crime Unit, MCRRT crisis response,
+  vehicle capital, FIFA 2026 deployment).
+- **Member-facing published brief** (week 2026-07-20): 1 included item, the
+  SOLGEN fire-protection grant, which survives (defence-tagged). The "24 items"
+  the operator saw earlier were the OPERATOR-ALL RLS view (full corpus
+  visibility), not the gated member set.
+
+The lens leak is closed: a non-defence cluster now needs public-safety
+relevance AND the materiality bar to default in, so a big general-municipal
+item from a regional buyer is held rather than shipped on materiality alone.
 
 ## The problem (operator diagnosis, confirmed in code)
 

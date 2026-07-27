@@ -33,9 +33,18 @@ import re
 from .filters import Keywords
 
 # End-user org_types that ARE public-safety: any item whose resolved end-user
-# is one of these is relevant by construction.
+# is one of these is relevant by construction. police_service/police_board are
+# the only public-safety org_types the corpus carries today (measured 2026-07-27
+# over the Peel feed: municipality/police_service/police_board only); fire, EMS,
+# and emergency management are DEPARTMENTS of a region/municipality, not
+# separately-resolved orgs, so they are caught by the keyword/facility fallback.
+# The unused types are listed anyway so that if the resolver ever types one, it
+# gates by construction rather than depending on its title carrying a keyword.
+# Every type here is public-safety by definition, so listing extras is
+# precision-safe (it can never admit a general item).
 PUBLIC_SAFETY_ORG_TYPES = frozenset(
-    {"police_service", "police_board", "corrections"})
+    {"police_service", "police_board", "corrections",
+     "fire_service", "ems", "emergency_management"})
 
 # Buyer org_types that publish a MIX (general + public-safety), so an item
 # resolving to one of these needs the per-item keyword/facility test.
