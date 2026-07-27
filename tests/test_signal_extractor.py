@@ -161,7 +161,8 @@ def test_dry_run_writes_nothing(monkeypatch):
 def test_doc_type_filter_is_passed_through(monkeypatch):
     seen = {}
 
-    def fake_get(status, limit, select="x", doc_type=None, doc_types=None, order=None):
+    def fake_get(status, limit, select="x", doc_type=None, doc_types=None, order=None,
+                 exclude_buyers=None):
         seen.update(doc_type=doc_type, doc_types=doc_types, order=order)
         return []
 
@@ -177,7 +178,8 @@ def test_forward_path_passes_doc_types_and_newest_first_order(monkeypatch):
     """The daily forward path scopes to several types and drains newest first."""
     seen = {}
 
-    def fake_get(status, limit, select="x", doc_type=None, doc_types=None, order=None):
+    def fake_get(status, limit, select="x", doc_type=None, doc_types=None, order=None,
+                 exclude_buyers=None):
         seen.update(doc_types=doc_types, order=order)
         return []
 

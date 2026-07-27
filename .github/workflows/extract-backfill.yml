@@ -46,7 +46,14 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           EXTRACTION_MODEL: claude-opus-4-8
+        # COST GATE (operator 2026-07-27): the tier-2 buyers' award history
+        # (~7,440 docs, ~$45) is HELD from the drain until the Toronto+Peel
+        # pilot delivers its cost-and-value read and the operator approves
+        # historical drains buyer batch by buyer batch. Forward collection
+        # is unaffected (the daily capped step handles it). Remove a buyer
+        # from this exclusion only with an operator-approved envelope.
         run: >
           python -m src.signal_extractor
           --doc-types award_notice,board_minutes,news_release
+          --exclude-buyers "City of Hamilton,City of Brampton,City of Kitchener,City of Vaughan,Halton Region"
           --newest-first --limit ${{ inputs.limit }}
