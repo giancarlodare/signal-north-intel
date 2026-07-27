@@ -339,6 +339,94 @@ first, deeper multi-source arc reconstruction, neutrality/transparency
 (the provable ledger + provenance discipline). Also: what they do better
 that we should learn from, stated honestly.
 
+## Capability-gap backlog (banked 2026-07-27; ROADMAP entries ONLY, nothing builds now)
+
+STANDING RULE (operator, attached to every item): nothing here starts
+without Wave 3 (portal stages 1-4) and the Toronto+Peel pilot landing
+first; the existing holds stay ahead of all of it; and anything with a
+cost or privacy dimension comes to the operator for approval BEFORE work
+begins. Each item carries its gating condition so nothing builds out of
+order and nothing silently drops.
+
+### Near-term, from data we already hold (highest priority when the queue clears)
+
+1. **EXPIRING CONTRACTS.** "Every contract has an end date; be there
+   first." Derive expiry from award data + contract terms; surface
+   contracts approaching recompete across a subscriber's monitored space
+   (incumbent, value, time-to-expiry, expected recompete window).
+   Operator-flagged as the FASTEST near-term win: simpler than the full
+   predictive arc, clean derivable data, obvious vendor value. GATE:
+   scope first whether current award data carries terms/durations or
+   whether extraction needs extending (an extraction change has a cost
+   dimension: projected envelope to the operator first).
+2. **INCUMBENT INTEL.** Who currently holds the contract, by buyer and
+   category, from our award history. Mostly a query/presentation layer
+   over existing data. GATE: Wave 3 + pilot landed.
+3. **PRICING INTELLIGENCE.** "What agencies actually paid" by category,
+   from awarded values. Presentation over existing data. The
+   client-facing gate applies verbatim: only figures sourced to a
+   publisher record are ever shown. GATE: Wave 3 + pilot landed.
+4. **MARKET INTELLIGENCE per agency.** Spend history, vendor landscape,
+   budget-cycle timing, category trends; feeds the buyer profile screen
+   (item 5). GATE: Wave 3 + pilot landed; renders inside item 5.
+
+### Product surfaces still missing (design from Claude Design; engineering TBD)
+
+5. **BUYER / AGENCY PROFILE.** The consolidated "know this buyer
+   completely" view: history, active signals, spend, incumbents,
+   expiring contracts, convergence indicators. GATE: Wave 3 landed;
+   consumes items 1-4; convergence panel additionally gated on the
+   pilot proving significance (see cross-references).
+6. **ALERTS / NOTIFICATIONS.** Subscriber-configured push alerts (signal
+   matches, contract expiry approaching, digest cadence) plus a
+   notification centre. GATE: Wave 3 stage 3 (watchlist + event log) is
+   the substrate; builds on it, never before it.
+7. **SAVED SEARCHES / CUSTOM FEEDS.** User-defined reusable filtered
+   views (e.g. all fleet procurement in the GTA over $500K). GATE:
+   Wave 3 stage 2 data layer.
+8. **ONBOARDING FLOW.** First-run setup: a new subscriber picks
+   monitored services/domains/vendors so the dashboard is relevant
+   immediately. GATE: Wave 3 stages 2-3; flow design from Claude Design.
+9. **ACCOUNT / SUBSCRIPTION / BILLING.** Plan tier, billing, seats, team
+   management. Wave 3 stage 4 (Stripe test) covers the billing seam
+   only; the full account surface is broader. GATE: stage 4 landed;
+   live billing remains its own operator decision.
+10. **COVERAGE MAP / "WHAT WE WATCH".** A transparency surface showing
+    exactly which agencies, sources, and domains we comprehensively
+    cover, and honestly what we do not. A DIFFERENTIATOR to build, not a
+    gap to copy: it directly serves the client-facing-gate doctrine
+    (never imply completeness we lack) and consumes the
+    coverage-confidence attribute (gate doctrine, coverage gaps). GATE:
+    Wave 3 landed; coverage-confidence data model defined.
+
+### Later-stage, gated on explicit decisions
+
+11. **DECISION-MAKER / ORG-STRUCTURE VIEW.** Who decides at each agency
+    (board chair, procurement lead, category budget owner). SCOPE
+    CONSTRAINT (operator, binding): design and build toward PUBLIC
+    organizational structure and roles, NOT harvested personal contact
+    data. Canadian privacy law (PIPEDA) is materially stricter than US
+    norms, and a contact-harvesting posture conflicts with the
+    neutral-intelligence brand. Any contact-enablement beyond public org
+    structure is a COUNSEL decision, never a default build: gated on the
+    September counsel package.
+12. **CRM INTEGRATIONS / EXPORT / WEBHOOKS.** Push signals and watchlist
+    matches into a subscriber's own systems. Enterprise-tier. GATE:
+    demand-pulled by a paying enterprise buyer requiring it (same rule
+    as the API).
+13. **MCP SERVER.** Expose our data to AI assistants. Furthest out.
+    GATE: the API read layer exists first (see API access entry and its
+    three gates).
+
+### Cross-references (banked elsewhere; linked, not duplicated)
+
+The API read layer (this file, API access entry), the convergence
+indicator (demand-arc design 0d + this file), the interactive prediction
+pathway (wave3-portal-design.md), terminal-action profiles keyed to arc
+nature (demand-arc design 0e), the client-facing gate doctrine
+(docs/client-facing-gate.md), and the vendor news wire (this file) are
+the same product family; items above that touch them inherit their gates.
+
 ## Parked / waiting
 
 - **Extractor max_tokens bump for large docs (known-class fix, banked
