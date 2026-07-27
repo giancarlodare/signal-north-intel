@@ -192,6 +192,29 @@ publicly and collectably (no login, robots-compatible)? Standard
 discipline: read-only, no accounts; public-and-collectable surfaces get a
 design-first proposal, walled ones get recorded verdicts.
 
+**PROBE VERDICT (CI job 89982216159, read-only, 2026-07-27): the CPO layer
+is largely NOT publicly collectable, by design.** Cooperative purchasing
+groups serve their members behind login portals, so their opportunity/award
+data is member-gated (our no-accounts rule stops there):
+- WALLED (login/register/account): OECM (marketplace behind sign-in),
+  Kinetic GPO, PCPG, HealthPRO, Supply Ontario (register).
+- DEAD / MOVED (404): Ontario VOR directory, MPBSD marketplace (both MGS
+  Lotus-Notes URLs gone).
+- BLOCKED: Canoe (403), HCPG (hcpg.ca robots-disallowed; halton page 404),
+  SGP (DNS fail / robots).
+- ONE PUBLIC CANDIDATE: YPCO via york.ca doing-business page (200, carries
+  bid/tender/opportunity/award marks, only a soft 'account' mark). BUT York
+  is already a live tier-1 buyer via york.bidsandtenders.ca, so YPCO overlaps
+  existing coverage; low marginal value, not a new collector.
+
+PROXY LINE (the honest coverage answer): CPO demand still reaches us through
+the MEMBER agencies' own award notices. An OECM or Kinetic agreement that a
+police service or municipality draws on posts as THAT buyer's award on its
+own publisher-linked portal, which we already collect. So the co-op layer is
+captured indirectly at the member edge, not at the co-op hub. PARK the
+direct-CPO-collection idea with this verdict; revisit only if a co-op opens a
+public (no-login) opportunity feed.
+
 ## Toronto procurement: GREEN via CKAN open data (verdict 2026-07-25)
 
 Toronto's SAP Ariba front end is closed to automation, and that is
