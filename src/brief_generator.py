@@ -32,6 +32,8 @@ starting selection.
 """
 import argparse
 import logging
+from . import public_safety
+from .filters import load_keywords
 import sys
 from collections import Counter, defaultdict
 from datetime import date, timedelta
@@ -57,6 +59,16 @@ IMMINENT_MIN_GRADE = 2
 # strongest member) to default into the draft. Defence-relevant always defaults
 # in. Draft-only; the editor can pull any held item back.
 LENS_MIN_MATERIALITY = 4
+
+_KEYWORDS = None
+
+
+def _kw():
+    """Cached public-safety keyword set (config/keywords.txt)."""
+    global _KEYWORDS
+    if _KEYWORDS is None:
+        _KEYWORDS = load_keywords()
+    return _KEYWORDS
 
 
 def bar_for(path) -> tuple:
@@ -201,6 +213,15 @@ def cluster(included, proc_by_signal):
             "defence_relevant": any(
                 bool((_one(s.get("documents")) or {}).get("defence_relevant"))
                 for s in sigs),
+            # Public-safety relevance (the vertical-depth truth-condition): a
+            # cluster defaults into the MEMBER-FACING draft only when it is
+            # public-safety-relevant, so a big general-municipal item from a
+            # regional buyer no longer enters on materiality alone.
+            "public_safety": public_safety.cluster_is_public_safety(
+                [{"title": s.get("title"),
+                  "defence_relevant": bool((_one(s.get("documents")) or {}).get("defence_relevant")),
+                  "org_type": (_one(s.get("organizations")) or {}).get("org_type")}
+                 for s in sigs], _kw()),
             "amount": float(lead.get("amount_max_cad") or 0),
             "org": (_one(lead.get("organizations")) or {}).get("canonical_name"),
             "doc_type": (_one(lead.get("documents")) or {}).get("doc_type"),
@@ -232,8 +253,14 @@ def apply_lens(clusters) -> int:
     Pure: sets c["included"] on every cluster and returns the held count."""
     held = 0
     for c in clusters:
+        # Member-facing lens (operator 2026-07-27): require public-safety
+        # relevance, not just materiality. defence_relevant is dual-use (a
+        # public-safety subset) and always keeps; a non-defence cluster keeps
+        # only when it is public-safety-relevant AND clears the materiality
+        # bar, so a big watermain from a regional buyer is held, not shipped.
         keep = bool(c.get("defence_relevant")) \
-            or (c.get("max_materiality") or 0) >= LENS_MIN_MATERIALITY
+            or (bool(c.get("public_safety"))
+                and (c.get("max_materiality") or 0) >= LENS_MIN_MATERIALITY)
         c["included"] = keep
         if not keep:
             held += 1
@@ -293,7 +320,7 @@ def run(dry_run: bool = True, today: date | None = None, force: bool = False) ->
     signals = supabase_client.fetch_all_rows_where(
         "signals",
         "id,signal_type,confidence,materiality,evidence_grade,amount_max_cad,"
-        "expected_timing,organization_id,title,organizations(canonical_name),"
+        "expected_timing,organization_id,title,organizations(canonical_name,org_type),"
         "document_id,"
         "documents!inner(doc_type,published_on,date_precision,url,defence_relevant)",
         {"suppressed": "is.false"})
