@@ -162,7 +162,19 @@ def resolve_confirmed(by_domain):
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--refresh", action="store_true",
+                    help="delete prior pilot-confirm@v1 procurements+links first, "
+                         "so a re-run after a drain re-links new signals fresh")
     args = ap.parse_args()
+
+    if args.refresh and not args.dry_run:
+        prior = supabase_client.fetch_all_rows_where(
+            "procurements", "id", {"proposed_by": f"eq.{STAMP}"})
+        for p in prior:
+            supabase_client.delete_rows("procurement_signals",
+                                        {"procurement_id": f"eq.{p['id']}"})
+            supabase_client.delete_rows("procurements", {"id": f"eq.{p['id']}"})
+        print(f"REFRESH: cleared {len(prior)} prior pilot-confirm procurements")
 
     by_domain = build_domain_index()
     resolved = resolve_confirmed(by_domain)
