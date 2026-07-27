@@ -245,10 +245,12 @@ def test_fetch_awarded_fails_loud_over_error_budget(monkeypatch):
 def test_tier1_config_rows_are_enabled_and_drps_is_not():
     keys = [m["org_key"] for m in bt.MUNICIPALITIES]
     assert keys == ["peel", "york", "london", "durham", "yrp",
-                    "hamilton", "brampton", "kitchener", "vaughan", "halton"]
+                    "hamilton", "brampton", "kitchener", "vaughan", "halton",
+                    "stcatharines", "thunderbay", "whitby", "burlington"]
     assert "drps" not in keys                      # HELD on provenance
     # markham/niagara/haltonhills/mississauga HELD below validation bar
-    for held in ("markham", "niagara", "haltonhills", "mississauga"):
+    for held in ("markham", "niagara", "haltonhills", "mississauga",
+                 "niagarafalls", "sarnia"):
         assert held not in keys
     # region tenants use their full-region subdomains (the survey's short
     # slugs error out)
