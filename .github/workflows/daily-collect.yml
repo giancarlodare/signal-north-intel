@@ -199,6 +199,19 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python -m src.apply_public_safety --apply
 
+      # Stage-3 watch matcher (operator decisions A-D 2026-07-27): write
+      # member match/backfill events over the gate-cleared universe.
+      # Deterministic, no LLM, idempotent; a clean no-op until the stage-3
+      # DDL is pasted (guarded on table existence), so wiring it now never
+      # turns the pipeline red. Runs AFTER the public-safety derivation so
+      # the universe filter sees fresh flags.
+      - name: Run member watch matcher
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.watch_matcher --apply
+
       # Board minutes run LAST, on purpose (operator 2026-07-25). The board
       # sites' WAFs (tpsb.ca, durhampoliceboard.ca) intermittently 415 a heavy
       # crawl repeated within a short window; as an early step that failed the

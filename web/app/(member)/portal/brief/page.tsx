@@ -18,6 +18,8 @@ import {
   type PortalItem,
 } from "@/lib/portal/data";
 import { actionWindow } from "@/lib/brief/date-label";
+import { listSaved, savedIds } from "@/lib/portal/watch-data";
+import { saveItem, unsaveItem } from "../actions";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -36,18 +38,40 @@ function weekLabel(weekStart: string): string {
   }).format(new Date(Date.UTC(y, m - 1, d, 12)));
 }
 
-function SaveButton({ id }: { id: string }) {
-  // Stage 3b: saving persists to the member's saved list once saved_items
-  // lands. Disabled until then; never localStorage-fake.
+function SaveButton({
+  id,
+  enabled,
+  saved,
+}: {
+  id: string;
+  enabled: boolean;
+  saved: boolean;
+}) {
+  // Live once the stage-3 DDL is pasted (saved_items readable); disabled
+  // pre-paste, never localStorage-fake.
+  if (!enabled) {
+    return (
+      <button
+        className="save-btn"
+        data-item-id={id}
+        disabled
+        title="Saving arrives with the next portal stage"
+      >
+        Save
+      </button>
+    );
+  }
   return (
-    <button
-      className="save-btn"
-      data-item-id={id}
-      disabled
-      title="Saving arrives with the next portal stage"
-    >
-      Save
-    </button>
+    <form action={saved ? unsaveItem : saveItem}>
+      <input type="hidden" name="brief_item_id" value={id} />
+      <button
+        className={`save-btn${saved ? " is-saved" : ""}`}
+        data-item-id={id}
+        type="submit"
+      >
+        {saved ? "Saved ✓" : "Save"}
+      </button>
+    </form>
   );
 }
 
@@ -103,6 +127,9 @@ export default async function BriefPage({
   const selected =
     briefs.find((b) => b.id === searchParams.brief) ?? briefs[0];
   const items = await getBriefItems(supabase, selected.id);
+  const saved = await listSaved(supabase);
+  const savingEnabled = saved !== null;
+  const savedSet = savedIds(saved);
   const lead = items[0] ?? null;
   const rest = items.slice(1);
 
@@ -154,7 +181,7 @@ export default async function BriefPage({
               }}
             >
               <span className="flag-card__match">Lead item</span>
-              <SaveButton id={lead.itemId} />
+              <SaveButton id={lead.itemId} enabled={savingEnabled} saved={savedSet.has(lead.itemId)} />
             </div>
             <h3
               style={{
@@ -215,7 +242,7 @@ export default async function BriefPage({
               >
                 {item.headline}
               </h3>
-              <SaveButton id={item.itemId} />
+              <SaveButton id={item.itemId} enabled={savingEnabled} saved={savedSet.has(item.itemId)} />
             </div>
             {item.vendorSoWhat ? (
               <p

@@ -11,6 +11,16 @@
 --   C. In-app delivery now; the weekly email digest reads watch_events later
 --      (send provider + template are separate operator inputs).
 --
+-- Walkthrough decisions CONFIRMED (operator 2026-07-27): D1 events survive
+-- an unfollow (told-you-first is service evidence; watch_id set null). D2
+-- operator-visible, with the STANDING POLICY LINE: operator access to member
+-- watches is for support and AGGREGATE product intelligence only, never to
+-- use one member's watch list against their interests -- a trust line held
+-- in policy, deliberately not enforced in code. D3 whole-word
+-- case-insensitive matching over gate-cleared titles (the pilot's
+-- "contracting" false-positive lesson; a bad match here would poison the
+-- trust log). D4 30-day labelled backfill window.
+--
 -- APPLY AT OPERATOR GO (same paste session as the other Wave 3 migrations;
 -- requires sn_role() from stage 1). Owner-scoped RLS throughout: a member
 -- reads and writes ONLY their own rows; the operator sees all (support); the
@@ -35,7 +45,8 @@ create table if not exists member_watches (
 );
 create unique index if not exists member_watches_kw_uniq
   on member_watches (member_id, kind, coalesce(lower(keyword), ''),
-                     coalesce(organization_id, '00000000-0000-0000-0000-000000000000'));
+                     coalesce(organization_id,
+                              '00000000-0000-0000-0000-000000000000'::uuid));
 
 -- 2. Append-only event log: what fired, when, for whom. 'match' events are
 --    the "we told you first" substrate; 'backfill' is labelled catch-up;

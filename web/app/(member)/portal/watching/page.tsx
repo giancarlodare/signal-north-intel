@@ -1,8 +1,18 @@
-// Watching (Claude Design handoff: dashboard/watching.html).
-// STAGE-3A GAP (flagged, expected): member_watches / watch_events have not
-// landed, so the keyword and buyer panels render the designed shells with
-// controls disabled and no fake persistence. The coverage panel is static
-// handoff content and stands as-is.
+// Watching (Claude Design handoff: dashboard/watching.html), live against
+// stage-3 member_watches / watch_events. Keyword chips and buyer follows
+// write through owner-scoped RLS; the "we told you first" log shows only
+// forward 'match' events plus the member's own follows (decision B: backfill
+// never enters the trust log; backfill items surface on Home as "recent
+// matches in your area"). Pre-paste (queries null) the panels show pending
+// notes and disabled controls.
+import { createClient } from "@/lib/supabase/server";
+import {
+  listWatches,
+  listEvents,
+  listFollowableBuyers,
+  shortDate,
+} from "@/lib/portal/watch-data";
+import { addKeywordWatch, removeWatch, followBuyer } from "../actions";
 import { COVERAGE_STATUS } from "@/lib/marketing/coverage-status";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +21,24 @@ export const metadata = {
   robots: { index: false, follow: false, nocache: true },
 };
 
-export default function WatchingPage() {
+export default async function WatchingPage() {
+  const supabase = createClient();
+  const [watches, events, buyers] = await Promise.all([
+    listWatches(supabase),
+    listEvents(supabase),
+    listFollowableBuyers(supabase),
+  ]);
+  const live = watches !== null;
+  const keywords = (watches ?? []).filter((w) => w.kind === "keyword");
+  const followed = new Set(
+    (watches ?? [])
+      .filter((w) => w.kind === "buyer")
+      .map((w) => w.organizationId),
+  );
+  const trustLog = (events ?? []).filter(
+    (e) => e.eventType === "match" || e.eventType === "follow",
+  );
+
   return (
     <main className="fade-rise">
       <div
@@ -31,7 +58,7 @@ export default function WatchingPage() {
           </span>
         </div>
 
-        <div className="watch-grid" data-placeholder="true">
+        <div className="watch-grid">
           <section
             className="card"
             style={{
@@ -43,16 +70,34 @@ export default function WatchingPage() {
             data-testid="keywords-panel"
           >
             <span className="t-label">Topics and keywords</span>
-            <span style={{ fontSize: 14, color: "var(--faint)" }}>
-              Keyword watching arrives with the next portal stage.
-            </span>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }} data-keywords></div>
-            <div style={{ display: "flex", gap: 10 }}>
+            {!live ? (
+              <span style={{ fontSize: 14, color: "var(--faint)" }}>
+                Keyword watching arrives with the next portal stage.
+              </span>
+            ) : null}
+            <div
+              style={{ display: "flex", gap: 10, flexWrap: "wrap" }}
+              data-keywords
+            >
+              {keywords.map((w) => (
+                <span className="kw-chip" key={w.id}>
+                  <span>{w.keyword}</span>
+                  <form action={removeWatch} style={{ display: "inline" }}>
+                    <input type="hidden" name="watch_id" value={w.id} />
+                    <button type="submit" aria-label="Stop watching">
+                      ×
+                    </button>
+                  </form>
+                </span>
+              ))}
+            </div>
+            <form action={addKeywordWatch} style={{ display: "flex", gap: 10 }}>
               <input
                 data-kw-input
+                name="keyword"
                 placeholder="Add a keyword, e.g. dispatch"
-                disabled
-                title="Arrives with the next portal stage"
+                disabled={!live}
+                title={live ? undefined : "Arrives with the next portal stage"}
                 style={{
                   flex: 1,
                   border: "1px solid var(--line)",
@@ -66,15 +111,15 @@ export default function WatchingPage() {
               />
               <button
                 data-kw-add
-                disabled
-                title="Arrives with the next portal stage"
+                type="submit"
+                disabled={!live}
                 style={{
                   padding: "11px 20px",
                   letterSpacing: "0.08em",
                   fontSize: 12,
                   border: 0,
-                  cursor: "default",
-                  background: "var(--line)",
+                  cursor: live ? "pointer" : "default",
+                  background: live ? "var(--red)" : "var(--line)",
                   color: "#fff",
                   fontWeight: 600,
                   textTransform: "uppercase",
@@ -83,7 +128,7 @@ export default function WatchingPage() {
               >
                 Watch
               </button>
-            </div>
+            </form>
           </section>
 
           <section
@@ -99,9 +144,40 @@ export default function WatchingPage() {
             <span className="t-label" style={{ paddingBottom: 12 }}>
               Buyers you follow
             </span>
-            <span style={{ fontSize: 14, color: "var(--faint)" }}>
-              Following buyers arrives with the next portal stage.
-            </span>
+            {!live ? (
+              <span style={{ fontSize: 14, color: "var(--faint)" }}>
+                Following buyers arrives with the next portal stage.
+              </span>
+            ) : (buyers ?? []).length === 0 ? (
+              <span style={{ fontSize: 14, color: "var(--faint)" }}>
+                Buyers appear here as briefs publish.
+              </span>
+            ) : (
+              (buyers ?? []).map((b) => (
+                <div className="follow-row" key={b.organizationId}>
+                  <span style={{ fontSize: 15, color: "var(--ink)" }}>
+                    {b.name}
+                  </span>
+                  {followed.has(b.organizationId) ? (
+                    <button className="follow-btn is-on" disabled>
+                      Following
+                    </button>
+                  ) : (
+                    <form action={followBuyer}>
+                      <input
+                        type="hidden"
+                        name="organization_id"
+                        value={b.organizationId}
+                      />
+                      <input type="hidden" name="buyer_name" value={b.name} />
+                      <button className="follow-btn" data-buyer={b.organizationId} type="submit">
+                        Follow
+                      </button>
+                    </form>
+                  )}
+                </div>
+              ))
+            )}
           </section>
         </div>
 
@@ -184,13 +260,23 @@ export default function WatchingPage() {
           data-testid="activity-log"
         >
           <span className="t-label">We told you first</span>
-          <span
-            style={{ fontSize: 14, color: "var(--faint)" }}
-            data-placeholder="true"
-          >
-            Every time we surface something for you, it is logged here with its
-            date. The record starts with your first watch.
-          </span>
+          {trustLog.length === 0 ? (
+            <span style={{ fontSize: 14, color: "var(--faint)" }}>
+              Every time we surface something for you, it is logged here with
+              its date. The record starts with your first watch.
+            </span>
+          ) : (
+            trustLog.map((e) => (
+              <div className="activity-row" key={e.id}>
+                <time>{shortDate(e.createdAt)}</time>
+                <span style={{ fontSize: 14 }}>
+                  {e.eventType === "match"
+                    ? `Flagged ${e.signalTitle ?? "an item"} for you (${e.detail ?? "watch match"}).`
+                    : e.detail ?? "You updated your watches."}
+                </span>
+              </div>
+            ))
+          )}
         </section>
       </div>
     </main>
