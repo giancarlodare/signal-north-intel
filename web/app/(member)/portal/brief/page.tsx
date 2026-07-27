@@ -109,6 +109,16 @@ export default async function BriefPage({
   searchParams: { brief?: string };
 }) {
   const supabase = createClient();
+  // Session diagnostic (2026-07-27): names whether this server render holds
+  // the member JWT or fell back to anon, which RLS answers with clean zero
+  // rows. Shows in Vercel function logs as [portal-data] render session.
+  const {
+    data: { user: renderUser },
+  } = await supabase.auth.getUser();
+  console.error(
+    "[portal-data] render session:",
+    renderUser ? `${renderUser.email} (${renderUser.id.slice(0, 8)})` : "ANON",
+  );
   const briefs = await listPublishedBriefs(supabase);
 
   if (briefs.length === 0) {
