@@ -9,9 +9,8 @@
 // the live record or the section is OMITTED, never static. Wired here: the
 // "Closing soon" panel (real in-market deadlines), the coverage register
 // (real on-the-record organizations), and the market-record capability rows
-// (real recent awards). The remaining capability panels (02-06) are handoff
-// sample content pending an operator call (wire, label illustrative, or
-// remove); they stay marked data-placeholder.
+// (real recent awards). Capability panels 02-06 are removed until their
+// engines are real (real-data-or-nothing, operator 2026-07-27).
 import { redirect } from "next/navigation";
 import { portalEnabled } from "@/lib/auth/roles";
 import SiteHeader from "@/components/site/SiteHeader";
@@ -45,64 +44,17 @@ function rowTitle(buyer: string | null, title: string): string {
 }
 
 type CapRow = { title: string; meta: string; val: string };
-// Capability 01 rows are LIVE (recent awards from the record); 02-06 below
-// are handoff sample content pending the operator's wire/label/remove call.
+// Capability panels 02-06 REMOVED (operator 2026-07-27): the site is
+// real-data-or-nothing, and an "illustrative sample" label is a crack in
+// that discipline. Each panel returns when its backing engine is real
+// (network view, price ranges, recompete calendar, foresight). Capability
+// 01 renders live recent awards.
 const CAPS: { id: string; name: string; label: string; rows: CapRow[] }[] = [
   {
     id: "01",
     name: "The market record",
     label: "Recently added",
     rows: [],
-  },
-  {
-    id: "02",
-    name: "The network view",
-    label: "Suppliers holding contracts",
-    rows: [
-      { title: "Radio and communications", meta: "3 suppliers", val: "64% with one" },
-      { title: "Digital evidence", meta: "4 suppliers", val: "52% with one" },
-      { title: "Fleet and upfitting", meta: "7 suppliers", val: "32% with one" },
-    ],
-  },
-  {
-    id: "03",
-    name: "Price and incumbency",
-    label: "Observed ranges",
-    rows: [
-      { title: "Body-worn camera, unit / year", meta: "9 awards", val: "$1,180 – $1,940" },
-      { title: "Evidence storage, TB / year", meta: "6 awards", val: "$310 – $780" },
-      { title: "Dispatch, per sworn member", meta: "2 awards", val: "Too few awards to state" },
-    ],
-  },
-  {
-    id: "04",
-    name: "Grants and funding",
-    label: "Open and forthcoming",
-    rows: [
-      { title: "Provincial equipment renewal stream", meta: "Applications open", val: "Closes Sep 2026" },
-      { title: "Federal interoperability program", meta: "Guidelines published", val: "Opens Q4 2026" },
-      { title: "Regional community safety fund", meta: "Awaiting allocation", val: "Expected 2027" },
-    ],
-  },
-  {
-    id: "05",
-    name: "Recompete calendar",
-    label: "Nearest expiries",
-    rows: [
-      { title: "Toronto Police Service, evidence storage", meta: "Axon", val: "4 months" },
-      { title: "Halton Regional Police, evidence licence", meta: "Axon", val: "8 months" },
-      { title: "Durham Regional Police, radio maintenance", meta: "Motorola", val: "11 months" },
-    ],
-  },
-  {
-    id: "06",
-    name: "Foresight",
-    label: "Live projections",
-    rows: [
-      { title: "Halton Regional Police, camera refresh", meta: "Tender", val: "Early 2027" },
-      { title: "Peel Regional Police, dispatch replacement", meta: "Tender", val: "Late 2026" },
-      { title: "Durham Regional Police, radio renewal", meta: "Tender", val: "First half 2027" },
-    ],
   },
 ];
 
@@ -303,7 +255,7 @@ export default async function SiteHome() {
           <div className="container">
             <div className="section-head">
               <span className="section-head__num">02</span>
-              <h2 className="t-title">Six capabilities, one record.</h2>
+              <h2 className="t-title">The market record.</h2>
             </div>
             <div className="caps" data-placeholder="true">
               <div className="caps__list">
