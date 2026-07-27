@@ -56,6 +56,11 @@ a floor the database already guarantees.
 | demand_arc_profiles | yes | significance = 'published' rows only (the significance gate, verbatim) |
 | everything else (procurements, procurement_signals, predictions + anchors/outcomes/supersessions, prospects + interactions, discovery tables, evidence_grade_rungs, sources, contract_awards, vendors) | NO | operator-only |
 
+**HARD GATE (operator D3 confirm, 2026-07-27):** the significance='published' auto-exposure ships as-is (moot at 0 published cells), BUT a manual `client_released` boolean is a REQUIRED follow-up before the FIRST demand_arc cell ever publishes to a paying subscriber. The member policy becomes `significance='published' AND client_released`. The significance gate is statistical/automatic; the first real prediction is a credibility-critical moment needing human release after the pilot's lessons on invisible correctness errors. Tracked as a blocking task; not built now (dead code at 0 cells), enforced before go-live.
+
+**sources: OPERATOR-DARK confirmed (D3, 2026-07-27)** — the coverage map is internal per the client-facing gate doctrine; members reach publisher URLs through documents, never the source list.
+
+
 Member WRITES: none anywhere in stage 1 (watchlist writes arrive in
 stage 3 with their own scoped policies).
 
