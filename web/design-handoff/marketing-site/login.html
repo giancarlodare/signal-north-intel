@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en-CA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Log in — Signal North</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../design-system/tokens.css">
+<link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="site-header__inner">
+    <a href="index.html" class="brand">
+      <svg width="22" height="22" viewBox="0 0 96 96" aria-hidden="true"><path d="M48 4 L76 90 L48 72 L20 90 Z" fill="#ffffff"/></svg>
+      <span class="brand__text"><span class="brand__name">Signal North</span><span class="brand__sub">Procurement Intelligence</span></span>
+    </a>
+    <span class="site-header__spacer"></span>
+    <a class="nav-link" href="about.html">About</a>
+    <a class="nav-link" href="pricing.html">Pricing</a>
+    <a class="nav-link nav-login" href="login.html">Log in</a>
+    <a class="btn btn--primary btn--nav" href="contact.html">Request access</a>
+  </div>
+</header>
+<div class="header-offset"></div>
+
+<main class="login-wrap">
+  <div class="login-card fade-rise">
+    <div style="display:flex; flex-direction:column; align-items:center; gap:18px; text-align:center;">
+      <svg width="34" height="34" viewBox="0 0 96 96" aria-hidden="true"><path d="M48 4 L76 90 L48 72 L20 90 Z" fill="#ffffff"/></svg>
+      <h1 style="font-family:var(--font-serif); font-size:30px; line-height:1.2; letter-spacing:-0.015em; color:#fff;">Member entrance</h1>
+      <p style="margin:0; font-size:15px; line-height:1.75; color:var(--blue-soft);">Enter your work email and we will send a sign-in link.</p>
+    </div>
+    <form data-form="login" style="display:flex; flex-direction:column; gap:14px;">
+      <input type="email" name="email" placeholder="name@organisation.ca" required>
+      <button class="btn btn--primary" type="submit" style="width:100%;">Send sign-in link</button>
+    </form>
+    <div data-login-sent hidden style="border:1px solid var(--navy-line); background:var(--navy-panel); padding:26px 28px; display:flex; flex-direction:column; gap:8px; text-align:center;">
+      <span style="font-family:var(--font-serif); font-size:21px; color:#fff;">Check your email.</span>
+      <span style="font-size:14px; line-height:1.7; color:var(--blue-soft);">If <span data-login-email></span> belongs to a member, a sign-in link is on its way. It expires in 15 minutes.</span>
+    </div>
+    <div style="border-top:1px solid var(--navy-mid); padding-top:20px; display:flex; flex-direction:column; gap:6px; text-align:center;">
+      <span style="font-size:13px; line-height:1.7; color:var(--blue-ghost);">Membership is by request while the founding cohort is open.</span>
+      <a href="contact.html" style="font-size:12px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--blue-soft);">Request access</a>
+    </div>
+  </div>
+</main>
+<script src="js/site.js"></script>
+</body>
+</html>

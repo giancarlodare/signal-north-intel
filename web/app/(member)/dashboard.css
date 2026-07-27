@@ -1,0 +1,65 @@
+/* Signal North member dashboard styles (Claude Design handoff, verbatim).
+   Source: web/design-handoff/dashboard/css/dashboard.css. Requires the
+   design-system tokens; pages sit inside a .sn-site wrapper. */
+.dash-header { position: fixed; inset: 0 0 auto 0; z-index: 40; background: rgba(13,27,46,0.82); backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4); border-bottom: 1px solid rgba(255,255,255,0.08); box-shadow: 0 1px 24px rgba(7,16,28,0.35); }
+.dash-header__inner { max-width: var(--content-max); margin: 0 auto; padding: 0 32px; height: var(--header-h); display: flex; align-items: center; gap: 22px; }
+.brand { display: flex; align-items: center; gap: 12px; white-space: nowrap; }
+.brand__text { display: flex; flex-direction: column; gap: 2px; }
+.brand__name { font-family: var(--font-serif); font-size: 20px; line-height: 1; letter-spacing: -0.01em; color: #fff; }
+.brand__sub { font-size: 7.5px; font-weight: 600; letter-spacing: 0.32em; text-transform: uppercase; color: var(--blue-soft); }
+.dash-header__spacer { flex: 1; }
+.dash-nav a { font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--blue-soft); white-space: nowrap; }
+.dash-nav a:hover { color: #fff; }
+.dash-nav a[aria-current="page"] { color: #fff; border-bottom: 2px solid var(--red); padding-bottom: 4px; }
+.dash-nav { display: flex; gap: 22px; align-items: center; }
+.avatar-link { display: flex; align-items: center; gap: 10px; }
+.avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--navy-light, #243d5c); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--blue-pale); }
+.avatar-link[aria-current="page"] .avatar { background: var(--red); }
+.avatar-link span:last-child { font-size: 13px; color: var(--blue-soft); }
+.header-offset { height: var(--header-h); }
+
+.dash-hero { background: var(--navy); }
+.dash-hero__inner { max-width: 1180px; margin: 0 auto; padding: 48px 48px 40px; display: flex; justify-content: space-between; align-items: flex-end; gap: 40px; flex-wrap: wrap; }
+.dash-hero__date { font-size: var(--fs-label); font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--blue-soft); }
+.dash-hero__title { font-family: var(--font-serif); font-size: 38px; line-height: 1.15; letter-spacing: -0.02em; color: #fff; }
+.dash-main { max-width: 1180px; margin: 0 auto; padding: 48px 48px 96px; }
+.dash-main--narrow { max-width: 860px; }
+.dash-cols { display: grid; grid-template-columns: minmax(360px,1.5fr) minmax(280px,1fr); gap: 32px; align-items: start; }
+
+.card { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); }
+.flag-card { padding: 30px 32px; display: flex; flex-direction: column; gap: 14px; transition: box-shadow var(--t-fast); }
+.flag-card:hover { box-shadow: var(--shadow-lg); }
+.flag-card__match { font-size: var(--fs-label); font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--red); }
+.flag-card h3 { font-family: var(--font-serif); font-size: 26px; line-height: 1.25; letter-spacing: -0.01em; color: var(--ink); }
+.flag-card__meta { display: flex; gap: 24px; align-items: baseline; border-top: 1px solid var(--line-soft); padding-top: 14px; flex-wrap: wrap; }
+.mono-meta { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.save-btn { background: none; border: 0; font-family: var(--font-sans); font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; white-space: nowrap; color: var(--faint); transition: color var(--t-fast); padding: 0; }
+.save-btn:hover, .save-btn.is-saved { color: var(--red); }
+.src-link { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-left: auto; }
+.t-label { font-size: var(--fs-label); font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+
+.brief-panel { background: var(--navy); border-radius: var(--radius); padding: 28px 30px; display: flex; flex-direction: column; gap: 16px; }
+.brief-panel h3 { font-family: var(--font-serif); font-size: 22px; line-height: 1.3; color: #fff; }
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red-on-dark); display: inline-block; animation: sn-pulse 2.4s ease-in-out infinite; }
+
+.editor-note { background: var(--cream); border-left: 2px solid var(--red); padding: 18px 24px; display: flex; flex-direction: column; gap: 6px; }
+.page-head { display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid var(--line); padding-bottom: 22px; margin-bottom: 32px; }
+.page-head h1 { font-family: var(--font-serif); font-size: 38px; line-height: 1.15; letter-spacing: -0.02em; color: var(--ink); }
+
+.watch-grid { display: grid; grid-template-columns: minmax(320px,1fr) minmax(320px,1fr); gap: 32px; align-items: start; }
+.kw-chip { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--navy); background: var(--navy); color: #fff; padding: 8px 14px; font-size: 13px; }
+.kw-chip button { background: none; border: 0; color: var(--blue-soft); font-size: 15px; line-height: 1; cursor: pointer; padding: 0; }
+.kw-chip button:hover { color: #fff; }
+.follow-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; border-top: 1px solid var(--line-soft); padding: 13px 0; }
+.follow-btn { border: 1px solid var(--line); background: none; color: var(--body); padding: 7px 16px; font-family: var(--font-sans); font-size: 12px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; transition: all var(--t-fast); white-space: nowrap; }
+.follow-btn.is-on { border-color: var(--navy); background: var(--navy); color: #fff; }
+.activity-row { display: flex; gap: 16px; align-items: baseline; border-top: 1px solid var(--line-soft); padding-top: 12px; }
+.activity-row time { font-family: var(--font-mono); font-size: 11px; color: var(--faint); white-space: nowrap; }
+
+.account-sheet { display: grid; grid-template-columns: minmax(140px,180px) minmax(200px,1fr); gap: 16px 32px; align-items: baseline; }
+.account-sheet dt { font-size: var(--fs-label); font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+.account-sheet dd { margin: 0; font-size: 16px; color: var(--ink); }
+.fade-rise { animation: sn-rise var(--t-page) ease-out both; }
+
+@media (max-width: 1024px) { .dash-cols, .watch-grid { grid-template-columns: 1fr; } }
+@media (max-width: 768px) { .dash-main, .dash-hero__inner { padding-left: 20px; padding-right: 20px; } .dash-nav a:not(.avatar-link) { display: none; } }

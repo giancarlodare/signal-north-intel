@@ -29,6 +29,7 @@ export interface PortalItem {
   defenceRelevant: boolean;
   eventDate: string | null;       // publisher doc's published_on
   datePrecision: string | null;   // 'day' | 'month' (renderer honours it)
+  docType: string | null;         // drives the date TYPE label (§7.4)
   sourceUrl: string | null;       // provenance link
   vendorSoWhat: string | null;    // editor_note
   amountCad: number | null;
@@ -70,6 +71,7 @@ interface ItemRow {
       url: string | null;
       published_on: string | null;
       date_precision: string | null;
+      doc_type: string | null;
     } | Record<string, unknown>[] | null;
   } | Record<string, unknown>[] | null;
 }
@@ -84,7 +86,7 @@ export async function getBriefItems(
     .select(
       "id, rank, timing_path, headline_override, editor_note, included, " +
       "signals:lead_signal_id(title, amount_max_cad, defence_relevant, public_safety, " +
-      "organizations(canonical_name), documents(url, published_on, date_precision))",
+      "organizations(canonical_name), documents(url, published_on, date_precision, doc_type))",
     )
     .eq("brief_id", briefId)
     .eq("included", true)
@@ -114,6 +116,7 @@ export async function getBriefItems(
       defenceRelevant: Boolean(s?.defence_relevant),
       eventDate: (doc?.published_on as string) ?? null,
       datePrecision: (doc?.date_precision as string) ?? null,
+      docType: (doc?.doc_type as string) ?? null,
       sourceUrl: (doc?.url as string) ?? null,
       vendorSoWhat: it.editor_note ?? null,
       amountCad: (s?.amount_max_cad as number) ?? null,

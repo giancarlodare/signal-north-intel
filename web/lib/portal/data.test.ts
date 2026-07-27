@@ -15,6 +15,7 @@ function item(p: Partial<PortalItem>): PortalItem {
     defenceRelevant: p.defenceRelevant ?? false,
     eventDate: p.eventDate ?? null,
     datePrecision: p.datePrecision ?? null,
+    docType: p.docType ?? null,
     sourceUrl: p.sourceUrl ?? null,
     vendorSoWhat: p.vendorSoWhat ?? null,
     amountCad: p.amountCad ?? null,

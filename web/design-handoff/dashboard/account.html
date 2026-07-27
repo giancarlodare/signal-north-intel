@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en-CA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Account — Signal North Member</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../design-system/tokens.css">
+<link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+<header class="dash-header">
+  <div class="dash-header__inner">
+    <a href="index.html" class="brand">
+      <svg width="22" height="22" viewBox="0 0 96 96" aria-hidden="true"><path d="M48 4 L76 90 L48 72 L20 90 Z" fill="#ffffff"/></svg>
+      <span class="brand__text"><span class="brand__name">Signal North</span><span class="brand__sub">Member</span></span>
+    </a>
+    <span class="dash-header__spacer"></span>
+    <nav class="dash-nav">
+      <a href="index.html">Home</a>
+      <a href="brief.html">The Brief</a>
+      <a href="saved.html">Saved</a>
+      <a href="watching.html">Watching</a>
+      <a href="account.html" class="avatar-link" aria-current="page"><span class="avatar" data-field="member-initials">MC</span><span data-field="member-shortname">M. Chen</span></a>
+    </nav>
+  </div>
+</header>
+<div class="header-offset"></div>
+
+<main class="fade-rise">
+  <div class="dash-main dash-main--narrow" style="padding-top:64px; display:flex; flex-direction:column; gap:32px;">
+    <div class="page-head" style="flex-direction:row; justify-content:space-between; align-items:flex-end; gap:24px; flex-wrap:wrap;">
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <h1>Account</h1>
+        <span style="font-size:15px; color:var(--muted);">Your membership, kept simple.</span>
+      </div>
+      <button data-signout class="follow-btn" style="padding:10px 22px; font-weight:600; letter-spacing:0.1em;">Sign out</button>
+    </div>
+
+    <section class="card" style="padding:30px 32px;" data-testid="account-sheet">
+      <dl class="account-sheet" style="margin:0;">
+        <dt>Name</dt><dd data-field="name">Morgan Chen</dd>
+        <dt>Work email</dt><dd data-field="email">m.chen@northbridgesystems.ca</dd>
+        <dt>Organisation</dt><dd data-field="org">Northbridge Systems Inc.</dd>
+        <dt>Membership</dt><dd><span style="font-family:var(--font-serif); font-size:19px; color:var(--red);" data-field="tier">Founding Member</span> <span class="mono-meta" data-field="tier-terms">$5,000/yr · locked to July 2028</span></dd>
+        <dt>Sign-in</dt><dd>Passwordless, by email link</dd>
+      </dl>
+      <p style="font-size:13px; line-height:1.7; color:var(--faint); border-top:1px solid var(--line-soft); margin:22px 0 0; padding-top:16px;">To change your name, email, or organisation, write to <a href="mailto:briefings@signalnorth.ca" style="font-size:13px;">briefings@signalnorth.ca</a> and we will make the change same-day.</p>
+    </section>
+
+    <section style="background:var(--cream); border:1px solid var(--line); border-radius:var(--radius); padding:26px 30px; display:grid; grid-template-columns:minmax(260px,1fr) auto; gap:24px; align-items:center;" data-testid="coverage-request">
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <span class="t-label" style="font-size:11px; letter-spacing:0.16em;">Wish we covered something?</span>
+        <span style="font-size:15px; line-height:1.7;">Founding members shape what we build next. Tell us the organisations or categories you need.</span>
+      </div>
+      <a href="mailto:briefings@signalnorth.ca?subject=Coverage request" class="follow-btn" style="text-decoration:none; padding:11px 22px; font-weight:600; letter-spacing:0.1em;">Request coverage</a>
+    </section>
+  </div>
+</main>
+<script src="js/dashboard.js"></script>
+</body>
+</html>
