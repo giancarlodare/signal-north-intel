@@ -7,6 +7,10 @@
 // the operator decides the auth model.
 import { signOut } from "@/app/auth-actions";
 import { createClient } from "@/lib/supabase/server";
+import { billingEnabled } from "@/lib/billing/stripe";
+import { getMemberSubscription } from "@/lib/billing/stripe";
+import { TIER_LABELS } from "@/lib/billing/config";
+import { startCheckout } from "./billing-actions";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -14,11 +18,17 @@ export const metadata = {
   robots: { index: false, follow: false, nocache: true },
 };
 
-export default async function AccountPage() {
+export default async function AccountPage({
+  searchParams,
+}: {
+  searchParams: { checkout?: string };
+}) {
   const supabase = createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const billing = billingEnabled();
+  const sub = billing && user ? await getMemberSubscription(user.id) : null;
   const meta = (user?.user_metadata ?? {}) as Record<string, unknown>;
   const name = (meta["full_name"] as string) || "Not on file";
   const org = (meta["organisation"] as string) || (meta["org"] as string) || "Not on file";
@@ -78,11 +88,34 @@ export default async function AccountPage() {
             <dt>Organisation</dt>
             <dd data-field="org">{org}</dd>
             <dt>Membership</dt>
-            <dd data-placeholder="true">
-              <span className="mono-meta" data-field="tier-terms">
-                Provisioned manually; billing details arrive with the Stripe
-                stage.
-              </span>
+            <dd>
+              {sub ? (
+                <>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-serif)",
+                      fontSize: 19,
+                      color: "var(--red)",
+                    }}
+                    data-field="tier"
+                  >
+                    {TIER_LABELS[sub.tier]}
+                  </span>{" "}
+                  <span className="mono-meta" data-field="tier-terms">
+                    {sub.status}
+                    {sub.currentPeriodEnd
+                      ? ` · renews ${sub.currentPeriodEnd.slice(0, 10)}`
+                      : ""}
+                    {sub.testMode ? " · TEST MODE" : ""}
+                  </span>
+                </>
+              ) : (
+                <span className="mono-meta" data-field="tier-terms">
+                  {billing
+                    ? "No subscription on file."
+                    : "Provisioned manually; billing arrives when the Stripe stage is configured."}
+                </span>
+              )}
             </dd>
             <dt>Sign-in</dt>
             <dd>Email link, with a password fallback</dd>
@@ -107,6 +140,63 @@ export default async function AccountPage() {
             and we will make the change same-day.
           </p>
         </section>
+
+        {billing && !sub ? (
+          <section
+            className="card"
+            style={{
+              padding: "26px 30px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 14,
+            }}
+            data-testid="billing-checkout"
+          >
+            <span className="t-label">Set up billing (test mode)</span>
+            {searchParams.checkout === "cancelled" ? (
+              <span style={{ fontSize: 14, color: "var(--faint)" }}>
+                Checkout cancelled; nothing was charged.
+              </span>
+            ) : null}
+            {searchParams.checkout === "unavailable" ? (
+              <span style={{ fontSize: 14, color: "var(--faint)" }}>
+                That tier is not configured yet.
+              </span>
+            ) : null}
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              {(["founding", "pro", "weekly"] as const).map((t) => (
+                <form action={startCheckout} key={t}>
+                  <input type="hidden" name="tier" value={t} />
+                  <button
+                    className="follow-btn"
+                    type="submit"
+                    style={{ padding: "10px 18px" }}
+                  >
+                    {TIER_LABELS[t]}
+                  </button>
+                </form>
+              ))}
+            </div>
+            <span style={{ fontSize: 12, color: "var(--faint)" }}>
+              Test keys only: no real charge is possible while the portal is
+              dark.
+            </span>
+          </section>
+        ) : null}
+        {searchParams.checkout === "success" ? (
+          <section
+            style={{
+              border: "1px solid var(--line)",
+              background: "var(--cream)",
+              padding: "18px 24px",
+              fontSize: 14,
+            }}
+            data-testid="billing-success"
+          >
+            Checkout complete. Your membership updates here as Stripe
+            confirms it.
+          </section>
+        ) : null}
 
         <section
           style={{
