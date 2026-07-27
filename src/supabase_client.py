@@ -144,16 +144,23 @@ def get_documents_by_status(status: str, limit: int,
                             select: str = "id,title,doc_type,url,published_on,source_id,content",
                             doc_type: str | None = None,
                             doc_types: list | None = None,
-                            order: str | None = None) -> list:
+                            order: str | None = None,
+                            exclude_buyers: list | None = None) -> list:
     """Fetch captured/extracted/failed documents. Pass `doc_type` for one type or
     `doc_types` for several (PostgREST `in.(...)`); `order` is a PostgREST order
     clause (e.g. "published_on.desc.nullslast") to control which documents a
-    capped run processes first."""
+    capped run processes first. `exclude_buyers` drops documents whose
+    buyer_name is in the list (cost gate: a HELD buyer's history never enters
+    a drain); the or-clause keeps NULL-buyer documents in scope, since SQL
+    NOT IN would silently drop them."""
     params = {"select": select, "status": f"eq.{status}", "limit": limit}
     if doc_type:
         params["doc_type"] = f"eq.{doc_type}"
     elif doc_types:
         params["doc_type"] = f"in.({','.join(doc_types)})"
+    if exclude_buyers:
+        quoted = ",".join(f'"{b}"' for b in exclude_buyers)
+        params["or"] = f"(buyer_name.is.null,buyer_name.not.in.({quoted}))"
     if order:
         params["order"] = order
     resp = _request("GET", "documents", headers=_headers(), params=params)
