@@ -38,6 +38,9 @@ export interface MarketingStats {
   councils_ministries_departments: number;
   live_contracts_with_end_dates: number;
   live_contract_value_cad: number;
+  total_awards_on_record: number;
+  total_disclosed_value_cad: number;
+  sources_registered: number;
   earliest_award_year: number | null;
   years_of_award_history: number;
   documents_last_7_days: number;
@@ -66,6 +69,7 @@ export interface RecentAward {
   title: string;
   vendor: string | null;
   end_year: number | null;
+  awarded_year: number | null;
 }
 
 export const getMarketingStats = unstable_cache(

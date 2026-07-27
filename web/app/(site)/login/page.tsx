@@ -1,12 +1,10 @@
 // Member entrance (Claude Design handoff: marketing-site/login.html).
 //
-// AUTH-MODEL DIVERGENCE (flagged, operator decision pending): the handoff
-// designs a passwordless magic-link flow; stage 1 built email + password
-// (signInWithPassword), and the operator signs in here daily. This page keeps
-// the designed shell but wires the REAL password flow (email + password
-// fields, same server action as before). Switching to magic-link is a
-// separate approved change, not a silent one.
-import { signIn } from "./actions";
+// DUAL-MODE AUTH (operator decision 2026-07-27): the designed magic-link
+// flow is the default; password sign-in stays fully working underneath
+// (vendor/gov mail filters can eat the link, and the operator signs in
+// daily). The sent state never confirms whether an address is a member.
+import { sendMagicLink, signIn } from "./actions";
 import SiteHeader, { BrandMark } from "@/components/site/SiteHeader";
 
 export const dynamic = "force-dynamic";
@@ -15,8 +13,9 @@ export const metadata = { title: "Log in — Signal North" };
 export default function LoginPage({
   searchParams,
 }: {
-  searchParams: { error?: string };
+  searchParams: { error?: string; sent?: string };
 }) {
+  const sent = searchParams.sent === "1";
   return (
     <>
       <SiteHeader />
@@ -51,49 +50,127 @@ export default function LoginPage({
                 color: "var(--blue-soft)",
               }}
             >
-              Sign in with your work email and password.
+              Enter your work email and we will send a sign-in link.
             </p>
           </div>
-          <form
-            action={signIn}
-            data-form="login"
-            style={{ display: "flex", flexDirection: "column", gap: 14 }}
-          >
-            {searchParams.error ? (
-              <p
+
+          {searchParams.error ? (
+            <p
+              style={{
+                margin: 0,
+                fontSize: 14,
+                lineHeight: 1.6,
+                color: "var(--red-on-dark)",
+                textAlign: "center",
+              }}
+            >
+              {searchParams.error}
+            </p>
+          ) : null}
+
+          {sent ? (
+            <div
+              data-login-sent
+              style={{
+                border: "1px solid var(--navy-line)",
+                background: "var(--navy-panel)",
+                padding: "26px 28px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+                textAlign: "center",
+              }}
+            >
+              <span
                 style={{
-                  margin: 0,
-                  fontSize: 14,
-                  lineHeight: 1.6,
-                  color: "var(--red-on-dark)",
-                  textAlign: "center",
+                  fontFamily: "var(--font-serif)",
+                  fontSize: 21,
+                  color: "#fff",
                 }}
               >
-                {searchParams.error}
-              </p>
-            ) : null}
-            <input
-              type="email"
-              name="email"
-              placeholder="name@organisation.ca"
-              autoComplete="username"
-              required
-            />
-            <input
-              type="password"
-              name="password"
-              placeholder="Password"
-              autoComplete="current-password"
-              required
-            />
-            <button
-              className="btn btn--primary"
-              type="submit"
-              style={{ width: "100%" }}
+                Check your email.
+              </span>
+              <span
+                style={{
+                  fontSize: 14,
+                  lineHeight: 1.7,
+                  color: "var(--blue-soft)",
+                }}
+              >
+                If that address belongs to a member, a sign-in link is on its
+                way. It expires shortly, so use it soon.
+              </span>
+            </div>
+          ) : (
+            <form
+              action={sendMagicLink}
+              data-form="login"
+              style={{ display: "flex", flexDirection: "column", gap: 14 }}
             >
-              Sign in
-            </button>
-          </form>
+              <input
+                type="email"
+                name="email"
+                placeholder="name@organisation.ca"
+                autoComplete="username"
+                required
+              />
+              <button
+                className="btn btn--primary"
+                type="submit"
+                style={{ width: "100%" }}
+              >
+                Send sign-in link
+              </button>
+            </form>
+          )}
+
+          <details style={{ textAlign: "center" }} data-testid="password-fallback">
+            <summary
+              style={{
+                cursor: "pointer",
+                listStyle: "none",
+                fontSize: 12,
+                fontWeight: 600,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "var(--blue-dim)",
+              }}
+            >
+              Use a password instead
+            </summary>
+            <form
+              action={signIn}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 14,
+                paddingTop: 14,
+              }}
+            >
+              <input
+                type="email"
+                name="email"
+                placeholder="name@organisation.ca"
+                autoComplete="username"
+                required
+              />
+              <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                autoComplete="current-password"
+                required
+              />
+              <button
+                className="btn btn--primary"
+                type="submit"
+                style={{ width: "100%" }}
+              >
+                Sign in
+              </button>
+            </form>
+          </details>
+
           <div
             style={{
               borderTop: "1px solid var(--navy-mid)",

@@ -102,3 +102,14 @@ test("marketing site: public only when the flag is on", () => {
     "to-login"
   );
 });
+
+test("/auth/confirm reachable unauthenticated in every flag state", () => {
+  assert.equal(
+    gate({ enabled: false, authenticated: false, role: "member", path: "/auth/confirm" }),
+    "allow"
+  );
+  assert.equal(
+    gate({ enabled: true, authenticated: false, role: "member", path: "/auth/confirm" }),
+    "allow"
+  );
+});

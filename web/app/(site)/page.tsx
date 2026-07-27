@@ -353,7 +353,11 @@ export default async function SiteHome() {
                               </span>
                             </div>
                             <span className="caps__row-val">
-                              {a.end_year ? `Ends ${a.end_year}` : "End not disclosed"}
+                              {a.end_year
+                                ? `Ends ${a.end_year}`
+                                : a.awarded_year
+                                  ? `Awarded ${a.awarded_year}`
+                                  : "Date not disclosed"}
                             </span>
                           </div>
                         ))

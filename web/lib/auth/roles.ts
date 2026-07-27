@@ -99,6 +99,9 @@ export function gate(args: {
   const { enabled, authenticated, role, path } = args;
   if (!authenticated) {
     if (path === "/login") return "allow";
+    // Magic-link landing: must be reachable unauthenticated in every flag
+    // state, or the emailed link could never establish a session.
+    if (path === "/auth/confirm") return "allow";
     // Marketing site: public once the flag is on; dark (to-login) before.
     if (enabled && isSitePath(path)) return "allow";
     return "to-login";

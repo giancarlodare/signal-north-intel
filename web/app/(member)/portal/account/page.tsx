@@ -85,7 +85,7 @@ export default async function AccountPage() {
               </span>
             </dd>
             <dt>Sign-in</dt>
-            <dd>Email and password</dd>
+            <dd>Email link, with a password fallback</dd>
           </dl>
           <p
             style={{

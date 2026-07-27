@@ -19,7 +19,7 @@ export interface CoverageStatusCell {
 export const COVERAGE_STATUS: CoverageStatusCell[] = [
   {
     label: "On the record today",
-    text: "Ontario police services, boards and councils in the register beside this, plus provincial programs",
+    text: "The police services, boards, councils and ministries in the register beside this, provincial and federal",
     tone: "firm",
   },
   {

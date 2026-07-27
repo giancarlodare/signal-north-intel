@@ -17,8 +17,12 @@ export const metadata = { title: "About — Signal North" };
 // ISR: stats refresh every 30 minutes without a redeploy.
 export const revalidate = 1800;
 
+// Only substantiated figures render (audit 2026-07-27): the live-contract
+// cells join the strip once the end-date extraction backlog gives them a
+// real value; until then the strip leads with what the record genuinely
+// holds.
 function statCells(s: MarketingStats) {
-  return [
+  const cells = [
     {
       value: String(s.police_and_boards),
       label: "Police services and oversight boards",
@@ -30,14 +34,14 @@ function statCells(s: MarketingStats) {
       note: "The bodies that fund public safety and run the grant programs it draws on, federal and provincial.",
     },
     {
-      value: formatCountFloor(s.live_contracts_with_end_dates),
-      label: "Contracts held, with end dates",
-      note: "Each one carrying its supplier, its disclosed value, and the date it comes back to market.",
+      value: String(s.sources_registered),
+      label: "Public sources collected continuously",
+      note: "Portals, boards, newsrooms, registers and legislatures, each linked to its publisher.",
     },
     {
-      value: formatCadCompact(s.live_contract_value_cad),
-      label: "In contract value on the record",
-      note: "The disclosed value of every live agreement we hold.",
+      value: formatCadCompact(s.total_disclosed_value_cad),
+      label: "In disclosed contract value on the record",
+      note: "The disclosed value of the awards we hold, across the full award history.",
     },
     {
       value: String(s.years_of_award_history),
@@ -50,6 +54,14 @@ function statCells(s: MarketingStats) {
       note: "Agendas, minutes, budgets, staff reports, notices and registers, collected the day they publish.",
     },
   ];
+  if (s.live_contracts_with_end_dates > 0) {
+    cells.splice(3, 0, {
+      value: formatCountFloor(s.live_contracts_with_end_dates),
+      label: "Contracts held, with end dates",
+      note: "Each one carrying its supplier, its disclosed value, and the date it comes back to market.",
+    });
+  }
+  return cells;
 }
 
 const PRINCIPLES = [

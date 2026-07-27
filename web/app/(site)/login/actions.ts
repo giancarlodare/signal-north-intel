@@ -1,7 +1,38 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { roleFromUser } from "@/lib/auth/roles";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+
+// Dual-mode auth (operator decision 2026-07-27): magic link is the designed
+// default for members; password stays fully working underneath because
+// vendor/gov mail filters can eat the link and the operator signs in daily.
+
+// Where the emailed link lands (app/auth/confirm/route.ts).
+function confirmUrl(): string {
+  const h = headers();
+  const origin =
+    h.get("origin") ??
+    `https://${h.get("x-forwarded-host") ?? h.get("host") ?? ""}`;
+  return `${origin}/auth/confirm`;
+}
+
+export async function sendMagicLink(formData: FormData) {
+  const email = String(formData.get("email") ?? "").trim();
+  if (email) {
+    const supabase = createClient();
+    // shouldCreateUser: false — founding members are provisioned manually;
+    // a link request must never create an account. The result is ignored on
+    // purpose (no user enumeration): unknown addresses get the same "if that
+    // address belongs to a member" message as real ones.
+    await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: confirmUrl(), shouldCreateUser: false },
+    });
+  }
+  redirect("/login?sent=1");
+}
 
 export async function signIn(formData: FormData) {
   const email = String(formData.get("email") ?? "");
@@ -13,5 +44,10 @@ export async function signIn(formData: FormData) {
   if (error) {
     redirect("/login?error=" + encodeURIComponent(error.message));
   }
-  redirect("/corpus");
+  // Land each role on its home surface (middleware would bounce a member off
+  // /corpus anyway; this just skips the extra hop).
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  redirect(roleFromUser(user) === "member" ? "/portal" : "/corpus");
 }

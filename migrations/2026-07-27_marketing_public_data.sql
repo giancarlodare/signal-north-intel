@@ -55,6 +55,16 @@ as $$
       select coalesce(sum(ca.value_cad), 0) from contract_awards ca
        where coalesce(ca.final_end_on, ca.end_on) >= current_date
          and ca.value_cad is not null),
+    -- Audit 2026-07-27: 0 of 548 awards carry an end date today (end-date
+    -- extraction backlog), so the live-only figures above render only once
+    -- that backlog lands; the totals below are the substantiated claims.
+    'total_awards_on_record', (
+      select count(*) from contract_awards),
+    'total_disclosed_value_cad', (
+      select coalesce(sum(ca.value_cad), 0) from contract_awards ca
+       where ca.value_cad is not null),
+    'sources_registered', (
+      select count(*) from sources),
     'earliest_award_year', (
       select extract(year from min(ca.awarded_on))::int from contract_awards ca
        where ca.awarded_on is not null),
@@ -139,13 +149,17 @@ stable
 security definer
 set search_path = public
 as $$
+  -- created_at confirmed present (audit 2026-07-27), so "recently added"
+  -- orders by when the record entered the corpus, which is what the label
+  -- claims. End dates are absent today (extraction backlog): the display
+  -- falls back to the award year, never a fabricated end.
   select coalesce(jsonb_agg(x), '[]'::jsonb) from (
     select coalesce(nullif(trim(ca.description), ''), 'Contract award') as title,
            ca.vendor_name as vendor,
-           extract(year from coalesce(ca.final_end_on, ca.end_on))::int as end_year
+           extract(year from coalesce(ca.final_end_on, ca.end_on))::int as end_year,
+           extract(year from ca.awarded_on)::int as awarded_year
       from contract_awards ca
-     where coalesce(ca.final_end_on, ca.end_on) is not null
-     order by ca.awarded_on desc nulls last
+     order by ca.created_at desc
      limit 3
   ) x;
 $$;
