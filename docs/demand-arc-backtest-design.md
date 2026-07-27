@@ -277,6 +277,34 @@ basis. The operator's linking doctrine, from that finding:
    Uncategorized-scope clusters are incoherent by construction and are
    excluded until categorized.
 
+## 0g. Confirmation pairs vs long-lag observations (operator doctrine, 2026-07-27)
+
+The pilot's first confirm pass surfaced a distinction the engine MUST
+report, or it will mistake n-growth for predictive power. Two kinds of
+transition observation carry very different value:
+
+- **CONFIRMATION PAIRS (~0-day, arc-validating).** A board approves an
+  item in the SAME meeting (or same document) where it appears, so the
+  agenda->minutes or same-document pair measures a near-zero lag. These
+  are REAL links and they grow n, but they carry NO predictive lead time.
+  They validate that the arc machinery works; they do not feed a sellable
+  prediction.
+- **LONG-LAG OBSERVATIONS (the sellable signal).** A transition measured
+  ACROSS separate documents over real calendar time (a budget line in one
+  cycle, an award in a later one; a grant receipt and its later
+  program conclusion). These carry the 6-18 month lead time the product
+  sells on.
+
+Board documents are RICH in confirmation pairs and THIN in long-lag arcs;
+the long lags live in budget-to-award spans (the rhythm groups) and in
+cross-document instrument threads (the T4 "Countering Hate" shape). The
+engine therefore reports the two SEPARATELY: a cell's n is split into
+(confirmation_n, longlag_n), and the significance gate and any published
+horizon are computed on the LONG-LAG observations only. A cell rich in
+0-day pairs but empty of long-lag spans is honestly "pending" no matter
+how high its raw n. Never let confirmation-pair volume dress a cell as
+predictive.
+
 ## 1. What it computes
 
 For each award, walk BACKWARD along the procurement_id spine to the earliest
