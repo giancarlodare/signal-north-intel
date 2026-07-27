@@ -88,6 +88,19 @@ MUNICIPALITIES = [
     {"org_key": "kitchener", "subdomain": "kitchener", "name": "City of Kitchener"},
     {"org_key": "vaughan", "subdomain": "vaughan", "name": "City of Vaughan"},
     {"org_key": "halton", "subdomain": "haltonregion", "name": "Halton Region"},
+    # Tier 3 (Phase 1 of the coverage program, operator go 2026-07-27):
+    # provenance passed in the operator's browser 2026-07-26; these FOUR
+    # cleared the CI validation bars in dry-run 30305005716 (ref_parsed and
+    # date_parsed 100%, awarded history present). Collection self-maintains
+    # on daily-tenders once the seed migration is pasted.
+    {"org_key": "stcatharines", "subdomain": "stcatharines", "name": "City of St. Catharines"},
+    {"org_key": "thunderbay", "subdomain": "thunderbay", "name": "City of Thunder Bay"},
+    {"org_key": "whitby", "subdomain": "whitby", "name": "Town of Whitby"},
+    {"org_key": "burlington", "subdomain": "burlington", "name": "City of Burlington"},
+    # HELD below bar (same run), diagnose-and-extend (never enable-and-hope):
+    #  - niagarafalls: OPEN grid 0 rows (dead-grid shape, same class as
+    #    markham/niagararegion).
+    #  - sarnia: OPEN grid 0 rows (raised the loud-failure guard).
     # FOUR are HELD below bar (same run), per diagnose-and-extend (never
     # enable-and-hope); enabling any of these now would loud-fail daily:
     #  - markham: OPEN grid 0 rows (dead grid; gated or tenant variant).
