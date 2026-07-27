@@ -277,6 +277,31 @@ basis. The operator's linking doctrine, from that finding:
    Uncategorized-scope clusters are incoherent by construction and are
    excluded until categorized.
 
+## 0h. Actor-vs-publisher attribution (banked design question, operator 2026-07-27)
+
+The corpus contamination audit (correctness gap, R3) surfaced a distinction
+to RESOLVE AS WE SCALE, not now: when a board agenda discusses ANOTHER
+entity's business (a Greater Sudbury board agenda summarizing a SOLGEN budget
+consultation, an OPP-managed tool, a City of Mississauga service contract),
+the extractor correctly attributes the signal to the ACTOR (SOLGEN, OPP,
+Mississauga), not the publishing board. That actor attribution is right. The
+open question is what the signal means for DEMAND RHYTHM:
+
+- Option A: it feeds the OTHER entity's demand rhythm (a real SOLGEN signal,
+  wherever it was published).
+- Option B: it is AMBIENT DISCUSSION in the board's own rhythm (the board
+  noting external context, not the actor's own procurement intent).
+
+The two are not always the same: a board minute recording that SOLGEN
+announced funding is weaker evidence of SOLGEN's procurement demand than
+SOLGEN's own budget document would be. Getting this wrong either inflates an
+entity's rhythm with second-hand mentions or drops real cross-published
+signal. Decide the rule (likely: keep the actor attribution but weight/flag
+second-hand mentions by publisher distance) when the multi-entity corpus is
+large enough to measure the effect. Banked; not solved now. Only the one true
+mis-attribution (751bc4fb, WRPS demand filed under Peel) is fixed in this
+pass.
+
 ## 0g. Confirmation pairs vs long-lag observations (operator doctrine, 2026-07-27)
 
 The pilot's first confirm pass surfaced a distinction the engine MUST
