@@ -1,44 +1,56 @@
 // About page (Claude Design handoff: marketing-site/about.html).
-// DATA-PLUMBING GAP (flagged, expected): the stats strip figures are handoff
-// placeholders (the $4.1B and every count), marked data-placeholder; wire to
-// measured corpus numbers before the flag flips.
+// LIVE DATA RULE (operator 2026-07-27): the stats strip renders MEASURED
+// corpus numbers via marketing_stats(), or is omitted entirely; the
+// handoff's placeholder figures ($4.1B etc.) never render. Note wording is
+// kept defensible: no "every service in Ontario" claims beyond what the
+// register shows.
 import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
+import {
+  getMarketingStats,
+  formatCadCompact,
+  formatCountFloor,
+  type MarketingStats,
+} from "@/lib/marketing/data";
 
 export const metadata = { title: "About — Signal North" };
+// ISR: stats refresh every 30 minutes without a redeploy.
+export const revalidate = 1800;
 
-const STATS = [
-  {
-    value: "44",
-    label: "Police services and oversight boards",
-    note: "Every municipal and regional service in Ontario, the provincial force, and the boards that approve their spending.",
-  },
-  {
-    value: "112",
-    label: "Councils, ministries and departments",
-    note: "The bodies that fund public safety and run the grant programs it draws on, federal and provincial.",
-  },
-  {
-    value: "2,900+",
-    label: "Contracts held, with end dates",
-    note: "Each one carrying its supplier, its disclosed value, and the date it comes back to market.",
-  },
-  {
-    value: "$4.1B",
-    label: "In contract value on the record",
-    note: "The disclosed value of every live agreement we hold, from patrol fleets to province-wide radio.",
-  },
-  {
-    value: "14",
-    label: "Years of disclosed award history",
-    note: "Enough depth to measure how long each organisation actually takes between decision and tender.",
-  },
-  {
-    value: "1,200+",
-    label: "Public documents read each week",
-    note: "Agendas, minutes, budgets, staff reports, notices and registers, collected the day they publish.",
-  },
-];
+function statCells(s: MarketingStats) {
+  return [
+    {
+      value: String(s.police_and_boards),
+      label: "Police services and oversight boards",
+      note: "Municipal and regional services, the provincial force, and the boards that approve their spending.",
+    },
+    {
+      value: String(s.councils_ministries_departments),
+      label: "Councils, ministries and departments",
+      note: "The bodies that fund public safety and run the grant programs it draws on, federal and provincial.",
+    },
+    {
+      value: formatCountFloor(s.live_contracts_with_end_dates),
+      label: "Contracts held, with end dates",
+      note: "Each one carrying its supplier, its disclosed value, and the date it comes back to market.",
+    },
+    {
+      value: formatCadCompact(s.live_contract_value_cad),
+      label: "In contract value on the record",
+      note: "The disclosed value of every live agreement we hold.",
+    },
+    {
+      value: String(s.years_of_award_history),
+      label: "Years of disclosed award history",
+      note: "Enough depth to measure how long each organisation actually takes between decision and tender.",
+    },
+    {
+      value: formatCountFloor(s.documents_last_7_days),
+      label: "Public documents read this week",
+      note: "Agendas, minutes, budgets, staff reports, notices and registers, collected the day they publish.",
+    },
+  ];
+}
 
 const PRINCIPLES = [
   { num: "01", title: "Human judgment", body: "Every projection carries the name of the analyst who reviewed it." },
@@ -47,7 +59,8 @@ const PRINCIPLES = [
   { num: "04", title: "Neutral by design", body: "No one can pay to change what the record shows." },
 ];
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const stats = await getMarketingStats();
   return (
     <>
       <SiteHeader current="about" />
@@ -78,19 +91,21 @@ export default function AboutPage() {
               neutral record.
             </p>
           </div>
-          <div className="stats" data-placeholder="true">
-            <div className="container stats__grid">
-              {STATS.map((s) => (
-                <div className="stat" key={s.label}>
-                  <span className="stat__value" data-field="value">
-                    {s.value}
-                  </span>
-                  <span className="stat__label">{s.label}</span>
-                  <span className="stat__note">{s.note}</span>
-                </div>
-              ))}
+          {stats ? (
+            <div className="stats">
+              <div className="container stats__grid">
+                {statCells(stats).map((s) => (
+                  <div className="stat" key={s.label}>
+                    <span className="stat__value" data-field="value">
+                      {s.value}
+                    </span>
+                    <span className="stat__label">{s.label}</span>
+                    <span className="stat__note">{s.note}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : null}
         </section>
 
         <section

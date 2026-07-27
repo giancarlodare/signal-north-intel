@@ -5,14 +5,23 @@
 // review queue; middleware sends everyone else to /login). With the flag on,
 // it renders the designed marketing home.
 //
-// DATA-PLUMBING GAP (flagged, expected): the "Closing soon" live panel, the
-// capabilities rows, and every figure below are the handoff's PLACEHOLDER
-// content, marked data-placeholder. They must be wired to live records
-// before the flag flips; the README of the handoff says the same.
+// LIVE DATA RULE (operator 2026-07-27): time-sensitive content renders from
+// the live record or the section is OMITTED, never static. Wired here: the
+// "Closing soon" panel (real in-market deadlines), the coverage register
+// (real on-the-record organizations), and the market-record capability rows
+// (real recent awards). The remaining capability panels (02-06) are handoff
+// sample content pending an operator call (wire, label illustrative, or
+// remove); they stay marked data-placeholder.
 import { redirect } from "next/navigation";
 import { portalEnabled } from "@/lib/auth/roles";
 import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
+import {
+  getClosingSoon,
+  getMarketingCoverage,
+  getRecentAwards,
+} from "@/lib/marketing/data";
+import { COVERAGE_STATUS } from "@/lib/marketing/coverage-status";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -20,71 +29,30 @@ export const metadata = {
     "Signal North — The intelligence network for Canadian public safety procurement",
 };
 
-type LiveRow = {
-  kind: string;
-  title: string;
-  days: string;
-  pct: string;
-  note: string;
-  hot?: boolean;
-};
+// The urgency bar: fuller as the deadline nears, over the 90-day window.
+function barWidth(daysLeft: number): string {
+  const pct = Math.round((1 - daysLeft / 90) * 100);
+  return `${Math.min(95, Math.max(5, pct))}%`;
+}
 
-// Handoff placeholder rows (data-placeholder until live wiring lands).
-const LIVE_ROWS: LiveRow[] = [
-  {
-    kind: "Grant · closing next",
-    title: "Provincial equipment renewal stream",
-    days: "18 days",
-    pct: "80%",
-    note:
-      "Open to municipal and regional services for radio, camera and fleet renewal. Eleven Ontario services drew on the last round.",
-    hot: true,
-  },
-  {
-    kind: "Tender",
-    title: "Waterloo Regional Police, digital forensics tooling",
-    days: "22 days",
-    pct: "76%",
-    note:
-      "Request for quotation posted 14 July. Estimated at $2.4M over five years, no incumbent disclosed.",
-  },
-  {
-    kind: "Grant",
-    title: "Federal interoperability program",
-    days: "41 days",
-    pct: "54%",
-    note:
-      "Guidelines published; applications expected to open in the fourth quarter for cross-service radio projects.",
-  },
-  {
-    kind: "Tender",
-    title: "City of Hamilton, signal controller renewal",
-    days: "48 days",
-    pct: "47%",
-    note:
-      "Carried in the 2027 capital forecast and now at market. Municipal, but the same buyers and the same cycle.",
-  },
-  {
-    kind: "Grant",
-    title: "Regional community safety fund",
-    days: "63 days",
-    pct: "30%",
-    note:
-      "Allocation awaited. Historically funds analyst posts and evidence-management licensing rather than hardware.",
-  },
-];
+// "Waterloo Regional Police, digital forensics tooling" composition, without
+// doubling a buyer the title already names.
+function rowTitle(buyer: string | null, title: string): string {
+  if (!buyer) return title;
+  return title.toLowerCase().includes(buyer.toLowerCase())
+    ? title
+    : `${buyer}, ${title}`;
+}
 
 type CapRow = { title: string; meta: string; val: string };
+// Capability 01 rows are LIVE (recent awards from the record); 02-06 below
+// are handoff sample content pending the operator's wire/label/remove call.
 const CAPS: { id: string; name: string; label: string; rows: CapRow[] }[] = [
   {
     id: "01",
     name: "The market record",
     label: "Recently added",
-    rows: [
-      { title: "Digital evidence management, 5-yr", meta: "Axon Public Safety", val: "Ends 2030" },
-      { title: "Patrol vehicle standing offer", meta: "Ford of Canada", val: "Ends 2027" },
-      { title: "Radio infrastructure maintenance", meta: "Motorola Solutions", val: "Ends 2029" },
-    ],
+    rows: [],
   },
   {
     id: "02",
@@ -138,45 +106,9 @@ const CAPS: { id: string; name: string; label: string; rows: CapRow[] }[] = [
   },
 ];
 
-const COVERAGE: { id: string; tab: string; names: string[] }[] = [
-  {
-    id: "services",
-    tab: "Police services",
-    names: [
-      "Barrie Police Service", "Belleville Police Service", "Brantford Police Service",
-      "Durham Regional Police Service", "Greater Sudbury Police Service", "Guelph Police Service",
-      "Halton Regional Police Service", "Hamilton Police Service", "Kingston Police",
-      "London Police Service", "Niagara Regional Police Service", "Ontario Provincial Police",
-      "Ottawa Police Service", "Peel Regional Police", "Peterborough Police Service",
-      "Sarnia Police Service", "Thunder Bay Police Service", "Toronto Police Service",
-      "Waterloo Regional Police Service", "Windsor Police Service", "York Regional Police",
-    ],
-  },
-  {
-    id: "oversight",
-    tab: "Boards and councils",
-    names: [
-      "City of Hamilton Council", "City of Kingston Council", "City of London Council",
-      "City of Ottawa Council", "City of Toronto Council", "City of Windsor Council",
-      "Durham Regional Council", "Halton Regional Council", "Hamilton Police Services Board",
-      "Niagara Regional Council", "Ottawa Police Service Board", "Peel Regional Council",
-      "Peel Police Services Board", "Region of Waterloo Council", "Toronto Police Service Board",
-      "Waterloo Regional Police Services Board", "York Regional Council",
-      "York Regional Police Services Board",
-    ],
-  },
-  {
-    id: "government",
-    tab: "Ministries and departments",
-    names: [
-      "Infrastructure Canada", "Ontario Ministry of Finance",
-      "Ontario Ministry of Municipal Affairs and Housing",
-      "Ontario Ministry of the Solicitor General", "Ontario Ministry of Transportation",
-      "Ontario Provincial Legislature, Hansard", "Public Safety Canada",
-      "Public Services and Procurement Canada", "Treasury Board of Canada Secretariat",
-    ],
-  },
-];
+// Coverage tabs are populated from the live record (marketing_coverage RPC);
+// the whole register section is omitted when the data is unavailable, so the
+// transparency feature can never show a stale list.
 
 const ARC_STEPS = [
   { kind: "On the record", date: "Nov 2025", title: "A news story", body: "Regional press reports the camera fleet is out of warranty, raised at a board meeting." },
@@ -185,9 +117,22 @@ const ARC_STEPS = [
   { kind: "On the record", date: "Jul 2026", title: "Vendors invited in", body: "An information session is posted to the regional purchasing portal." },
 ];
 
-export default function SiteHome() {
+export default async function SiteHome() {
   // Dark: exactly the old app/page.tsx behavior for signed-in users.
   if (!portalEnabled()) redirect("/corpus");
+
+  const [closing, coverage, recentAwards] = await Promise.all([
+    getClosingSoon(),
+    getMarketingCoverage(),
+    getRecentAwards(),
+  ]);
+  const coverageTabs = coverage
+    ? [
+        { id: "services", tab: "Police services", names: coverage.services },
+        { id: "oversight", tab: "Boards and councils", names: coverage.oversight },
+        { id: "government", tab: "Ministries and departments", names: coverage.government },
+      ].filter((t) => t.names.length > 0)
+    : [];
 
   return (
     <>
@@ -217,86 +162,84 @@ export default function SiteHome() {
                 </a>
               </div>
             </div>
-            <aside
-              className="live-panel fade-rise"
-              aria-label="Closing soon"
-              data-placeholder="true"
-            >
-              <div className="live-panel__head">
-                <span className="live-panel__title">Closing soon</span>
-                <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span className="live-dot"></span>
-                  <span
-                    className="t-mono"
-                    style={{
-                      fontSize: 11,
-                      letterSpacing: "0.12em",
-                      color: "var(--blue-mist)",
-                    }}
-                  >
-                    LIVE
-                  </span>
-                </span>
-              </div>
-              {LIVE_ROWS.map((row, i) => (
-                <div
-                  key={i}
-                  className={`live-row${row.hot ? " live-row--hot is-open" : ""}`}
-                  data-testid={`live-row-${i}`}
-                >
-                  <div className="live-row__grid">
-                    <div
+            {closing ? (
+              <aside className="live-panel fade-rise" aria-label="Closing soon">
+                <div className="live-panel__head">
+                  <span className="live-panel__title">Closing soon</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span className="live-dot"></span>
+                    <span
+                      className="t-mono"
                       style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 5,
-                        minWidth: 0,
+                        fontSize: 11,
+                        letterSpacing: "0.12em",
+                        color: "var(--blue-mist)",
                       }}
                     >
-                      <span className="live-row__kind">{row.kind}</span>
-                      <span className="live-row__title" data-field="title">
-                        {row.title}
-                      </span>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 7,
-                        alignItems: "flex-end",
-                      }}
-                    >
-                      <span className="live-row__days" data-field="days">
-                        {row.days}
-                      </span>
-                      <span className="live-row__bar">
-                        <i style={{ width: row.pct }}></i>
-                      </span>
-                    </div>
-                  </div>
-                  <span className="live-row__note" data-field="note">
-                    {row.note}
+                      LIVE
+                    </span>
                   </span>
                 </div>
-              ))}
-              <div className="live-panel__foot">
-                <span style={{ fontSize: 13, color: "var(--blue-dim)" }}>
-                  Five of 34 open this week.
-                </span>
-                <a
-                  href="/contact"
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    letterSpacing: "0.14em",
-                    textTransform: "uppercase",
-                    color: "#fff",
-                  }}
-                >
-                  Request access →
-                </a>
-              </div>
-            </aside>
+                {closing.rows.map((row, i) => (
+                  <div
+                    key={i}
+                    className={`live-row${i === 0 ? " live-row--hot" : ""}`}
+                    data-testid={`live-row-${i}`}
+                  >
+                    <div className="live-row__grid">
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 5,
+                          minWidth: 0,
+                        }}
+                      >
+                        <span className="live-row__kind">
+                          {i === 0 ? `${row.kind} · closing next` : row.kind}
+                        </span>
+                        <span className="live-row__title" data-field="title">
+                          {rowTitle(row.buyer, row.title)}
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 7,
+                          alignItems: "flex-end",
+                        }}
+                      >
+                        <span className="live-row__days" data-field="days">
+                          {row.days_left} {row.days_left === 1 ? "day" : "days"}
+                        </span>
+                        <span className="live-row__bar">
+                          <i style={{ width: barWidth(row.days_left) }}></i>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div className="live-panel__foot">
+                  <span style={{ fontSize: 13, color: "var(--blue-dim)" }}>
+                    {closing.rows.length} of {closing.total_open} open in the
+                    next 90 days.
+                  </span>
+                  <a
+                    href="/contact"
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      letterSpacing: "0.14em",
+                      textTransform: "uppercase",
+                      color: "#fff",
+                    }}
+                  >
+                    Request access →
+                  </a>
+                </div>
+              </aside>
+            ) : null}
           </div>
         </section>
 
@@ -387,6 +330,41 @@ export default function SiteHome() {
                       <h3 className="t-heading">{cap.name}</h3>
                       <span className="caps__detail-label">{cap.label}</span>
                     </div>
+                    {cap.id === "01" ? (
+                      recentAwards ? (
+                        recentAwards.map((a, i) => (
+                          <div className="caps__row" key={i}>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 4,
+                                minWidth: 0,
+                                flex: "1 1 220px",
+                              }}
+                            >
+                              <span className="caps__row-title">
+                                {a.title.length > 70
+                                  ? `${a.title.slice(0, 70)}…`
+                                  : a.title}
+                              </span>
+                              <span className="caps__row-meta">
+                                {a.vendor ?? "Vendor not disclosed"}
+                              </span>
+                            </div>
+                            <span className="caps__row-val">
+                              {a.end_year ? `Ends ${a.end_year}` : "End not disclosed"}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="caps__row" data-placeholder="true">
+                          <span className="caps__row-title">
+                            Recent additions publish here from the live record.
+                          </span>
+                        </div>
+                      )
+                    ) : null}
                     {cap.rows.map((row, i) => (
                       <div className="caps__row" key={i}>
                         <div
@@ -411,70 +389,68 @@ export default function SiteHome() {
           </div>
         </section>
 
-        {/* 03 COVERAGE */}
-        <section className="band band--paper" style={{ borderTop: "1px solid var(--line)" }}>
-          <div className="container">
-            <div className="section-head">
-              <span className="section-head__num">03</span>
-              <h2 className="t-title">Coverage you can check, name by name.</h2>
-              <span className="section-head__note">
-                Every organisation on the record, and the ones that are not yet.
-              </span>
-            </div>
-            <div className="coverage">
-              <div className="coverage__tabs" data-tabs="coverage">
-                {COVERAGE.map((c, i) => (
-                  <button
-                    key={c.id}
-                    className={`tab${i === 0 ? " is-active" : ""}`}
-                    data-panel={c.id}
-                  >
-                    {c.tab}
-                  </button>
-                ))}
+        {/* 03 COVERAGE (live register; omitted entirely when unavailable) */}
+        {coverageTabs.length > 0 ? (
+          <section
+            className="band band--paper"
+            style={{ borderTop: "1px solid var(--line)" }}
+          >
+            <div className="container">
+              <div className="section-head">
+                <span className="section-head__num">03</span>
+                <h2 className="t-title">Coverage you can check, name by name.</h2>
+                <span className="section-head__note">
+                  Every organisation on the record, and the ones that are not
+                  yet.
+                </span>
               </div>
-              {COVERAGE.map((c, i) => (
-                <div
-                  key={c.id}
-                  className="coverage__list"
-                  data-panel-group="coverage"
-                  data-panel={c.id}
-                  hidden={i !== 0}
-                >
-                  {c.names.map((n) => (
-                    <span className="coverage__name" key={n}>
-                      {n}
-                    </span>
+              <div className="coverage">
+                <div className="coverage__tabs" data-tabs="coverage">
+                  {coverageTabs.map((c, i) => (
+                    <button
+                      key={c.id}
+                      className={`tab${i === 0 ? " is-active" : ""}`}
+                      data-panel={c.id}
+                    >
+                      {c.tab}
+                    </button>
                   ))}
                 </div>
-              ))}
-              <div className="coverage__status">
-                <div className="coverage__cell">
-                  <span className="t-label" style={{ color: "var(--navy)" }}>
-                    Complete
-                  </span>
-                  <span style={{ fontSize: 15 }}>
-                    Ontario policing, councils, provincial programs
-                  </span>
-                </div>
-                <div className="coverage__cell">
-                  <span className="t-label" style={{ color: "var(--faint)" }}>
-                    Opening this year
-                  </span>
-                  <span style={{ fontSize: 15 }}>
-                    British Columbia and Alberta policing
-                  </span>
-                </div>
-                <div className="coverage__cell">
-                  <span className="t-label" style={{ color: "var(--faint)" }}>
-                    Not yet covered
-                  </span>
-                  <span style={{ fontSize: 15 }}>Federal defence procurement</span>
+                {coverageTabs.map((c, i) => (
+                  <div
+                    key={c.id}
+                    className="coverage__list"
+                    data-panel-group="coverage"
+                    data-panel={c.id}
+                    hidden={i !== 0}
+                  >
+                    {c.names.map((n) => (
+                      <span className="coverage__name" key={n}>
+                        {n}
+                      </span>
+                    ))}
+                  </div>
+                ))}
+                <div className="coverage__status">
+                  {COVERAGE_STATUS.map((cell) => (
+                    <div className="coverage__cell" key={cell.label}>
+                      <span
+                        className="t-label"
+                        style={{
+                          color:
+                            cell.tone === "firm" ? "var(--navy)" : "var(--faint)",
+                        }}
+                      >
+                        {cell.label}
+                      </span>
+                      <span style={{ fontSize: 15 }}>{cell.text}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+        ) : null}
 
         {/* 04 PREDICTION */}
         <section className="band band--cream">

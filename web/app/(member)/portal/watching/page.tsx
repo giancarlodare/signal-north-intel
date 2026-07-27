@@ -3,6 +3,8 @@
 // landed, so the keyword and buyer panels render the designed shells with
 // controls disabled and no fake persistence. The coverage panel is static
 // handoff content and stands as-is.
+import { COVERAGE_STATUS } from "@/lib/marketing/coverage-status";
+
 export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Watching — Signal North Member",
@@ -138,49 +140,24 @@ export default function WatchingPage() {
               gap: 24,
             }}
           >
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <span
-                className="t-label"
-                style={{
-                  fontSize: 11,
-                  letterSpacing: "0.14em",
-                  color: "var(--navy)",
-                }}
+            {COVERAGE_STATUS.map((cell) => (
+              <div
+                key={cell.label}
+                style={{ display: "flex", flexDirection: "column", gap: 6 }}
               >
-                Complete
-              </span>
-              <span style={{ fontSize: 14 }}>
-                Ontario policing, councils, and provincial programs
-              </span>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <span
-                className="t-label"
-                style={{
-                  fontSize: 11,
-                  letterSpacing: "0.14em",
-                  color: "var(--faint)",
-                }}
-              >
-                Opening this year
-              </span>
-              <span style={{ fontSize: 14 }}>
-                British Columbia and Alberta policing
-              </span>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <span
-                className="t-label"
-                style={{
-                  fontSize: 11,
-                  letterSpacing: "0.14em",
-                  color: "var(--faint)",
-                }}
-              >
-                Not yet covered
-              </span>
-              <span style={{ fontSize: 14 }}>Federal defence procurement</span>
-            </div>
+                <span
+                  className="t-label"
+                  style={{
+                    fontSize: 11,
+                    letterSpacing: "0.14em",
+                    color: cell.tone === "firm" ? "var(--navy)" : "var(--faint)",
+                  }}
+                >
+                  {cell.label}
+                </span>
+                <span style={{ fontSize: 14 }}>{cell.text}</span>
+              </div>
+            ))}
           </div>
           <span
             style={{
