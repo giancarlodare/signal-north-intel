@@ -70,7 +70,7 @@ export default function SiteFooter() {
             <a href="/contact">Request access</a>
             <a href="/login">Log in</a>
             <span style={{ color: "var(--blue-dim)", paddingTop: 10 }}>
-              briefings@signalnorth.ca
+              giancarlo@signalnorthintel.com
               <br />
               Toronto, Ontario
             </span>

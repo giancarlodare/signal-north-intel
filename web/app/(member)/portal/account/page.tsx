@@ -132,10 +132,10 @@ export default async function AccountPage({
           >
             To change your name, email, or organisation, write to{" "}
             <a
-              href="mailto:briefings@signalnorth.ca"
+              href="mailto:giancarlo@signalnorthintel.com"
               style={{ fontSize: 13 }}
             >
-              briefings@signalnorth.ca
+              giancarlo@signalnorthintel.com
             </a>{" "}
             and we will make the change same-day.
           </p>
@@ -224,7 +224,7 @@ export default async function AccountPage({
             </span>
           </div>
           <a
-            href="mailto:briefings@signalnorth.ca?subject=Coverage request"
+            href="mailto:giancarlo@signalnorthintel.com?subject=Coverage request"
             className="follow-btn"
             style={{
               textDecoration: "none",

@@ -203,9 +203,9 @@ export default function ContactPage() {
                 }}
               >
                 <span style={{ fontSize: 16, color: "var(--ink)" }}>
-                  briefings@signalnorth.ca
+                  giancarlo@signalnorthintel.com
                 </span>
-                <span style={{ fontSize: 16 }}>+1 416 555 0148</span>
+                <span style={{ fontSize: 16 }}>+1 647 221 8123</span>
                 <span style={{ fontSize: 16, color: "var(--muted)" }}>
                   Toronto, Ontario
                 </span>

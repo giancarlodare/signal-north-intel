@@ -202,7 +202,7 @@ export default async function WatchingPage() {
           >
             <span className="t-label">What we watch today</span>
             <a
-              href="mailto:briefings@signalnorth.ca?subject=Coverage request"
+              href="mailto:giancarlo@signalnorthintel.com?subject=Coverage request"
               className="src-link"
               style={{ marginLeft: 0 }}
             >
