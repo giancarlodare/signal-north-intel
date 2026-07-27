@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en-CA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Home — Signal North Member</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../design-system/tokens.css">
+<link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+<header class="dash-header">
+  <div class="dash-header__inner">
+    <a href="index.html" class="brand">
+      <svg width="22" height="22" viewBox="0 0 96 96" aria-hidden="true"><path d="M48 4 L76 90 L48 72 L20 90 Z" fill="#ffffff"/></svg>
+      <span class="brand__text"><span class="brand__name">Signal North</span><span class="brand__sub">Member</span></span>
+    </a>
+    <span class="dash-header__spacer"></span>
+    <nav class="dash-nav">
+      <a href="index.html" aria-current="page">Home</a>
+      <a href="brief.html">The Brief</a>
+      <a href="saved.html">Saved</a>
+      <a href="watching.html">Watching</a>
+      <a href="account.html" class="avatar-link"><span class="avatar" data-field="member-initials">MC</span><span data-field="member-shortname">M. Chen</span></a>
+    </nav>
+  </div>
+</header>
+<div class="header-offset"></div>
+
+<main class="fade-rise">
+  <section class="dash-hero">
+    <div class="dash-hero__inner">
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <span class="dash-hero__date" data-field="date">Monday 27 July 2026</span>
+        <h1 class="dash-hero__title" data-field="headline">Good morning. Two things changed in your world.</h1>
+      </div>
+      <span style="font-size:14px; color:var(--blue-dim);" data-field="watch-summary">Watching 3 buyers and 3 topics · <a href="watching.html" style="color:var(--blue-soft); text-decoration:underline;">adjust</a></span>
+    </div>
+  </section>
+
+  <div class="dash-main dash-cols">
+    <section style="display:flex; flex-direction:column; gap:20px;" data-testid="flags">
+      <span class="t-label">Flagged for you</span>
+
+      <article class="card flag-card" data-testid="flag-item">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; gap:16px; flex-wrap:wrap;">
+          <span class="flag-card__match" data-field="match">Matches: digital evidence · Halton</span>
+          <button class="save-btn" data-item-id="f1">Save</button>
+        </div>
+        <h3 data-field="title">Halton board receives replacement options for digital evidence management</h3>
+        <p style="margin:0;" data-field="body">The July agenda carries the staff report your watchlist has been tracking since the June licence disclosure. Tender window modelled at February to March 2027.</p>
+        <div class="flag-card__meta"><span class="mono-meta" data-field="buyer">Halton Regional Police Service</span><span class="mono-meta" data-field="window">Window: Feb–Mar 2027</span><a href="#" class="src-link">View source →</a></div>
+      </article>
+
+      <article class="card flag-card" data-testid="flag-item">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; gap:16px; flex-wrap:wrap;">
+          <span class="flag-card__match" data-field="match">Matches: fleet</span>
+          <button class="save-btn" data-item-id="f2">Save</button>
+        </div>
+        <h3 data-field="title">Durham carries $3.2M for patrol fleet renewal in the 2027 capital forecast</h3>
+        <p style="margin:0;" data-field="body">First appearance of the line. On Durham's measured cycle, options requests follow a capital-forecast entry by four to seven months.</p>
+        <div class="flag-card__meta"><span class="mono-meta" data-field="buyer">Durham Regional Police Service</span><span class="mono-meta" data-field="window">Window: not yet modelled, pending board activity</span><a href="#" class="src-link">View source →</a></div>
+      </article>
+    </section>
+
+    <aside style="display:flex; flex-direction:column; gap:32px;">
+      <div class="brief-panel">
+        <div style="display:flex; justify-content:space-between; align-items:baseline; gap:12px;">
+          <span class="t-label" style="color:#fff;">This week's brief</span><span class="live-dot"></span>
+        </div>
+        <h3 data-field="brief-headline">Halton's camera refresh moves to its decisive quarter.</h3>
+        <a href="brief.html" style="font-size:11px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:var(--blue-soft);">Read the Weekly Signal →</a>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:14px;">
+        <div style="display:flex; justify-content:space-between; align-items:baseline;">
+          <span class="t-label">Saved</span>
+          <a href="saved.html" style="font-size:11px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase;">All saved →</a>
+        </div>
+        <div class="card" style="padding:16px 20px; display:flex; flex-direction:column; gap:5px;">
+          <span style="font-size:15px; color:var(--ink);">Toronto's evidence storage agreement enters its final four months</span>
+          <span class="mono-meta" style="font-size:11px;">Saved 21 July</span>
+        </div>
+        <div class="card" style="padding:16px 20px; display:flex; flex-direction:column; gap:5px;">
+          <span style="font-size:15px; color:var(--ink);">Federal interoperability program guidelines published</span>
+          <span class="mono-meta" style="font-size:11px;">Saved 9 July</span>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:12px; border-top:1px solid var(--line); padding-top:20px;" data-testid="activity-log">
+        <span class="t-label">We told you first</span>
+        <div class="activity-row" style="border-top:0; padding-top:0;"><time>24 Jul</time><span style="font-size:13.5px;">Flagged Durham's fleet line for you, six days before it appeared in trade press.</span></div>
+        <div class="activity-row" style="border-top:0; padding-top:0;"><time>18 Jul</time><span style="font-size:13.5px;">Flagged the Halton staff report for you the morning the agenda posted.</span></div>
+        <div class="activity-row" style="border-top:0; padding-top:0;"><time>2 Jul</time><span style="font-size:13.5px;">You followed Durham Regional Police Service.</span></div>
+      </div>
+    </aside>
+  </div>
+</main>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

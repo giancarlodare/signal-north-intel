@@ -73,3 +73,43 @@ test("unauthenticated always routes to login except on login", () => {
     "allow"
   );
 });
+
+test("marketing site: public only when the flag is on", () => {
+  // Flag ON: the four site paths open without auth.
+  for (const p of ["/", "/about", "/pricing", "/contact"]) {
+    assert.equal(
+      gate({ enabled: true, authenticated: false, role: "member", path: p }),
+      "allow",
+      p
+    );
+  }
+  // Flag OFF: exactly the pre-incorporation behavior (dark, to-login).
+  for (const p of ["/", "/about", "/pricing", "/contact"]) {
+    assert.equal(
+      gate({ enabled: false, authenticated: false, role: "member", path: p }),
+      "to-login",
+      p
+    );
+  }
+  // Non-site unauthenticated paths stay closed even with the flag on.
+  assert.equal(
+    gate({ enabled: true, authenticated: false, role: "member", path: "/portal" }),
+    "to-login"
+  );
+  // Site paths are exact matches: a nested unknown path is not public.
+  assert.equal(
+    gate({ enabled: true, authenticated: false, role: "member", path: "/about/team" }),
+    "to-login"
+  );
+});
+
+test("/auth/confirm reachable unauthenticated in every flag state", () => {
+  assert.equal(
+    gate({ enabled: false, authenticated: false, role: "member", path: "/auth/confirm" }),
+    "allow"
+  );
+  assert.equal(
+    gate({ enabled: true, authenticated: false, role: "member", path: "/auth/confirm" }),
+    "allow"
+  );
+});

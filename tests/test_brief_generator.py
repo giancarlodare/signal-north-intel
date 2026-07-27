@@ -12,12 +12,14 @@ TODAY = date(2026, 7, 15)  # a Wednesday
 
 
 def _sig(sid, published_on, doc_type="award_notice", materiality=3, grade=3,
-         org=None, amount=None, title="t", defence=False, doc_id=None):
+         org=None, amount=None, title="t", defence=False, doc_id=None,
+         org_type=None):
     return {"id": sid, "signal_type": "contract_award", "confidence": "confirmed",
             "materiality": materiality, "evidence_grade": grade,
             "amount_max_cad": amount, "expected_timing": None,
             "organization_id": org, "title": title, "document_id": doc_id,
-            "organizations": {"canonical_name": org and f"Org {org}"},
+            "organizations": {"canonical_name": org and f"Org {org}",
+                              "org_type": org_type},
             "documents": {"doc_type": doc_type, "published_on": published_on,
                           "date_precision": "day", "url": "http://x",
                           "defence_relevant": defence}}
@@ -183,29 +185,41 @@ def test_cluster_lead_is_strongest_member():
 
 
 # --- relevance lens: draft-only starting selection ----------------------------
-def test_lens_defaults_defence_in_and_holds_small_non_defence():
+def test_lens_requires_public_safety_not_just_materiality():
+    # The leak fix (operator 2026-07-27): materiality alone no longer admits a
+    # non-defence cluster. A big GENERAL-municipal item (no public-safety org,
+    # no public-safety text) is held even at the lens bar; a public-safety item
+    # at the same bar keeps. Defence-tagged keeps at any materiality.
     included = [
         (_sig("d1", "2026-07-14", materiality=3, defence=True), "recent"),
-        (_sig("big", "2026-07-14", materiality=4), "recent"),
+        (_sig("police_big", "2026-07-14", materiality=4,
+              org_type="police_service"), "recent"),
+        (_sig("watermain_big", "2026-07-14", materiality=4,
+              org_type="municipality", title="watermain replacement"), "recent"),
         (_sig("small", "2026-07-14", materiality=3), "recent"),
     ]
     clusters = bg.cluster(included, proc_by_signal={})
     held = bg.apply_lens(clusters)
     by_id = {c["lead_signal_id"]: c for c in clusters}
-    assert by_id["d1"]["included"] is True       # defence tag, any materiality
-    assert by_id["big"]["included"] is True      # non-defence at the lens bar
-    assert by_id["small"]["included"] is False   # held, recoverable in editor
-    assert held == 1
+    assert by_id["d1"]["included"] is True             # defence tag, any materiality
+    assert by_id["police_big"]["included"] is True     # public-safety at the bar
+    assert by_id["watermain_big"]["included"] is False  # LEAK FIX: big alone is held
+    assert by_id["small"]["included"] is False         # held, recoverable in editor
+    assert held == 2
     # Held clusters keep their rank: the lens sets the starting selection only.
+    assert by_id["watermain_big"]["rank"] > 0
     assert by_id["small"]["rank"] > 0
 
 
 def test_lens_uses_strongest_member_materiality_not_the_lead():
     # The lead is picked grade-first, so a non-lead member can carry the
-    # cluster's highest materiality; the lens must see it.
+    # cluster's highest materiality; the lens must see it. Public-safety org so
+    # the test isolates the max-materiality mechanic from the relevance gate.
     included = [
-        (_sig("lead", "2026-07-14", org="o1", grade=5, materiality=3), "recent"),
-        (_sig("member", "2026-07-14", org="o1", grade=3, materiality=4), "recent"),
+        (_sig("lead", "2026-07-14", org="o1", grade=5, materiality=3,
+              org_type="police_service"), "recent"),
+        (_sig("member", "2026-07-14", org="o1", grade=3, materiality=4,
+              org_type="police_service"), "recent"),
     ]
     clusters = bg.cluster(included, proc_by_signal={})
     assert len(clusters) == 1

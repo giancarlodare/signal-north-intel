@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en-CA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Watching — Signal North Member</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../design-system/tokens.css">
+<link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+<header class="dash-header">
+  <div class="dash-header__inner">
+    <a href="index.html" class="brand">
+      <svg width="22" height="22" viewBox="0 0 96 96" aria-hidden="true"><path d="M48 4 L76 90 L48 72 L20 90 Z" fill="#ffffff"/></svg>
+      <span class="brand__text"><span class="brand__name">Signal North</span><span class="brand__sub">Member</span></span>
+    </a>
+    <span class="dash-header__spacer"></span>
+    <nav class="dash-nav">
+      <a href="index.html">Home</a>
+      <a href="brief.html">The Brief</a>
+      <a href="saved.html">Saved</a>
+      <a href="watching.html" aria-current="page">Watching</a>
+      <a href="account.html" class="avatar-link"><span class="avatar" data-field="member-initials">MC</span><span data-field="member-shortname">M. Chen</span></a>
+    </nav>
+  </div>
+</header>
+<div class="header-offset"></div>
+
+<main class="fade-rise">
+  <div class="dash-main" style="padding-top:64px; display:flex; flex-direction:column; gap:40px;">
+    <div class="page-head">
+      <h1>Watching</h1>
+      <span style="font-size:15px; color:var(--muted);">Tell the record what matters to you. Matches surface on your home and in your flags.</span>
+    </div>
+
+    <div class="watch-grid">
+      <section class="card" style="padding:28px 30px; display:flex; flex-direction:column; gap:18px;" data-testid="keywords-panel">
+        <span class="t-label">Topics and keywords</span>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;" data-keywords></div>
+        <div style="display:flex; gap:10px;">
+          <input data-kw-input placeholder="Add a keyword, e.g. dispatch" style="flex:1; border:1px solid var(--line); border-radius:2px; padding:11px 14px; font-size:14px; font-family:var(--font-sans); color:var(--ink); outline:none;">
+          <button data-kw-add class="btn btn--primary" style="padding:11px 20px; letter-spacing:0.08em; font-size:12px; border:0; cursor:pointer; background:var(--red); color:#fff; font-weight:600; text-transform:uppercase; font-family:var(--font-sans);">Watch</button>
+        </div>
+      </section>
+
+      <section class="card" style="padding:28px 30px; display:flex; flex-direction:column; gap:6px;" data-testid="buyers-panel">
+        <span class="t-label" style="padding-bottom:12px;">Buyers you follow</span>
+        <div class="follow-row"><span style="font-size:15px; color:var(--ink);">Halton Regional Police Service</span><button class="follow-btn" data-buyer="halton">Follow</button></div>
+        <div class="follow-row"><span style="font-size:15px; color:var(--ink);">Peel Regional Police</span><button class="follow-btn" data-buyer="peel">Follow</button></div>
+        <div class="follow-row"><span style="font-size:15px; color:var(--ink);">Durham Regional Police Service</span><button class="follow-btn" data-buyer="durham">Follow</button></div>
+        <div class="follow-row"><span style="font-size:15px; color:var(--ink);">Toronto Police Service</span><button class="follow-btn" data-buyer="toronto">Follow</button></div>
+      </section>
+    </div>
+
+    <section class="card" style="padding:28px 30px; display:flex; flex-direction:column; gap:16px;" data-testid="coverage-panel">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:16px; flex-wrap:wrap;">
+        <span class="t-label">What we watch today</span>
+        <a href="mailto:briefings@signalnorth.ca?subject=Coverage request" class="src-link" style="margin-left:0;">Request coverage →</a>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:24px;">
+        <div style="display:flex; flex-direction:column; gap:6px;"><span class="t-label" style="font-size:11px; letter-spacing:0.14em; color:var(--navy);">Complete</span><span style="font-size:14px;">Ontario policing, councils, and provincial programs</span></div>
+        <div style="display:flex; flex-direction:column; gap:6px;"><span class="t-label" style="font-size:11px; letter-spacing:0.14em; color:var(--faint);">Opening this year</span><span style="font-size:14px;">British Columbia and Alberta policing</span></div>
+        <div style="display:flex; flex-direction:column; gap:6px;"><span class="t-label" style="font-size:11px; letter-spacing:0.14em; color:var(--faint);">Not yet covered</span><span style="font-size:14px;">Federal defence procurement</span></div>
+      </div>
+      <span style="font-size:13px; line-height:1.7; color:var(--faint); border-top:1px solid var(--line-soft); padding-top:14px;">If a keyword returns nothing, this is why it might: we either do not cover that ground yet, or nothing is happening on it. We will always tell you which.</span>
+    </section>
+
+    <section style="display:flex; flex-direction:column; gap:14px; max-width:720px;" data-testid="activity-log">
+      <span class="t-label">We told you first</span>
+      <div class="activity-row"><time>24 Jul</time><span style="font-size:14px;">Flagged Durham's fleet line for you, six days before it appeared in trade press.</span></div>
+      <div class="activity-row"><time>18 Jul</time><span style="font-size:14px;">Flagged the Halton staff report for you the morning the agenda posted.</span></div>
+      <div class="activity-row"><time>2 Jul</time><span style="font-size:14px;">You followed Durham Regional Police Service.</span></div>
+    </section>
+  </div>
+</main>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

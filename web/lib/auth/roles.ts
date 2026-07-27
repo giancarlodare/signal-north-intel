@@ -70,6 +70,17 @@ export function isMemberPath(path: string): boolean {
   return path === MEMBER_PREFIX || path.startsWith(MEMBER_PREFIX + "/");
 }
 
+// The public marketing site (Wave 3 stage 5, Claude Design incorporation).
+// These paths are reachable WITHOUT auth only when the portal flag is on;
+// while dark they behave exactly as before (unauthenticated -> /login), so
+// deploying the marketing pages changes nothing until the operator flips
+// PORTAL_ENABLED. Exact matches: the site has no nested public routes.
+export const SITE_PATHS = ["/", "/about", "/pricing", "/contact"] as const;
+
+export function isSitePath(path: string): boolean {
+  return (SITE_PATHS as readonly string[]).includes(path);
+}
+
 // The gate decision for a request, given the flag, the role, and the path.
 // Pure and unit-testable (no I/O), so the policy is verified by test, not by
 // reading middleware control flow.
@@ -86,7 +97,15 @@ export function gate(args: {
   path: string;
 }): GateOutcome {
   const { enabled, authenticated, role, path } = args;
-  if (!authenticated) return path === "/login" ? "allow" : "to-login";
+  if (!authenticated) {
+    if (path === "/login") return "allow";
+    // Magic-link landing: must be reachable unauthenticated in every flag
+    // state, or the emailed link could never establish a session.
+    if (path === "/auth/confirm") return "allow";
+    // Marketing site: public once the flag is on; dark (to-login) before.
+    if (enabled && isSitePath(path)) return "allow";
+    return "to-login";
+  }
 
   // Flag OFF: pre-Wave-3 behavior. Member routes do not exist yet (404),
   // everything else is allowed exactly as before. No role gating.

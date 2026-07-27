@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en-CA">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Saved — Signal North Member</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../design-system/tokens.css">
+<link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+<header class="dash-header">
+  <div class="dash-header__inner">
+    <a href="index.html" class="brand">
+      <svg width="22" height="22" viewBox="0 0 96 96" aria-hidden="true"><path d="M48 4 L76 90 L48 72 L20 90 Z" fill="#ffffff"/></svg>
+      <span class="brand__text"><span class="brand__name">Signal North</span><span class="brand__sub">Member</span></span>
+    </a>
+    <span class="dash-header__spacer"></span>
+    <nav class="dash-nav">
+      <a href="index.html">Home</a>
+      <a href="brief.html">The Brief</a>
+      <a href="saved.html" aria-current="page">Saved</a>
+      <a href="watching.html">Watching</a>
+      <a href="account.html" class="avatar-link"><span class="avatar" data-field="member-initials">MC</span><span data-field="member-shortname">M. Chen</span></a>
+    </nav>
+  </div>
+</header>
+<div class="header-offset"></div>
+
+<main class="fade-rise">
+  <div class="dash-main dash-main--narrow" style="padding-top:64px; display:flex; flex-direction:column; gap:20px;">
+    <div class="page-head">
+      <h1>Saved</h1>
+      <span style="font-size:15px; color:var(--muted);">Items you flagged, as they stood when you saved them.</span>
+    </div>
+    <article class="card flag-card" data-saved-card data-testid="saved-item" style="padding:24px 28px; gap:10px;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:16px; flex-wrap:wrap;">
+        <h3 style="font-size:22px;" data-field="title">Toronto's evidence storage agreement enters its final four months</h3>
+        <button class="save-btn" data-remove-saved="s1">Remove</button>
+      </div>
+      <div class="flag-card__meta" style="border-top:0; padding-top:0;"><span class="mono-meta">Toronto Police Service</span><span class="mono-meta">Saved 21 July</span><a href="#" class="src-link">View source →</a></div>
+    </article>
+    <article class="card flag-card" data-saved-card data-testid="saved-item" style="padding:24px 28px; gap:10px;">
+      <div style="display:flex; justify-content:space-between; align-items:baseline; gap:16px; flex-wrap:wrap;">
+        <h3 style="font-size:22px;" data-field="title">Federal interoperability program guidelines published</h3>
+        <button class="save-btn" data-remove-saved="s2">Remove</button>
+      </div>
+      <div class="flag-card__meta" style="border-top:0; padding-top:0;"><span class="mono-meta">Public Safety Canada</span><span class="mono-meta">Saved 9 July</span><a href="#" class="src-link">View source →</a></div>
+    </article>
+    <div style="border:1px dashed var(--line); padding:48px; text-align:center; display:none; flex-direction:column; gap:8px;" data-saved-empty>
+      <span style="font-family:var(--font-serif); font-size:22px; color:var(--muted);">Nothing saved yet.</span>
+      <span style="font-size:14px; color:var(--faint);">Use Save on any item in the brief or your flags.</span>
+    </div>
+  </div>
+</main>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

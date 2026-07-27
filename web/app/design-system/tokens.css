@@ -1,0 +1,96 @@
+/* Signal North design tokens (Claude Design handoff, 2026-07-27).
+   Source of truth: web/design-handoff/design-system/tokens.css.
+   ADAPTATION (the only one): the handoff scopes tokens on :root and styles
+   body directly; here everything is scoped under .sn-site so the design
+   system cannot bleed into the internal review app, which shares selector
+   and variable names (--card, .card) with opposite (dark) values. Marketing
+   and member layouts wrap their trees in <div class="sn-site">. */
+.sn-site {
+  /* Colour */
+  --navy: #0d1b2e;        /* primary dark bg, nav, hero */
+  --navy-mid: #1a2f4a;    /* dark hover, dividers on navy */
+  --navy-panel: #132741;  /* raised panel on navy */
+  --navy-line: #24405f;   /* borders on dark */
+  --navy-deep: #07101c;   /* footer / deepest bg */
+  --red: #c41230;         /* single accent: CTAs, active, signal */
+  --red-hover: #a50e27;
+  --red-on-dark: #e8556f; /* red for small elements on navy (contrast-safe) */
+  --ink: #07101c;         /* headline text on light */
+  --ink-soft: #1a1916;
+  --body: #4a4742;        /* body text on light */
+  --muted: #6b6862;       /* secondary text on light */
+  --faint: #9a948a;       /* tertiary text on light */
+  --blue-soft: #8fb0cf;   /* secondary text on navy */
+  --blue-mist: #a8c0d6;   /* body text on navy */
+  --blue-pale: #dde8f0;   /* near-white text on navy */
+  --blue-dim: #6b8fb5;    /* tertiary on navy */
+  --blue-ghost: #3d6491;  /* faint mono text on deep navy */
+  --paper: #f8f7f4;       /* page background */
+  --cream: #f3f2ef;       /* alternate band background */
+  --card: #ffffff;
+  --line: #d4d1cb;        /* borders on light */
+  --line-soft: #e8e6e1;   /* hairlines inside cards */
+
+  /* Type */
+  --font-serif: 'EB Garamond', Georgia, serif;      /* display + headings */
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif; /* body + UI */
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace; /* data, dates, codes */
+
+  /* Type scale (desktop) */
+  --fs-display: 62px;   /* hero statements, serif, -0.025em, 1.12 */
+  --fs-title: 44px;     /* numbered section titles, serif, -0.02em, 1.14 */
+  --fs-heading: 30px;   /* panel headings, serif, 1.25 */
+  --fs-subhead: 24px;   /* card headings, serif, 1.3 */
+  --fs-body: 17px;      /* long-form body, 1.85 */
+  --fs-ui: 15px;        /* UI copy, 1.7 */
+  --fs-small: 13px;     /* captions, 1.7 */
+  --fs-label: 11px;     /* uppercase labels, 600, 0.16-0.2em tracking */
+  --fs-mono: 12px;      /* mono data labels */
+
+  /* Spacing (8px base) */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px; --sp-5: 24px;
+  --sp-6: 32px; --sp-7: 48px; --sp-8: 64px; --sp-9: 96px; --sp-10: 120px;
+
+  /* Layout */
+  --content-max: 1280px;
+  --gutter: 48px;
+  --header-h: 76px;
+  --radius: 4px;          /* cards */
+  --radius-tight: 2px;    /* inputs, buttons */
+
+  /* Shadow */
+  --shadow-md: 0 1px 3px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+  --shadow-lg: 0 4px 6px rgba(0,0,0,0.07), 0 10px 30px rgba(0,0,0,0.08);
+
+  /* Motion */
+  --ease: ease;
+  --t-fast: 150ms;
+  --t-page: 480ms;
+
+  /* Page base (the handoff's body rule, carried by the wrapper) */
+  margin: 0;
+  min-height: 100vh;
+  background: var(--paper);
+  color: var(--body);
+  font-family: var(--font-sans);
+  font-size: var(--fs-ui);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Page-entry fade (apply .fade-rise to each page's <main> child sections) */
+@keyframes sn-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes sn-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+.sn-site .fade-rise { animation: sn-rise var(--t-page) ease-out both; }
+
+/* Base */
+.sn-site a { color: var(--red); text-decoration: none; transition: color var(--t-fast) var(--ease); }
+.sn-site a:hover { color: var(--red-hover); }
+.sn-site h1, .sn-site h2, .sn-site h3 { margin: 0; font-weight: 400; }
+
+/* Shared type helpers */
+.sn-site .t-display { font-family: var(--font-serif); font-size: var(--fs-display); line-height: 1.12; letter-spacing: -0.025em; color: var(--ink); }
+.sn-site .t-title { font-family: var(--font-serif); font-size: var(--fs-title); line-height: 1.14; letter-spacing: -0.02em; color: var(--ink); }
+.sn-site .t-heading { font-family: var(--font-serif); font-size: var(--fs-heading); line-height: 1.25; color: var(--ink); }
+.sn-site .t-label { font-size: var(--fs-label); font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+.sn-site .t-mono { font-family: var(--font-mono); font-size: var(--fs-mono); }

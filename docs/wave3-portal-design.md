@@ -153,8 +153,51 @@ Stage specifics as instructed:
 2. Dashboard: member-filtered data layer + functional component skeleton
    over published briefs and gate-cleared signals, unstyled, ready to
    receive design.
-3. Watchlist + event log: tables, follow/unfollow logic, deterministic
-   match-event writer in the daily pipeline, no LLM. Operator pastes the
-   DDL.
+3. Watchlist + event log + saved items (scope extended, operator
+   2026-07-27). Two DISTINCT per-member data models, both owner-scoped by
+   RLS (a member reads/writes ONLY their own rows: this extends the
+   client-facing gate from read-only gate-cleared surfaces to per-member
+   OWNED data):
+   a. **Watched keywords / tags (forward-looking).** A member follows
+      buyers / vendors / keywords / tags; the daily pipeline runs a
+      deterministic (no-LLM) match-event writer that LOGS every FUTURE
+      signal matching a watch to an append-only event log (what fired,
+      when, which signal + publisher URL). This is the "we told you
+      first" substrate. Tables: `member_watches` (the standing follows) +
+      `watch_events` (append-only matches).
+   b. **Saved / bookmarked items (point-in-time).** When a member flags a
+      Weekly Signal item they like, it saves to their personal saved
+      list. This is NOT a watch and NOT an event-log entry: it is a
+      manual bookmark of an item that already exists, with no matching
+      logic and no event stream. Folding it into the event log would
+      fabricate "match events" for a manual action and pollute the
+      "we told you first" trail. It gets its own small join table,
+      `saved_items` (member_id, brief_item_id, saved_at), owner-scoped by
+      RLS. Launch scope saves Weekly Signal items (brief_items);
+      signal-level saving from the raw feed is a later extension.
+   Operator pastes the DDL for all three tables.
 4. Stripe test mode: checkout/subscription plumbing against operator-
    provided test keys. No live-charge path while dark.
+
+## Member surface for launch and two scoping decisions (operator 2026-07-27)
+
+The BUILD-NOW member surface is the dashboard, comprising: dashboard home,
+the brief / signal feed (stage 2, functional skeleton built), a saved /
+bookmarked-items view (stage 3b), and watched keywords / tags that flag
+matching future signals (stage 3a, the "we told you first" event). The
+public-safety member-read gate (docs/public-safety-relevance-filter-design.md)
+sits under all of it. All of it stays behind PORTAL_ENABLED.
+
+Two scoping decisions, banked:
+
+1. **NO drag-and-drop / customizable dashboard for launch.** Ship a
+   well-designed FIXED layout first; add rearrangement later once real
+   founding members tell us what they would move. Building configurability
+   before there are users is guessing. (Design of the fixed layout is
+   Giancarlo's Claude Design work, per the firm boundary above.)
+2. **Automated grant-application tooling is NOT a member-facing Signal
+   North feature.** It is internal / Synapse-side service delivery, kept
+   across the neutrality wall (docs/legal-seam-investor.md, ROADMAP
+   firewall). Members wanting grant help are REFERRED to Synapse; they do
+   not do grant work inside the neutral product. Do not build grant tooling
+   into the member portal.
