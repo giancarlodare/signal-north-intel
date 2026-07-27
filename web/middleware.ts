@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { gate, portalEnabled, roleFromUser } from "@/lib/auth/roles";
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
@@ -35,14 +36,37 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  if (!user && path !== "/login") {
+
+  // Wave 3 role gate. While PORTAL_ENABLED is off (the default), gate()
+  // returns exactly the pre-Wave-3 outcomes: auth-only, no role gating, and
+  // the member surface 404s. So this branch is inert in production until the
+  // operator flips the flag AND the DDL has stamped the operator role.
+  const outcome = gate({
+    enabled: portalEnabled(),
+    authenticated: Boolean(user),
+    role: roleFromUser(user),
+    path,
+  });
+
+  if (outcome === "to-login") {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
+  if (outcome === "to-portal") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/portal";
+    return NextResponse.redirect(url);
+  }
+  if (outcome === "not-found") {
+    // The member surface does not exist while dark; a 404 hides it.
+    return new NextResponse(null, { status: 404 });
+  }
+
+  // Signed-in users landing on /login go to their home surface.
   if (user && path === "/login") {
     const url = request.nextUrl.clone();
-    url.pathname = "/corpus";
+    url.pathname = roleFromUser(user) === "member" ? "/portal" : "/corpus";
     return NextResponse.redirect(url);
   }
 

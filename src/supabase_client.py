@@ -145,14 +145,20 @@ def get_documents_by_status(status: str, limit: int,
                             doc_type: str | None = None,
                             doc_types: list | None = None,
                             order: str | None = None,
-                            exclude_buyers: list | None = None) -> list:
+                            exclude_buyers: list | None = None,
+                            include_url_like: list | None = None) -> list:
     """Fetch captured/extracted/failed documents. Pass `doc_type` for one type or
     `doc_types` for several (PostgREST `in.(...)`); `order` is a PostgREST order
     clause (e.g. "published_on.desc.nullslast") to control which documents a
     capped run processes first. `exclude_buyers` drops documents whose
     buyer_name is in the list (cost gate: a HELD buyer's history never enters
     a drain); the or-clause keeps NULL-buyer documents in scope, since SQL
-    NOT IN would silently drop them."""
+    NOT IN would silently drop them. `include_url_like` RESTRICTS to documents
+    whose url matches one of the host patterns (the targeted-drain scope);
+    mutually exclusive with exclude_buyers (both use the `or` param)."""
+    if exclude_buyers and include_url_like:
+        raise ValueError("exclude_buyers and include_url_like both use `or`; "
+                         "set only one")
     params = {"select": select, "status": f"eq.{status}", "limit": limit}
     if doc_type:
         params["doc_type"] = f"eq.{doc_type}"
@@ -161,6 +167,9 @@ def get_documents_by_status(status: str, limit: int,
     if exclude_buyers:
         quoted = ",".join(f'"{b}"' for b in exclude_buyers)
         params["or"] = f"(buyer_name.is.null,buyer_name.not.in.({quoted}))"
+    if include_url_like:
+        clauses = ",".join(f"url.ilike.*{h}*" for h in include_url_like)
+        params["or"] = f"({clauses})"
     if order:
         params["order"] = order
     resp = _request("GET", "documents", headers=_headers(), params=params)

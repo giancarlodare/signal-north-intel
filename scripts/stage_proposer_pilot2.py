@@ -57,6 +57,7 @@ STOPWORDS = {
     "streets", "road", "roads", "avenue", "headquarters", "hall", "north",
     "south", "east", "west", "canada", "ontario", "america", "community",
     "general", "management", "team", "technology",
+    "contracting", "contractor", "contractors",
 }
 
 

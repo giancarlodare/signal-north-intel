@@ -82,6 +82,44 @@ significance gate still governs what is labeled published vs pending; pooling
 only stabilizes the estimate, it never manufactures confidence. This is a later
 addition, noted here so the schema and gate anticipate it.
 
+**What standing up partial pooling would take (operator-requested read,
+2026-07-27, after the pilot showed long-lag arcs are structurally scarce even
+on the densest services):** the pilot's finding is that drain volume alone
+will not fill the table, so pooling is the likely real route. Build shape:
+
+1. **A service taxonomy for the pooling groups.** Each service needs a
+   'kind' it can borrow from: police service, police board, municipality,
+   transit, etc., plus size band. This is an org-resolution attribute
+   (like parent_ministry, 0a), human-confirmed. Small effort; mostly data.
+2. **A hierarchical estimator per transition cell.** Replace the current
+   per-cell independent bootstrap with a partial-pooling model: each cell's
+   lag distribution is drawn toward its GROUP's distribution, weighted by
+   the cell's own n (a cell with n=1 leans mostly on the group; a cell with
+   n=8 barely moves). Two viable implementations: (a) a Bayesian
+   hierarchical model (PyMC/NumPyro) that is statistically clean but adds a
+   dependency and a fit step; (b) a lighter empirical-Bayes / James-Stein
+   shrinkage toward the group median that needs no new dependency and runs
+   in the existing engine. Recommend starting with (b): it captures most of
+   the benefit, is deterministic, and keeps the read-only cheap-to-run
+   property. (a) is a later upgrade if the credibility bar demands a full
+   posterior.
+3. **A pooled significance rule.** The gate must distinguish 'published on
+   the service's own data' from 'published with pooled strength' so the
+   client-facing gate never presents a borrowed estimate as a direct one.
+   Add a `basis` field (own | pooled) to the published cell; a pooled cell
+   is shown with wider bars and a note that it borrows from the cohort. This
+   is the honesty seam pooling requires.
+4. **Validation.** Backtest the pooled estimates against the few cells that
+   DO reach n>=8 on their own: the pooled estimate for a held-out dense cell
+   should land near its direct estimate. If it does, pooling is trustworthy;
+   if not, the groups are wrong. This is the go/no-go test for the method.
+
+Effort estimate: the empirical-Bayes path (b) is days, not weeks, and reuses
+the existing bootstrap machinery; the taxonomy is the main data task. The
+full Bayesian path (a) is a larger, later investment. Neither is approved;
+this is the read the operator asked for so the fleet-vs-pooling decision has
+a concrete alternative costed.
+
 ## 0c. Backward historical reconstruction (operator reframe, 2026-07-26)
 
 The path to statistical significance is BACKWARD RECONSTRUCTION, not forward
@@ -276,6 +314,59 @@ basis. The operator's linking doctrine, from that finding:
    link). Pressure feeds rung 1 as a domain-pressure indicator only.
    Uncategorized-scope clusters are incoherent by construction and are
    excluded until categorized.
+
+## 0h. Actor-vs-publisher attribution (banked design question, operator 2026-07-27)
+
+The corpus contamination audit (correctness gap, R3) surfaced a distinction
+to RESOLVE AS WE SCALE, not now: when a board agenda discusses ANOTHER
+entity's business (a Greater Sudbury board agenda summarizing a SOLGEN budget
+consultation, an OPP-managed tool, a City of Mississauga service contract),
+the extractor correctly attributes the signal to the ACTOR (SOLGEN, OPP,
+Mississauga), not the publishing board. That actor attribution is right. The
+open question is what the signal means for DEMAND RHYTHM:
+
+- Option A: it feeds the OTHER entity's demand rhythm (a real SOLGEN signal,
+  wherever it was published).
+- Option B: it is AMBIENT DISCUSSION in the board's own rhythm (the board
+  noting external context, not the actor's own procurement intent).
+
+The two are not always the same: a board minute recording that SOLGEN
+announced funding is weaker evidence of SOLGEN's procurement demand than
+SOLGEN's own budget document would be. Getting this wrong either inflates an
+entity's rhythm with second-hand mentions or drops real cross-published
+signal. Decide the rule (likely: keep the actor attribution but weight/flag
+second-hand mentions by publisher distance) when the multi-entity corpus is
+large enough to measure the effect. Banked; not solved now. Only the one true
+mis-attribution (751bc4fb, WRPS demand filed under Peel) is fixed in this
+pass.
+
+## 0g. Confirmation pairs vs long-lag observations (operator doctrine, 2026-07-27)
+
+The pilot's first confirm pass surfaced a distinction the engine MUST
+report, or it will mistake n-growth for predictive power. Two kinds of
+transition observation carry very different value:
+
+- **CONFIRMATION PAIRS (~0-day, arc-validating).** A board approves an
+  item in the SAME meeting (or same document) where it appears, so the
+  agenda->minutes or same-document pair measures a near-zero lag. These
+  are REAL links and they grow n, but they carry NO predictive lead time.
+  They validate that the arc machinery works; they do not feed a sellable
+  prediction.
+- **LONG-LAG OBSERVATIONS (the sellable signal).** A transition measured
+  ACROSS separate documents over real calendar time (a budget line in one
+  cycle, an award in a later one; a grant receipt and its later
+  program conclusion). These carry the 6-18 month lead time the product
+  sells on.
+
+Board documents are RICH in confirmation pairs and THIN in long-lag arcs;
+the long lags live in budget-to-award spans (the rhythm groups) and in
+cross-document instrument threads (the T4 "Countering Hate" shape). The
+engine therefore reports the two SEPARATELY: a cell's n is split into
+(confirmation_n, longlag_n), and the significance gate and any published
+horizon are computed on the LONG-LAG observations only. A cell rich in
+0-day pairs but empty of long-lag spans is honestly "pending" no matter
+how high its raw n. Never let confirmation-pair volume dress a cell as
+predictive.
 
 ## 1. What it computes
 

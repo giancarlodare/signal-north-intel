@@ -128,3 +128,33 @@ source is worse than no timeline: one bad click-through discredits the whole
 surface (the trust asymmetry in docs/client-facing-gate.md), so every node
 passes the signal gate before the timeline renders, and an arc with an
 unverifiable node renders no timeline at all.
+
+## BUILD GO: stages 1-4 (operator 2026-07-27), with the design boundary
+
+Engineering go for stages 1-4, stage 1 starting Mon Jul 28 after the
+ten-buyer collect is verified clean. Design-first PER STAGE: each stage's
+decision points and table go to the operator BEFORE its PR merges.
+
+FIRM BOUNDARY (operator instruction, binding on every session): NO
+design, styling, visual, or artistic work, and NO marketing copy, in
+this build. Giancarlo does all design separately in Claude Design and
+hands over files to incorporate. The build delivers the FUNCTIONAL layer
+fully and stops at unstyled functional skeletons for anything visual,
+with clean separation of logic from presentation so design files drop in
+later. Stage 5 (marketing site) and all dashboard visuals are AWAITING
+GIANCARLO'S CLAUDE DESIGN FILES; do not start them.
+
+Stage specifics as instructed:
+1. Member auth + RLS: member vs operator roles; the RLS policies ARE the
+   client-facing gate (docs/client-facing-gate.md): member reads scoped
+   to published + gate-cleared surfaces only, enforced by the DATABASE,
+   not the UI. PORTAL_ENABLED flag plumbing, defaulting off. Operator
+   pastes the DDL.
+2. Dashboard: member-filtered data layer + functional component skeleton
+   over published briefs and gate-cleared signals, unstyled, ready to
+   receive design.
+3. Watchlist + event log: tables, follow/unfollow logic, deterministic
+   match-event writer in the daily pipeline, no LLM. Operator pastes the
+   DDL.
+4. Stripe test mode: checkout/subscription plumbing against operator-
+   provided test keys. No live-charge path while dark.
