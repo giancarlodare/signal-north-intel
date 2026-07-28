@@ -10,7 +10,7 @@
 --   different product).
 -- Structure: probe run 30356971071 -- the page's own public REST call
 --   (restapi/bidding/list/noauthorize) returns the full 38-bid portfolio,
---   refs back to 2023, dedicated tenderNumber/bidStatus/closing fields.
+--   refs back to 2013, dedicated tenderNumber/bidStatus/closing fields.
 -- Enablement effect: src/tenders_biddingo collects DRPS on daily-tenders
 --   (one rendered page per run, self-maintaining). The full portfolio is 38
 --   rows in one response, so there is no history drain to cost-gate; the

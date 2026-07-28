@@ -14,7 +14,7 @@ Access method, decided on probe evidence (runs 30356741517 + 30356971071,
     The call is SERVER-PAGED ({"startResult": 0, "maxRow": 10} body; the
     response reports the portfolio size as bidCount), and replaying the
     page's own call with a larger maxRow through the page's request context
-    returns the full portfolio (DRPS: all 38 bids, refs back to 2023) --
+    returns the full portfolio (DRPS: all 38 bids, refs back to 2013) --
     run 30357811409.
   * each row has a dedicated tenderNumber field (the DRPS bid reference,
     printed verbatim: "DRPS-2026-002", "DRPS 2025-003", "2023-0002",

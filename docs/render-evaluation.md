@@ -95,6 +95,22 @@ Updates from today's probes, and the operator's reprioritization:
   adapter, validation against the tier-1 tender bars, operator go, and
   enablement inside daily-tenders, whose Playwright step already exists,
   so the marginal cost stays runner minutes only.
+* **BUILT AND VALIDATED (2026-07-28)**: under the renamed
+  SignalNorthIntel/1.0 UA the biddingo.com robots evaluates clean
+  (wildcard-allow; the old name's "Collector" token falsely matched a
+  banned-tool group aimed at a different product -- probe run
+  30356741517). The /m/drps grid populates under the honest UA and feeds
+  from a public server-paged REST call (restapi/bidding/list/noauthorize,
+  {startResult, maxRow} body, portfolio size in bidCount -- runs
+  30356971071 + 30357811409). src/tenders_biddingo renders once and pages
+  the page's own call (Method B). Validation dry-run 30358174044: rows=38
+  ref_parsed=100% closing_parsed=100% posted_parsed=100%, tender=34
+  award=4, full history 2013-2026 incl. the Body-Worn Camera RFI (2017),
+  NG Recorder/Logger (2020), Police Campus construction RFI (2025), and
+  the vehicle-towing lifecycle closing in the 2026 award. Awaiting
+  operator go: merge + paste the DRPS source seed together. eScribe
+  boards and the Ontario Newsroom JSON collector queue behind it on the
+  same stack.
 
 Cost restated for the program cap: $0 API spend at collection (no LLM, no
 SaaS); GitHub Actions runner minutes only (Playwright install ~40s plus
