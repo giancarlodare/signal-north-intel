@@ -186,3 +186,55 @@ export function shortDate(iso: string): string {
     month: "short",
   }).format(d);
 }
+
+// ---------------------------------------------------------------------------
+// Live "closing soon" surface (Wave 3, operator D1-D4 2026-07-28). Reads the
+// member_live_items projection table -- a flat, gate-cleared table (the gate
+// lives in src/live_surface.py, not here). Returns null when the table is not
+// pasted yet, so the page falls back to its Pending block pre-paste.
+// ---------------------------------------------------------------------------
+export interface LiveItem {
+  id: string;
+  headline: string;
+  buyer: string | null;
+  docType: string;
+  closingOn: string;
+  datePrecision: string | null;
+  referenceNumber: string | null;
+  url: string | null;
+  categorySlug: string | null;
+  defenceRelevant: boolean;
+  refreshedAt: string | null;
+}
+
+export async function listLiveItems(
+  supabase: SupabaseClient,
+): Promise<LiveItem[] | null> {
+  const { data, error } = await supabase
+    .from("member_live_items")
+    .select(
+      "id, headline, buyer_name, doc_type, closing_on, date_precision, " +
+      "reference_number, url, category_slug, defence_relevant, refreshed_at",
+    )
+    .order("closing_on", { ascending: true });
+  if (error) {
+    // Pre-paste (table absent) returns null so the page shows Pending; this
+    // is the one place a query error is a legitimate "not ready yet", not a
+    // silent-empty (the table's own absence is the signal, not zero rows).
+    console.error("[watch-data] listLiveItems:", error.message);
+    return null;
+  }
+  return ((data ?? []) as unknown as Record<string, unknown>[]).map((r) => ({
+    id: r.id as string,
+    headline: (r.headline as string) ?? "(untitled opportunity)",
+    buyer: (r.buyer_name as string) ?? null,
+    docType: (r.doc_type as string) ?? "",
+    closingOn: (r.closing_on as string) ?? "",
+    datePrecision: (r.date_precision as string) ?? null,
+    referenceNumber: (r.reference_number as string) ?? null,
+    url: (r.url as string) ?? null,
+    categorySlug: (r.category_slug as string) ?? null,
+    defenceRelevant: Boolean(r.defence_relevant),
+    refreshedAt: (r.refreshed_at as string) ?? null,
+  }));
+}

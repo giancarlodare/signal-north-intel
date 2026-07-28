@@ -9,6 +9,7 @@ const MARK = "M48 4 L76 90 L48 72 L20 90 Z";
 const NAV = [
   { href: "/portal", label: "Home" },
   { href: "/portal/brief", label: "The Brief" },
+  { href: "/portal/closing-soon", label: "Closing soon" },
   { href: "/portal/saved", label: "Saved" },
   { href: "/portal/watching", label: "Watching" },
 ] as const;

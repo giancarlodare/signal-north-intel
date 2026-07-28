@@ -212,6 +212,20 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python -m src.watch_matcher --apply
 
+      # Live "closing soon" surface (Wave 3, operator D1-D4 2026-07-28):
+      # rewrite the member_live_items projection from the gate-cleared slice
+      # (public_safety + unsuppressed + grade>=4 + tender/grant closing in
+      # 30/45 days). Deterministic, no LLM. Runs AFTER the public-safety
+      # derivation so the projection sees fresh flags; self-skips until the
+      # member_live_items migration is pasted, so wiring it now never reddens
+      # the pipeline. Ordered so its refreshed_at reflects the day's collection.
+      - name: Refresh member live surface
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.live_surface --apply
+
       # Board minutes run LAST, on purpose (operator 2026-07-25). The board
       # sites' WAFs (tpsb.ca, durhampoliceboard.ca) intermittently 415 a heavy
       # crawl repeated within a short window; as an early step that failed the
