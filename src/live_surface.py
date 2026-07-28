@@ -109,7 +109,10 @@ def project(signals, today: date) -> tuple:
             "reference_number": doc.get("reference_number"),
             "url": doc.get("url"),
             "category_slug": s.get("category_slug"),
-            "defence_relevant": bool(doc.get("defence_relevant")),
+            # Open tag array, not a fixed domain boolean (generic-shape rule,
+            # docs/spine-vertical-seam.md). The VERTICAL semantics are the tag
+            # values this vertical happens to emit.
+            "tags": (["defence"] if doc.get("defence_relevant") else []),
         })
     # Soonest-closing first: the member's most urgent opportunity leads.
     rows.sort(key=lambda r: r["closing_on"])

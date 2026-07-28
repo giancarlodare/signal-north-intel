@@ -203,7 +203,7 @@ export interface LiveItem {
   referenceNumber: string | null;
   url: string | null;
   categorySlug: string | null;
-  defenceRelevant: boolean;
+  tags: string[];
   refreshedAt: string | null;
 }
 
@@ -234,7 +234,7 @@ export async function listLiveItems(
     referenceNumber: (r.reference_number as string) ?? null,
     url: (r.url as string) ?? null,
     categorySlug: (r.category_slug as string) ?? null,
-    defenceRelevant: Boolean(r.defence_relevant),
+    tags: (r.tags as string[]) ?? [],
     refreshedAt: (r.refreshed_at as string) ?? null,
   }));
 }

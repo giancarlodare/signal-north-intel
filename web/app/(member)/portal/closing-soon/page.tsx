@@ -36,7 +36,7 @@ function ItemRow({ item }: { item: LiveItem }) {
         <span className="flag-card__match" data-field="deadline">
           {when ? `${label} ${when}` : label}
         </span>
-        {item.defenceRelevant ? (
+        {item.tags.includes("defence") ? (
           <span className="mono-meta" data-field="defence">
             Defence-relevant
           </span>

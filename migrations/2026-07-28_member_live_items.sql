@@ -32,7 +32,12 @@ create table if not exists member_live_items (
   reference_number text,
   url              text,
   category_slug    text,
-  defence_relevant boolean not null default false,
+  -- GENERIC SHAPE (operator 2026-07-28, docs/spine-vertical-seam.md rule 1):
+  -- an open tag array rather than a fixed domain boolean. Today the writer
+  -- sets 'defence' where the document is defence-relevant; tomorrow it can
+  -- carry grant/category/urgency tags, and a second product's live surface
+  -- needs no migration. Vertical semantics live in the VALUES, not the schema.
+  tags             text[] not null default '{}',
   refreshed_at     timestamptz not null default now(),
   -- one live row per signal: the writer deletes-and-rewrites, and this makes
   -- a double-write a loud unique violation rather than a silent duplicate.

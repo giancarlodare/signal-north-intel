@@ -44,7 +44,7 @@ def test_clean_signal_projects_with_presentation_columns_only():
     assert r["reference_number"] == "2026-104P"
     # No operator-internal fields leak into the projection (D3).
     for banned in ("evidence_grade", "amount_max_cad", "suppressed",
-                   "reviewed_by", "public_safety"):
+                   "reviewed_by", "public_safety", "defence_relevant"):
         assert banned not in r, banned
 
 
@@ -112,12 +112,18 @@ def test_rows_sorted_soonest_closing_first():
     assert [r["signal_id"] for r in rows] == ["b", "c", "a"]
 
 
-def test_unresolved_buyer_and_defence_flag_from_document():
+def test_unresolved_buyer_and_defence_tag_from_document():
     rows, _ = ls.project([sig(
         organizations=None,
         documents={"defence_relevant": True})], TODAY)
     assert rows[0]["buyer_name"] is None
-    assert rows[0]["defence_relevant"] is True
+    # Generic shape: an open tag array, not a fixed domain boolean.
+    assert rows[0]["tags"] == ["defence"]
+
+
+def test_non_defence_item_carries_no_tags():
+    rows, _ = ls.project([sig()], TODAY)
+    assert rows[0]["tags"] == []
 
 
 def test_run_raises_on_empty_slice(monkeypatch):
