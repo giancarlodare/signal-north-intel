@@ -71,7 +71,15 @@ standing rule: watch-summary 14px, activity-log column gap 14px, saved-card
 gap 5px, activity-row text 13.5px. No visible drift-fix; scale-centralization
 only.
 
-## Closing-soon page (dashboard) -- pending (new page, authored to spec)
+## Closing-soon page (dashboard) -- converted 2026-07-28
+VERDICT: CENTRALIZATION (authored-to-convention). No handoff HTML exists
+(this is the new live surface), so it was checked against the design-system
+conventions the brief and home establish. It already used the design-system
+classes (dash-hero__title, flag-card, flag-card__meta, mono-meta, src-link);
+all five inline numbers mapped to EXACT tokens (gap 16/8/20 -> --sp-4/2/5,
+fontSize 13 -> --fs-small) with ZERO off-scale values -- cleaner than the
+ported pages, which is the payoff of authoring to convention. Converted all
+five; render-identical; no flags needed.
 
 ## Marketing pages (home, about, pricing) -- operator-driven, worst-first
 Narrower structural mismatches; the operator will point at each with paired

@@ -29,7 +29,7 @@ function ItemRow({ item }: { item: LiveItem }) {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "baseline",
-          gap: 16,
+          gap: "var(--sp-4)",
           flexWrap: "wrap",
         }}
       >
@@ -88,13 +88,13 @@ export default async function ClosingSoonPage() {
     <main className="fade-rise" data-testid="closing-soon">
       <section className="dash-hero">
         <div className="dash-hero__inner">
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--sp-2)" }}>
             <span className="dash-hero__date">Live opportunities</span>
             <h1 className="dash-hero__title">Closing soon</h1>
           </div>
           {refreshedAt ? (
             <span
-              style={{ fontSize: 13, color: "var(--blue-dim)" }}
+              style={{ fontSize: "var(--fs-small)", color: "var(--blue-dim)" }}
               data-field="freshness"
             >
               As of {shortDate(refreshedAt)}
@@ -105,7 +105,7 @@ export default async function ClosingSoonPage() {
 
       <div
         className="dash-main dash-main--narrow"
-        style={{ display: "flex", flexDirection: "column", gap: 20 }}
+        style={{ display: "flex", flexDirection: "column", gap: "var(--sp-5)" }}
       >
         {items === null ? (
           <Pending
@@ -126,7 +126,7 @@ export default async function ClosingSoonPage() {
             ))}
             <p
               data-testid="live-count"
-              style={{ margin: 0, fontSize: 13, color: "var(--faint)" }}
+              style={{ margin: 0, fontSize: "var(--fs-small)", color: "var(--faint)" }}
             >
               {items.length} opportunities closing soon
             </p>
