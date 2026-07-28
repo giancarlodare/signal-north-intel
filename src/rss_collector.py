@@ -86,7 +86,11 @@ FEEDS = [
     },
     {
         "name": "Department of National Defence — News",
-        "feed_url": _GC_NEWS_API.format(dept="departmentofnationaldefence",
+        # Dept slug corrected 2026-07-28 (probe run 30352966516): the GC news
+        # API renamed it to 'departmentnationaldefense' (no 'of', US spelling,
+        # matching canada.ca advanced-search's dprtmnt param); the old slug
+        # returned a VALID empty feed and the feed went dark silently.
+        "feed_url": _GC_NEWS_API.format(dept="departmentnationaldefense",
                                         title="National%20Defence"),
         "allowed_hosts": ["www.canada.ca", "canada.ca", "www.forces.gc.ca"],
         "scope_terms": [],
@@ -96,9 +100,15 @@ FEEDS = [
     },
     {
         "name": "RCMP — News",
-        "feed_url": _GC_NEWS_API.format(dept="royalcanadianmountedpolice",
-                                        title="RCMP"),
-        "allowed_hosts": ["www.canada.ca", "canada.ca", "www.rcmp-grc.gc.ca", "rcmp-grc.gc.ca"],
+        # Moved 2026-07-28 (probe run 30353094661): the RCMP left the GC news
+        # API entirely (every dept slug returns empty) and now publishes a
+        # feed directory at rcmp.ca/en/news/web-feeds. The news-release
+        # product feed is the national-release analogue of the old feed; the
+        # main feed is mostly local detachment items (kept out deliberately).
+        "feed_url": "https://rcmp.ca/en/feed-flux/news-nouvelles/product-produit/news-release",
+        "allowed_hosts": ["rcmp.ca", "www.rcmp.ca",
+                          "www.canada.ca", "canada.ca",
+                          "www.rcmp-grc.gc.ca", "rcmp-grc.gc.ca"],
         "scope_terms": [],
         "source_name_candidates": ["RCMP — News", "RCMP News",
                                    "Canada.ca — RCMP News"],
