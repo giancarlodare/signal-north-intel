@@ -68,6 +68,17 @@ forensic
 coast guard
 marine security
 
+# --- Surveillance-adjacent vendor categories (operator 2026-07-28, after
+# --- the Ottawa "CCTV Asset Inspection ACAN" was found member-hidden) ---
+cctv
+closed-circuit
+closed circuit
+body-worn
+body worn camera
+alpr
+licence plate recognition
+license plate recognition
+
 # ---DEFENCE---
 # Dual-use defence terms. Matches here also set defence_relevant = true.
 
