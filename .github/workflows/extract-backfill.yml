@@ -22,6 +22,17 @@ on:
         description: "Max documents to extract this run (per-run cost ceiling)"
         type: string
         default: "200"
+      # Targeted-drain scope (operator-approved envelopes only): comma-
+      # separated url host substrings passed to --include-hosts, and an
+      # optional doc_types override. Empty = the standing unscoped drain.
+      include_hosts:
+        description: "Restrict the run to these url host substrings (targeted drain)"
+        type: string
+        default: ""
+      doc_types:
+        description: "Override the doc_types list for a targeted drain"
+        type: string
+        default: "award_notice,board_minutes,news_release"
 
 concurrency:
   group: extract-backfill
@@ -54,6 +65,7 @@ jobs:
         # from this exclusion only with an operator-approved envelope.
         run: >
           python -m src.signal_extractor
-          --doc-types award_notice,board_minutes,news_release
+          --doc-types "${{ inputs.doc_types }}"
           --exclude-buyers "City of Hamilton,City of Brampton,City of Kitchener,City of Vaughan,Halton Region"
           --newest-first --limit ${{ inputs.limit }}
+          ${{ inputs.include_hosts != '' && format('--include-hosts "{0}"', inputs.include_hosts) || '' }}
