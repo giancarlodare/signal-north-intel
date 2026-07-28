@@ -109,7 +109,15 @@ FEEDS = [
         "allowed_hosts": ["rcmp.ca", "www.rcmp.ca",
                           "www.canada.ca", "canada.ca",
                           "www.rcmp-grc.gc.ca", "rcmp-grc.gc.ca"],
-        "scope_terms": [],
+        # Scope gate (operator 2026-07-28): the news-release feed is still
+        # dominated by local detachment blotter, which would burn daily
+        # extraction budget for zero procurement signal. Only procurement /
+        # funding / program / organizational items pass. NOTE matches_scope
+        # is substring, so 'invests'/'investment' rather than bare 'invest'
+        # (which sits inside "investigating", i.e. every blotter item).
+        "scope_terms": ["contract", "procurement", "funding", "invests",
+                        "investment", "program", "equipment",
+                        "modernization", "national", "headquarters"],
         "source_name_candidates": ["RCMP — News", "RCMP News",
                                    "Canada.ca — RCMP News"],
         "source_id_env": "RCMP_NEWS_SOURCE_ID",
