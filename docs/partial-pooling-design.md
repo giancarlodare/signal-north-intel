@@ -29,14 +29,19 @@ Universe: the per-(organization, transition) lag lists demand_arc already
 computes. Lags are right-skewed and heavy-tailed, so everything happens on
 log-lags.
 
-Two-level empirical-Bayes normal model on y = log(lag_days):
+Two-level empirical-Bayes model on the cells' LOG-MEDIANS (build note
+2026-07-28: the first cut pooled means of log-lags, i.e. geometric means,
+and low-outlier lags dragged a 363d-median cell to a "pooled median" of
+84d; the house quantity of record is the median, so the median is what
+pools). Per cell, y = log1p(median(lags)) and v = the bootstrap variance
+of that log-median.
 
 * Population level, per transition and per stratum (see P1): grand mean mu
   and between-cell variance tau^2, estimated by method of moments from the
-  cells' log-lag means and within-cell variances (DerSimonian-Laird).
+  cells' (y, v) (DerSimonian-Laird).
 * Cell level: the pooled cell estimate is the precision-weighted blend
-    theta_cell = w x ybar_cell + (1 - w) x mu,
-    w = tau^2 / (tau^2 + sigma^2_cell / n_cell)
+    theta_cell = w x y_cell + (1 - w) x mu,
+    w = tau^2 / (tau^2 + v_cell)
   which is the classic shrinkage estimator: a cell with rich local data
   keeps its own signal (w near 1); a thin cell leans on the sector prior
   (w near 0). Reported medians are exp(theta), back on the day scale.

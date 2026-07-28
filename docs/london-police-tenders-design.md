@@ -1,6 +1,16 @@
 # London Police Service bids page: collector design (Phase 1 wrap)
 
-Status: DESIGN, awaiting operator approval. Nothing is built.
+Status: step-1 probe COMPLETE 2026-07-28 (run 30321078029) and it
+simplified everything: the Umbraco page is a landing page whose
+procurement link goes to **londonpolice.bidsandtenders.ca** (a standard
+bids&tenders tenant, like York Regional Police already enabled). No new
+collector is needed; step 2 collapses into the standard tenant validation
+dry-run under the existing collector, then operator go + seed paste to
+enable. Provenance chain: londonpolice.ca (service's own domain, robots
+permitted) names the tenant, the same publisher-links-portal pattern the
+tier-2/tier-3 enablements used. The original plain-requests design below
+is retained for the record; it is superseded by the tenant route.
+
 Program: coverage program Phase 1 (operator approved 2026-07-28 under the
 $500 cap). Design-first per the standing discipline.
 
