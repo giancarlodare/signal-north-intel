@@ -197,16 +197,40 @@ def fill_prompt(template: str, **values) -> str:
 MAX_BODY_CHARS = int(os.environ.get("EXTRACTION_MAX_BODY_CHARS", "60000"))
 
 
-def extract_signals(doc: dict, source_name: str, model: str) -> tuple:
-    """Call Claude to extract signals from one document. Returns (signals, stamp)."""
+# extraction@v3+ prompt files carry the static instruction block ABOVE this
+# marker (sent as a prompt-cached system block: the identical prefix across
+# every doc in a run bills at ~0.1x on cache hits) and the per-document
+# template BELOW it. v1/v2 files have no marker and keep the legacy path
+# (tiny _SYSTEM constant, everything in the user message) byte-for-byte.
+USER_SPLIT = "=====USER====="
+
+
+def split_prompt(prompt_text: str) -> tuple:
+    """Return (system_text_or_None, user_template) for a prompt file."""
+    if USER_SPLIT not in prompt_text:
+        return None, prompt_text
+    system_text, _, user_template = prompt_text.partition(USER_SPLIT)
+    return system_text.strip(), user_template.strip()
+
+
+def extract_signals(doc: dict, source_name: str, model: str,
+                    usage_totals: dict | None = None,
+                    prompt_version: int | None = None) -> tuple:
+    """Call Claude to extract signals from one document. Returns (signals, stamp).
+
+    usage_totals, when given, accumulates the response's token-usage counters
+    (input/output/cache_write/cache_read) so a run can report its cache hit
+    rate; prompt_version pins a specific prompt (the v2-vs-v3 comparison run),
+    defaulting to the active version."""
     import anthropic  # lazy so the module imports without the SDK installed
 
-    prompt_text, stamp = prompts.get_prompt("extraction")
+    prompt_text, stamp = prompts.get_prompt("extraction", prompt_version)
+    system_text, user_template = split_prompt(prompt_text)
     # Rich doc types (board_minutes) store their full text in documents.content;
     # title-only doc types (CSV/RSS rows) fall back to the title as before.
     body = (doc.get("content") or "").strip() or doc.get("title", "")
     filled = fill_prompt(
-        prompt_text,
+        user_template,
         title=doc.get("title", "Unknown"),
         doc_type=doc.get("doc_type", "other"),
         source_name=source_name,
@@ -214,15 +238,32 @@ def extract_signals(doc: dict, source_name: str, model: str) -> tuple:
         url=doc.get("url", ""),
         content=body[:MAX_BODY_CHARS],
     )
+    if system_text is None:
+        system = _SYSTEM                       # legacy v1/v2 shape, unchanged
+    else:
+        system = [{"type": "text", "text": system_text,
+                   "cache_control": {"type": "ephemeral"}}]
 
     client = anthropic.Anthropic()
     resp = client.messages.create(
         model=model,
         max_tokens=4096,
-        system=_SYSTEM,
+        system=system,
         messages=[{"role": "user", "content": filled}],
         output_config={"format": {"type": "json_schema", "schema": _RESPONSE_SCHEMA}},
     )
+    if usage_totals is not None:
+        u = resp.usage
+        usage_totals["input_tokens"] = (usage_totals.get("input_tokens", 0)
+                                        + (u.input_tokens or 0))
+        usage_totals["output_tokens"] = (usage_totals.get("output_tokens", 0)
+                                         + (u.output_tokens or 0))
+        usage_totals["cache_write_tokens"] = (
+            usage_totals.get("cache_write_tokens", 0)
+            + (getattr(u, "cache_creation_input_tokens", 0) or 0))
+        usage_totals["cache_read_tokens"] = (
+            usage_totals.get("cache_read_tokens", 0)
+            + (getattr(u, "cache_read_input_tokens", 0) or 0))
     if resp.stop_reason == "refusal":
         log.warning("Extraction refused for document %s", doc.get("id"))
         return [], stamp
@@ -272,10 +313,12 @@ def run_extraction(batch_size: int = 20, model: str = DEFAULT_MODEL, dry_run: bo
         return stats
     log.info("Processing %d documents%s", len(docs), " (DRY RUN — no writes)" if dry_run else "")
 
+    usage: dict = {}
     for doc in docs:
         try:
             source_name = supabase_client.get_source_name(doc["source_id"])
-            raw_signals, stamp = extract_signals(doc, source_name, model)
+            raw_signals, stamp = extract_signals(doc, source_name, model,
+                                                 usage_totals=usage)
             for raw in raw_signals:
                 payload = build_signal_payload(raw, doc["id"], stamp, resolve_org,
                                                resolve_cat, doc.get("doc_type"))
@@ -305,6 +348,14 @@ def run_extraction(batch_size: int = 20, model: str = DEFAULT_MODEL, dry_run: bo
                 except Exception:
                     log.exception("Could not mark document %s as failed", doc.get("id"))
 
+    # Cache line for the overnight status: on a cached prompt (extraction@v3+)
+    # cache_read should approach one system-block per doc after the first call;
+    # all-zero cache counters on a v3 run would mean caching silently broke.
+    if usage:
+        log.info("Token usage: input=%d output=%d cache_write=%d cache_read=%d",
+                 usage.get("input_tokens", 0), usage.get("output_tokens", 0),
+                 usage.get("cache_write_tokens", 0),
+                 usage.get("cache_read_tokens", 0))
     log.info("Extraction complete%s: %s", " (DRY RUN)" if dry_run else "", stats)
     return stats
 
