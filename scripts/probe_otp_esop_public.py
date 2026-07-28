@@ -18,7 +18,7 @@ import urllib.robotparser
 
 import requests
 
-UA = "SignalNorthCollector/1.0"
+UA = "SignalNorthIntel/1.0"
 BASE = "https://ontariotenders.app.jaggaer.com"
 CANDIDATES = [
     "/esop/toolkit/opportunity/current/list.si",

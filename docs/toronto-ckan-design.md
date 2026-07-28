@@ -8,7 +8,7 @@ operator's instruction.
 ## 1. Scope
 
 One requests-based collector on the Windsor open-data pattern (the
-CanadaBuys / board-minutes politeness stance: SignalNorthCollector UA,
+CanadaBuys / board-minutes politeness stance: SignalNorthIntel UA,
 robots respected, 2s shared delay, loud failure on empty). No Playwright,
 no accounts, no new schema. Toronto's SAP Ariba front end stays closed to
 automation and is irrelevant here: we collect the city's own published

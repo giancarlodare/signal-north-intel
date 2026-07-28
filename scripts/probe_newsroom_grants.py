@@ -32,7 +32,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from src import supabase_client
 
-UA = "SignalNorthCollector/1.0"
+UA = "SignalNorthIntel/1.0"
 FUND = re.compile(r"\b(fund|funding|grant|grants|invest|investment|contribution)\w*",
                   re.IGNORECASE)
 

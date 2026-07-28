@@ -230,7 +230,7 @@ awarded rung for Peel. It supersedes minutes-mining for Peel.
 
 ### 9.3 TPSB: access restored, real awards, but minute-keyed (not tender-keyed)
 The WAF 415 that parked TPSB on 2026-07-11 is GONE: plain requests (even the
-`SignalNorthCollector/1.0` UA) now gets HTTP 200 on robots.txt and the listing;
+`SignalNorthIntel/1.0` UA (renamed 2026-07-28)) now gets HTTP 200 on robots.txt and the listing;
 88 agenda/minutes PDFs are reachable and extract cleanly. TPSB minutes DO carry
 real contract-award motions with vendor and value, e.g. "Approve a contract
 award to Olin Canada ULC for ammunition in the amount of $622,000", "contract

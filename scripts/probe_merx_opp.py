@@ -17,7 +17,7 @@ from urllib.parse import quote
 
 import requests
 
-UA = "SignalNorthCollector/1.0"
+UA = "SignalNorthIntel/1.0"
 BASE = "https://www.merx.com"
 OPP = re.compile(r"\bOPP\b|Ontario Provincial Police|Provincial Police",
                  re.IGNORECASE)

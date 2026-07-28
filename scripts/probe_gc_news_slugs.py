@@ -15,7 +15,7 @@ import urllib.robotparser
 
 import requests
 
-UA = "SignalNorthCollector/1.0"
+UA = "SignalNorthIntel/1.0"
 API = ("https://api.io.canada.ca/io-server/gc/news/en/v2"
        "?dept={dept}&sort=publishedDate&orderBy=desc&pick=8&format=json")
 

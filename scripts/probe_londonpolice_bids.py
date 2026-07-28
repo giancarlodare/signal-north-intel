@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 BASE = "https://www.londonpolice.ca"
 PAGE = f"{BASE}/about/bids-and-tenders/"
-UA = "SignalNorthCollector/1.0"
+UA = "SignalNorthIntel/1.0"
 
 
 def fetch(url: str) -> requests.Response:

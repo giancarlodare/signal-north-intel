@@ -6,7 +6,7 @@ evidence from the read-only CI probe the same day, job 88502863474).
 ## 1. Scope
 
 Two requests-based collectors on the CanadaBuys/board-minutes politeness
-pattern (SignalNorthCollector UA, robots respected, 2s shared delay, loud
+pattern (SignalNorthIntel UA, robots respected, 2s shared delay, loud
 failure on empty). No Playwright, no accounts, no new schema.
 
 | Target | Why | Provenance |

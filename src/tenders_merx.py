@@ -21,7 +21,7 @@ Two stages (docs/merx-windsor-design.md, approved 2026-07-20):
      Date (published_on, day precision). The MERX id rides in the URL.
 
 Politeness is the board-minutes pattern (shared PoliteFetcher: robots per
-host, 2s delay, SignalNorthCollector UA). A per-tab NEW-item cap drains the
+host, 2s delay, SignalNorthIntel UA). A per-tab NEW-item cap drains the
 awarded backlog over successive days; a hard page bound caps the initial
 history at ~1000 ids per tab.
 
