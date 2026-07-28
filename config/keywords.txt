@@ -2,7 +2,9 @@
 #
 # How this file works:
 #   - One keyword or phrase per line, matched case-insensitively as a
-#     substring against each notice's title + description.
+#     WHOLE WORD or phrase against each notice's title + description
+#     (substring matching produced false defence tags: 'ems' inside
+#     "Systems", 'uas'/'ppe' inside ordinary words; fixed 2026-07-28).
 #   - Lines starting with "#" are comments and are ignored.
 #   - Blank lines are ignored.
 #   - Everything ABOVE the "# ---DEFENCE---" marker is the general
