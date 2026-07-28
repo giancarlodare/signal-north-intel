@@ -18,6 +18,7 @@ import {
   type PortalItem,
 } from "@/lib/portal/data";
 import { actionWindow } from "@/lib/brief/date-label";
+import { provenanceKind, provenanceLabel } from "@/lib/portal/provenance";
 import { listSaved, savedIds } from "@/lib/portal/watch-data";
 import { saveItem, unsaveItem } from "../actions";
 
@@ -82,6 +83,11 @@ function ItemMeta({ item }: { item: PortalItem }) {
     item.eventDate,
     item.datePrecision,
   );
+  // Honest provenance (operator rule 2026-07-28): the label matches where the
+  // click actually lands — record page, publisher listing (text-fragment
+  // anchor), or portal landing — and the publisher's reference number renders
+  // beside the link so a portal-level record is locatable in two clicks.
+  const kind = item.sourceUrl ? provenanceKind(item.sourceUrl) : null;
   return (
     <div
       className="flag-card__meta"
@@ -89,14 +95,19 @@ function ItemMeta({ item }: { item: PortalItem }) {
     >
       {item.buyer ? <span className="mono-meta">{item.buyer}</span> : null}
       {window_ ? <span className="mono-meta">{window_}</span> : null}
-      {item.sourceUrl ? (
+      {item.referenceNumber ? (
+        <span className="mono-meta" data-field="reference">
+          Ref {item.referenceNumber}
+        </span>
+      ) : null}
+      {item.sourceUrl && kind ? (
         <a
           href={item.sourceUrl}
           className="src-link"
           target="_blank"
           rel="noreferrer"
         >
-          View the publisher record →
+          {provenanceLabel(kind)}
         </a>
       ) : null}
     </div>
