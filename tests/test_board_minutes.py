@@ -432,8 +432,10 @@ def test_guess_meeting_date_existing_formats_still_parse():
 
 def test_big12_boards_config_rows():
     enabled = [b["name"] for b in bm.BOARDS if b.get("enabled", True)]
+    # TPSB re-parked 2026-07-28 (site-wide WAF 415 returned; probe run
+    # 30359688633 confirmed it is client-level, not UA). Returns to this
+    # list when the wall lifts again.
     assert enabled == [
-        "Toronto Police Service Board",
         "Peel Police Services Board",
         "York Regional Police Services Board",
         "Durham Regional Police Services Board",
@@ -443,6 +445,7 @@ def test_big12_boards_config_rows():
     ]
     parked = {b["name"]: b for b in bm.BOARDS if not b.get("enabled", True)}
     assert set(parked) == {
+        "Toronto Police Service Board",
         "Hamilton Police Service Board", "Niagara Regional Police Service Board",
         "London Police Service Board", "Windsor Police Service Board",
         "Ottawa Police Services Board"}

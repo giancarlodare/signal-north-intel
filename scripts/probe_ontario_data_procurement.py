@@ -18,7 +18,7 @@ import urllib.robotparser
 
 import requests
 
-UA = "SignalNorthCollector/1.0"
+UA = "SignalNorthIntel/1.0"
 CKAN = "https://data.ontario.ca/api/3/action/package_search"
 
 

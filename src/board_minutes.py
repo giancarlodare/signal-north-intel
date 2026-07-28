@@ -52,7 +52,13 @@ log = logging.getLogger(__name__)
 # longer parenthesized form (URL + description), which some WAFs choke on.
 # The name still identifies us as an automated collector — this is
 # compatibility, not disguise. Full provenance lives in this repo.
-USER_AGENT = "SignalNorthCollector/1.0"
+# Renamed from SignalNorthCollector/1.0 (operator 2026-07-28): the word
+# "Collector" appears verbatim in standard bad-bot blocklists (Biddingo's
+# robots bans a different tool by that token), so the old name drew false
+# robots collisions on sites whose stated policy welcomes crawlers. The new
+# name identifies us just as plainly; this clears a false match, it does not
+# evade any rule aimed at us.
+USER_AGENT = "SignalNorthIntel/1.0"
 POLITE_DELAY_SECONDS = 2.0
 REQUEST_TIMEOUT = 30
 MAX_DOCUMENT_BYTES = 25 * 1024 * 1024   # refuse PDFs larger than this
@@ -81,13 +87,24 @@ BOARDS = [
             "TPSB",
         ],
         "source_id_env": "TPSB_SOURCE_ID",
-        # UNPARKED 2026-07-14: the WAF block that parked this on 2026-07-11 has
-        # lifted. Re-probed from a runner: plain requests with this client's UA
-        # ('SignalNorthCollector/1.0') now returns HTTP 200 on robots.txt AND the
-        # listing (147KB), and all 88 agenda/minutes PDFs fetch and extract
-        # cleanly. (Earlier the WAF 415'd the client site-wide regardless of UA.)
-        # If the 415 returns, re-park by flipping enabled to False.
-        "enabled": True,
+        # RE-PARKED 2026-07-28: the site-wide WAF 415 returned (daily-collect
+        # run 30350142055). Diagnosis probe run 30359688633 confirmed 415 on
+        # robots.txt AND the listing under the collector UA, the renamed UA,
+        # and a real browser UA alike -- client/IP-level, not UA. Same wall
+        # that parked this 2026-07-11 and lifted 2026-07-14; likely to lift
+        # again. Proxy coverage while parked: the 88 already-collected TPSB
+        # PDFs stay in corpus, and Toronto CKAN tenders + TPS awards continue.
+        # Re-probe on a later daily red-check; unpark by flipping back True.
+        # (History: unparked 2026-07-14 after the 2026-07-11 park.)
+        "enabled": False,
+        "parked_reason": (
+            "site-wide WAF 415 returned 2026-07-28 (run 30350142055; probe "
+            "30359688633: 415 under collector, renamed, and browser UAs "
+            "alike -- client-level, not UA). Second occurrence of the "
+            "2026-07-11 wall, which lifted once before; re-probe "
+            "periodically and unpark when it lifts. Proxy: the 88 collected "
+            "TPSB PDFs stay in corpus; Toronto CKAN tenders + TPS awards "
+            "continue."),
         # Verified in-browser 2026-07-10 (the earlier /meetings guess 404s).
         # Structure: year headings, then meeting dates, some with links.
         "listing_urls": ["https://tpsb.ca/home/current-and-past-meetings/"],

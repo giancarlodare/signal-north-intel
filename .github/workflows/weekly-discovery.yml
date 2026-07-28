@@ -58,6 +58,26 @@ jobs:
         if: steps.guard.outputs.should_run == 'true'
         run: python scripts/robots_drift_watch.py
 
+      # Demand-arc weekly recompute + Paule-Mandel pooled stamp (operator
+      # accepted PM as the standing estimator 2026-07-28). Deterministic,
+      # no LLM. The stamp self-skips until the pooled-columns migration is
+      # pasted; verdicts stay pool_uninformative/prior_only until a cell
+      # genuinely clears the P2 gate, and task #53's client_released human
+      # gate stands ahead of anything member-visible.
+      - name: Demand-arc profiles (weekly recompute)
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.demand_arc
+
+      - name: Partial-pooling stamp (Paule-Mandel)
+        if: steps.guard.outputs.should_run == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.pool_arcs --apply
+
       - name: Run discovery (propose-only)
         if: steps.guard.outputs.should_run == 'true'
         env:

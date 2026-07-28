@@ -23,7 +23,7 @@ import urllib.robotparser
 
 import requests
 
-UA = "SignalNorthCollector/1.0"
+UA = "SignalNorthIntel/1.0"
 SLUG = re.compile(r"opportunit|tender|bid|rfp|rfq|solicitation|procurement",
                   re.IGNORECASE)
 

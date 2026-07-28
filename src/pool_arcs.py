@@ -343,6 +343,19 @@ def run(dry_run: bool = True) -> dict:
 
     written = 0
     if not dry_run:
+        # Pre-migration guard (apply_public_safety pattern): until the
+        # operator pastes 2026-07-28_demand_arc_pooled_columns.sql the
+        # pooled_* columns do not exist; skip cleanly instead of erroring
+        # per row, so the weekly wiring can precede the paste.
+        try:
+            supabase_client.fetch_rows_where(
+                "demand_arc_profiles", "id,pooled_status", {}, limit=1)
+        except Exception as e:  # noqa: BLE001 - any read error means not ready
+            log.info("pooled_* columns not present yet (%s); skipping the "
+                     "stamp. Paste migrations/2026-07-28_demand_arc_pooled_"
+                     "columns.sql to enable.", type(e).__name__)
+            return {"cells": len(rows), "written": 0, "skipped": True,
+                    **coverage}
         profiles = supabase_client.fetch_all_rows_where(
             "demand_arc_profiles",
             "id,organization_id,from_grade,to_grade,computed_at", {})

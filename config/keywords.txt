@@ -79,6 +79,84 @@ alpr
 licence plate recognition
 license plate recognition
 
+
+# --- Approved expansion (operator 2026-07-28, diff-gated; evidence in
+# --- the impact-diff runs; bare 'rms' stays a watch-item, spelled-out
+# --- 'records management system' carries the category) ---
+
+# Weapons / use-of-force
+firearm
+ammunition
+conducted energy weapon
+cew
+taser
+less-lethal
+less lethal
+use of force
+
+# Dispatch / CAD / NG9-1-1
+computer aided dispatch
+computer-aided dispatch
+cad system
+ng9-1-1
+ng911
+psap
+dispatch console
+p25
+trunked radio
+
+# Records / digital evidence
+records management system
+digital evidence
+digital evidence management
+body-worn camera
+bwc
+in-car camera
+in car camera
+interview recording
+
+# Fleet / vehicles
+patrol vehicle
+pursuit
+prisoner transport
+upfit
+
+# Forensics depth
+forensic services
+
+# Radio
+radio
+portable radio
+
+# Grants language
+community safety
+crime prevention
+victim services
+gun and gang
+community safety and policing
+
+# Training
+use of force training
+firearms training
+recruit training
+
+# Facility construction (keep-path gap)
+fire hall
+fire station
+police station
+police headquarters
+emergency operations centre
+emergency operations center
+
+# Cyber (watch-five kept 2026-07-28; incident response monitored in
+# overnight statuses, strike later only if it pulls general-IT noise)
+incident response
+disclosure management
+ransomware
+security operations centre
+security operations center
+penetration testing
+
 # ---DEFENCE---
 # Dual-use defence terms. Matches here also set defence_relevant = true.
 

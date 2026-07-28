@@ -98,6 +98,9 @@ AWARD_NOTICE_URL_TEMPLATE = "https://canadabuys.canada.ca/en/tender-opportunitie
 # UNSPSC segment(s) treated as automatically in-scope regardless of keyword
 # match. Segment 46 is "Defense and Law Enforcement and Security and Safety
 # Equipment and Supplies" in the UNSPSC taxonomy.
-RELEVANT_UNSPSC_SEGMENTS = {"46"}
+# Segment 92 (national defence and public order SERVICES) added
+# 2026-07-28 (operator, diff-gated: four keeps, all defensible);
+# 46 is law-enforcement/security EQUIPMENT.
+RELEVANT_UNSPSC_SEGMENTS = {"46", "92"}
 
 REQUEST_TIMEOUT_SECONDS = 60

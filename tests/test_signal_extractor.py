@@ -138,7 +138,7 @@ def test_dry_run_writes_nothing(monkeypatch):
                              "url": "u", "published_on": None, "source_id": "s1"}])
     monkeypatch.setattr(se.supabase_client, "get_source_name", lambda sid: "Src")
     monkeypatch.setattr(se, "extract_signals",
-                        lambda doc, source_name, model: (
+                        lambda doc, source_name, model, **kw: (
                             [{"title": "x", "signal_type": "other", "summary": "s",
                               "confidence": "probable", "materiality": 3,
                               "organization_name": None, "category_slug": None}],
@@ -219,3 +219,60 @@ def test_get_documents_by_status_builds_in_filter_and_order(monkeypatch):
     assert p["doc_type"] == "in.(tender_notice,news_release,grant_program)"
     assert p["order"] == "published_on.desc.nullslast"
     assert p["limit"] == 50
+
+
+# ---------------------------------------------------------------------------
+# extraction@v3: cached-system prompt split (operator-gated 2026-07-28)
+# ---------------------------------------------------------------------------
+def test_split_prompt_v2_has_no_marker_and_keeps_legacy_shape():
+    text, _ = prompts.get_prompt("extraction", 2)
+    system_text, user_template = se.split_prompt(text)
+    assert system_text is None
+    assert user_template == text          # byte-for-byte: legacy path unchanged
+
+
+def test_split_prompt_v3_splits_system_and_user():
+    text, _ = prompts.get_prompt("extraction", 3)
+    system_text, user_template = se.split_prompt(text)
+    assert system_text is not None
+    # Static instructions live in the system block...
+    assert "INSTRUCTIONS:" in system_text
+    assert "signal_type" in system_text
+    # ...and the user template carries ONLY the per-doc fields.
+    assert "{title}" in user_template and "{content}" in user_template
+    assert "INSTRUCTIONS:" not in user_template
+    for token in ("{title}", "{doc_type}", "{source_name}",
+                  "{published_on}", "{url}", "{content}"):
+        assert token not in system_text, token   # nothing per-doc in the cache
+
+
+def test_v3_system_block_clears_the_opus48_cache_floor():
+    # Opus 4.8's minimum cacheable prefix is 1024 tokens; below it a
+    # cache_control stamp silently never caches. ~4 chars/token means the
+    # block must stay comfortably above ~4096 chars (it is ~6.6k today).
+    text, _ = prompts.get_prompt("extraction", 3)
+    system_text, _ = se.split_prompt(text)
+    assert len(system_text) > 5000
+
+
+def test_v3_embedded_schema_matches_the_live_response_schema():
+    # The v3 system block prints the response schema verbatim; this guard
+    # fails the suite if _RESPONSE_SCHEMA ever drifts from the immutable
+    # prompt file (the fix is a v4, never an edit of v3).
+    import json as _json
+    text, _ = prompts.get_prompt("extraction", 3)
+    system_text, _ = se.split_prompt(text)
+    start = system_text.index("{", system_text.index(
+        "The exact response schema you must match:"))
+    embedded = _json.loads(system_text[start:])
+    assert embedded == se._RESPONSE_SCHEMA
+
+
+def test_v3_fill_prompt_substitutes_user_template():
+    text, _ = prompts.get_prompt("extraction", 3)
+    _, user_template = se.split_prompt(text)
+    filled = fill_prompt(user_template, title="T-1", doc_type="tender_notice",
+                         source_name="S", published_on="2026-07-28",
+                         url="https://x", content="Body")
+    assert "Title: T-1" in filled and "Content/Description: Body" in filled
+    assert "{" not in filled.replace("{}", "")  # no unfilled tokens remain

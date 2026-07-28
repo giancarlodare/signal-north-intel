@@ -12,7 +12,7 @@ import urllib.robotparser
 
 import requests
 
-UA = "SignalNorthCollector/1.0"
+UA = "SignalNorthIntel/1.0"
 
 # (base host, path that is currently DISALLOWED and would be collectable)
 WATCHES = [

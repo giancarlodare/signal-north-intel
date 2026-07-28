@@ -33,7 +33,7 @@ the >= 90% bar before enablement. A field the resolver cannot map logs
 loudly and the validation bar catches it; nothing is enabled on a guess.
 
 Politeness is the board-minutes pattern (shared PoliteFetcher: robots per
-host, 2s delay, SignalNorthCollector UA). CKAN calls go through post_json so
+host, 2s delay, SignalNorthIntel UA). CKAN calls go through post_json so
 parameters ride in the JSON body, not the query string. A per-dataset
 NEW-row cap drains the multi-year history over successive days; unlike MERX
 each row arrives whole in the page (no per-row fetch), so the cap costs
