@@ -74,7 +74,7 @@ export default async function PortalHome() {
     <main className="fade-rise" data-testid="portal-dashboard">
       <section className="dash-hero">
         <div className="dash-hero__inner">
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--sp-2)" }}>
             <span className="dash-hero__date" data-field="date">
               {todayEastern()}
             </span>
@@ -86,6 +86,7 @@ export default async function PortalHome() {
                   : "Welcome back."}
             </h1>
           </div>
+          {/* 14px: off the named scale, matches the handoff (flagged) */}
           <span
             style={{ fontSize: 14, color: "var(--blue-dim)" }}
             data-field="watch-summary"
@@ -113,7 +114,7 @@ export default async function PortalHome() {
 
       <div className="dash-main dash-cols">
         <section
-          style={{ display: "flex", flexDirection: "column", gap: 20 }}
+          style={{ display: "flex", flexDirection: "column", gap: "var(--sp-5)" }}
           data-testid="flags"
         >
           <span className="t-label">Flagged for you</span>
@@ -135,7 +136,7 @@ export default async function PortalHome() {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "baseline",
-                    gap: 16,
+                    gap: "var(--sp-4)",
                     flexWrap: "wrap",
                   }}
                 >
@@ -162,14 +163,14 @@ export default async function PortalHome() {
           )}
         </section>
 
-        <aside style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+        <aside style={{ display: "flex", flexDirection: "column", gap: "var(--sp-6)" }}>
           <div className="brief-panel">
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "baseline",
-                gap: 12,
+                gap: "var(--sp-3)",
               }}
             >
               <span className="t-label" style={{ color: "#fff" }}>
@@ -185,7 +186,7 @@ export default async function PortalHome() {
                 <a
                   href="/portal/brief"
                   style={{
-                    fontSize: 11,
+                    fontSize: "var(--fs-label)",
                     fontWeight: 600,
                     letterSpacing: "0.12em",
                     textTransform: "uppercase",
@@ -200,6 +201,7 @@ export default async function PortalHome() {
             )}
           </div>
 
+          {/* gap 14: off the 8px scale, matches the handoff (flagged) */}
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div
               style={{
@@ -212,7 +214,7 @@ export default async function PortalHome() {
               <a
                 href="/portal/saved"
                 style={{
-                  fontSize: 11,
+                  fontSize: "var(--fs-label)",
                   fontWeight: 600,
                   letterSpacing: "0.1em",
                   textTransform: "uppercase",
@@ -237,16 +239,17 @@ export default async function PortalHome() {
                   key={it.briefItemId}
                   className="card"
                   style={{
-                    padding: "16px 20px",
+                    padding: "var(--sp-4) var(--sp-5)",
                     display: "flex",
                     flexDirection: "column",
+                    // gap 5: off the 8px scale, matches the handoff (flagged)
                     gap: 5,
                   }}
                 >
-                  <span style={{ fontSize: 15, color: "var(--ink)" }}>
+                  <span style={{ fontSize: "var(--fs-ui)", color: "var(--ink)" }}>
                     {it.headline ?? "(untitled item)"}
                   </span>
-                  <span className="mono-meta" style={{ fontSize: 11 }}>
+                  <span className="mono-meta" style={{ fontSize: "var(--fs-label)" }}>
                     Saved {shortDate(it.savedAt)}
                   </span>
                 </div>
@@ -258,7 +261,7 @@ export default async function PortalHome() {
             style={{
               display: "flex",
               flexDirection: "column",
-              gap: 12,
+              gap: "var(--sp-3)",
               borderTop: "1px solid var(--line)",
               paddingTop: 20,
             }}
@@ -279,6 +282,7 @@ export default async function PortalHome() {
                   key={e.id}
                 >
                   <time>{shortDate(e.createdAt)}</time>
+                  {/* 13.5px: off the named scale, matches the handoff (flagged) */}
                   <span style={{ fontSize: 13.5 }}>
                     {e.eventType === "match"
                       ? `Flagged ${e.signalTitle ?? "an item"} for you.`

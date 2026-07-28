@@ -175,7 +175,10 @@ export default async function BriefPage({
           style={{
             maxWidth: 860,
             margin: "0 auto",
-            padding: "64px 48px 56px",
+            // 56px bottom pad and the 14px gap are off the named 8px scale;
+            // kept to match the handoff target verbatim (flagged for the
+            // designer). The other two edges are exact tokens.
+            padding: "var(--sp-8) var(--sp-7) 56px",
             display: "flex",
             flexDirection: "column",
             gap: 14,
@@ -184,27 +187,20 @@ export default async function BriefPage({
           <span className="dash-hero__date" data-field="issue">
             The Weekly Signal · Week of {weekLabel(selected.weekStart)}
           </span>
-          <h1
-            style={{
-              fontFamily: "var(--font-serif)",
-              fontSize: 44,
-              lineHeight: 1.14,
-              letterSpacing: "-0.02em",
-              color: "#fff",
-            }}
-            data-field="headline"
-          >
+          {/* .t-title is the design-system display heading (serif, --fs-title,
+              1.14, -0.02em); the hero sits on navy so white overrides --ink. */}
+          <h1 className="t-title" style={{ color: "#fff" }} data-field="headline">
             {lead?.headline ?? `Week of ${weekLabel(selected.weekStart)}`}
           </h1>
         </div>
       </section>
       <div
         className="dash-main dash-main--narrow"
-        style={{ display: "flex", flexDirection: "column", gap: 48 }}
+        style={{ display: "flex", flexDirection: "column", gap: "var(--sp-7)" }}
       >
         {lead ? (
           <article
-            style={{ display: "flex", flexDirection: "column", gap: 16 }}
+            style={{ display: "flex", flexDirection: "column", gap: "var(--sp-4)" }}
             data-testid="lead-item"
           >
             <div
@@ -212,31 +208,26 @@ export default async function BriefPage({
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "baseline",
-                gap: 16,
+                gap: "var(--sp-4)",
               }}
             >
               <span className="flag-card__match">Lead item</span>
               <SaveButton id={lead.itemId} enabled={savingEnabled} saved={savedSet.has(lead.itemId)} />
             </div>
-            <h3
-              style={{
-                fontFamily: "var(--font-serif)",
-                fontSize: 30,
-                lineHeight: 1.25,
-                letterSpacing: "-0.01em",
-                color: "var(--ink)",
-              }}
-              data-field="title"
-            >
+            {/* .t-heading is the design-system panel heading (serif,
+                --fs-heading, 1.25, --ink). */}
+            <h3 className="t-heading" data-field="title">
               {lead.headline}
             </h3>
             {lead.vendorSoWhat ? (
               <div className="editor-note">
+                {/* .t-label with a 10px override to match the handoff (the
+                    label token is 11px; flagged for the designer). */}
                 <span className="t-label" style={{ fontSize: 10 }}>
                   Editor&apos;s note · G. Da-Ré
                 </span>
                 <p
-                  style={{ margin: 0, fontSize: 15, lineHeight: 1.75 }}
+                  style={{ margin: 0, fontSize: "var(--fs-ui)", lineHeight: 1.75 }}
                   data-field="editor-note"
                 >
                   {lead.vendorSoWhat}
@@ -254,7 +245,7 @@ export default async function BriefPage({
         {rest.map((item) => (
           <article
             key={item.itemId}
-            style={{ display: "flex", flexDirection: "column", gap: 12 }}
+            style={{ display: "flex", flexDirection: "column", gap: "var(--sp-3)" }}
             data-testid="brief-item"
           >
             <div
@@ -262,9 +253,12 @@ export default async function BriefPage({
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "baseline",
-                gap: 16,
+                gap: "var(--sp-4)",
               }}
             >
+              {/* Secondary item heading. 25px is OFF the named scale (nearest
+                  token --fs-subhead is 24px); kept to match the handoff target
+                  verbatim, flagged for the designer to reconcile. */}
               <h3
                 style={{
                   fontFamily: "var(--font-serif)",
@@ -283,6 +277,8 @@ export default async function BriefPage({
               <p
                 style={{
                   margin: 0,
+                  // 14px is off the named scale (nearest --fs-small 13 /
+                  // --fs-ui 15); kept to match the handoff, flagged.
                   fontSize: 14,
                   lineHeight: 1.7,
                   color: "var(--muted)",
@@ -296,7 +292,7 @@ export default async function BriefPage({
             <ItemMeta item={item} />
           </article>
         ))}
-        <p data-testid="portal-count" style={{ margin: 0, fontSize: 13, color: "var(--faint)" }}>
+        <p data-testid="portal-count" style={{ margin: 0, fontSize: "var(--fs-small)", color: "var(--faint)" }}>
           {items.length} items
         </p>
       </div>
