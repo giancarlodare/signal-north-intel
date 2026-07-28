@@ -64,14 +64,17 @@ interface ItemRow {
   signals: {
     title: string | null;
     amount_max_cad: number | null;
-    defence_relevant: boolean | null;
     public_safety: boolean | null;
     organizations: { canonical_name: string | null } | { canonical_name: string | null }[] | null;
+    // defence_relevant lives on DOCUMENTS (collectors stamp it there); the
+    // signals table has no such column, and selecting one 400s the whole
+    // query (the 2026-07-28 "0 items" incident).
     documents: {
       url: string | null;
       published_on: string | null;
       date_precision: string | null;
       doc_type: string | null;
+      defence_relevant: boolean | null;
     } | Record<string, unknown>[] | null;
   } | Record<string, unknown>[] | null;
 }
@@ -85,13 +88,20 @@ export async function getBriefItems(
     .from("brief_items")
     .select(
       "id, rank, timing_path, headline_override, editor_note, included, " +
-      "signals:lead_signal_id(title, amount_max_cad, defence_relevant, public_safety, " +
-      "organizations(canonical_name), documents(url, published_on, date_precision, doc_type))",
+      "signals:lead_signal_id(title, amount_max_cad, public_safety, " +
+      "organizations(canonical_name), " +
+      "documents(url, published_on, date_precision, doc_type, defence_relevant))",
     )
     .eq("brief_id", briefId)
     .eq("included", true)
     .order("rank", { ascending: true });
-  if (error) console.error("[portal-data] getBriefItems:", error.message);
+  if (error) {
+    // LOUD FAILURE: a query error must never render as an honest-looking
+    // "0 items" (the 2026-07-28 incident: a bad column name 400'd every
+    // load and the empty-array fallback swallowed it for a full day).
+    console.error("[portal-data] getBriefItems:", error.message);
+    throw new Error(`getBriefItems(${briefId}): ${error.message}`);
+  }
 
   return ((data ?? []) as unknown as ItemRow[])
     // Second barrier under the RLS clamp: even if an operator preview (which
@@ -114,7 +124,7 @@ export async function getBriefItems(
       headline: it.headline_override || ((s?.title as string) ?? "(untitled item)"),
       buyer: (org?.canonical_name as string) ?? null,
       timingPath: it.timing_path === "imminent" ? "imminent" : "recent",
-      defenceRelevant: Boolean(s?.defence_relevant),
+      defenceRelevant: Boolean(doc?.defence_relevant),
       eventDate: (doc?.published_on as string) ?? null,
       datePrecision: (doc?.date_precision as string) ?? null,
       docType: (doc?.doc_type as string) ?? null,
