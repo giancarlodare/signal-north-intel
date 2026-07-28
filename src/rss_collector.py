@@ -247,6 +247,14 @@ def run(limit: int = MAX_ENTRIES_PER_FEED, dry_run: bool = False) -> int:
             parsed = _parse_feed(feed["feed_url"])
             if parsed.bozo and not parsed.entries:
                 raise RuntimeError(f"feed parse error: {parsed.bozo_exception}")
+            if not parsed.entries:
+                # Loud failure (2026-07-28): the DND and RCMP feeds went dark
+                # for weeks because a renamed dept slug returns a VALID empty
+                # feed, which recorded as success. Zero entries is never
+                # success; it is a dead slug or a moved publisher.
+                raise RuntimeError(
+                    "feed returned zero entries: dead dept slug or moved "
+                    "publisher; refusing to record silence.")
             stats = collect_feed(feed, parsed.entries, source_id, keywords,
                                  fetcher, limit, dry_run)
             log.info("Feed %s: %s%s", feed["name"], stats, " (DRY RUN)" if dry_run else "")
