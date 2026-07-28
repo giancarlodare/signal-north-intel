@@ -131,3 +131,14 @@ training system
 # "stops"/"laptops" never did and still cannot match).
 wps
 ops/
+
+# ============ WATCH-ITEMS ONLY (operator 2026-07-28) ============
+# The five terms most likely to over-capture (generic IT, not
+# public-safety-specific). Staged here for per-term impact diffs;
+# operator keeps or strikes each on sample evidence.
+incident response
+disclosure management
+ransomware
+security operations centre
+security operations center
+penetration testing

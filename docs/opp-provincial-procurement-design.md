@@ -147,3 +147,42 @@ eleven CPOs publish collectably; this front asks the same of the provincial
 central-purchasing layer. They run as one probe pass this week (operator
 pulled both forward), one design each, enabled independently on their own
 provenance + validation.
+
+## Passes 7-8 (2026-07-28): the wall confirmed exactly, and the MERX door found
+
+**Pass 8, the operator's eSOP candidate URLs.** robots.txt on
+ontariotenders.app.jaggaer.com, verbatim and in full:
+
+    User-agent: *
+    Disallow: /esop
+
+A blanket tree disallow: it covers /esop/toolkit/opportunity/current/list.si
+and every variant the operator found. Those pages may well render live
+opportunity lists in a human browser, but the publisher's robots policy
+disallows automated collection of the whole tree, so under the standing
+discipline they are human-research-only. Nothing was fetched. The
+ministry/OPP solicitation layer stays closed to collectors unless robots
+changes or Supply Ontario grants feed access (a business-development ask,
+not a scraping question).
+
+**Pass 7, the public gaps.** The agency layer is NOT walled; it publishes
+on MERX:
+
+* oeb.ca/about-oeb/public-tenders (robots-allowed, server-side) lists Open
+  and Awarded Opportunities where every item links a public
+  merx.com/solicitations detail page, security-relevant items included
+  (threat-risk assessment upgrades, access card and detection systems).
+* merx.com/metrolinx, merx.com/infrastructureontario, and
+  merx.com/cityoftoronto are live public buyer pages, robots-allowed, the
+  exact shape the Ottawa collector already parses; merx.com/public/
+  solicitations/open is a public cross-buyer list. LCBO and UofT slugs
+  404ed (wrong slugs, not walls; correct slugs discoverable).
+* Supply Ontario bulletins (/bulletins/, /procurement-bulletins/): a VOR
+  ARRANGEMENT catalogue (no dates, no opportunity links); collectable only
+  as labeled upstream-intent signal, never as an opportunity feed.
+
+**Standing provincial verdict (supersedes "dead zone"):** ministries and
+OPP through OTP stay human-research-only; agencies, crown corps, and
+transit are coverable through MERX public buyer pages via the existing
+tenders_merx pattern with per-buyer provenance and validation bars. The
+MERX-breadth design carries this forward.

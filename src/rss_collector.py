@@ -86,7 +86,11 @@ FEEDS = [
     },
     {
         "name": "Department of National Defence — News",
-        "feed_url": _GC_NEWS_API.format(dept="departmentofnationaldefence",
+        # Dept slug corrected 2026-07-28 (probe run 30352966516): the GC news
+        # API renamed it to 'departmentnationaldefense' (no 'of', US spelling,
+        # matching canada.ca advanced-search's dprtmnt param); the old slug
+        # returned a VALID empty feed and the feed went dark silently.
+        "feed_url": _GC_NEWS_API.format(dept="departmentnationaldefense",
                                         title="National%20Defence"),
         "allowed_hosts": ["www.canada.ca", "canada.ca", "www.forces.gc.ca"],
         "scope_terms": [],
@@ -96,10 +100,24 @@ FEEDS = [
     },
     {
         "name": "RCMP — News",
-        "feed_url": _GC_NEWS_API.format(dept="royalcanadianmountedpolice",
-                                        title="RCMP"),
-        "allowed_hosts": ["www.canada.ca", "canada.ca", "www.rcmp-grc.gc.ca", "rcmp-grc.gc.ca"],
-        "scope_terms": [],
+        # Moved 2026-07-28 (probe run 30353094661): the RCMP left the GC news
+        # API entirely (every dept slug returns empty) and now publishes a
+        # feed directory at rcmp.ca/en/news/web-feeds. The news-release
+        # product feed is the national-release analogue of the old feed; the
+        # main feed is mostly local detachment items (kept out deliberately).
+        "feed_url": "https://rcmp.ca/en/feed-flux/news-nouvelles/product-produit/news-release",
+        "allowed_hosts": ["rcmp.ca", "www.rcmp.ca",
+                          "www.canada.ca", "canada.ca",
+                          "www.rcmp-grc.gc.ca", "rcmp-grc.gc.ca"],
+        # Scope gate (operator 2026-07-28): the news-release feed is still
+        # dominated by local detachment blotter, which would burn daily
+        # extraction budget for zero procurement signal. Only procurement /
+        # funding / program / organizational items pass. NOTE matches_scope
+        # is substring, so 'invests'/'investment' rather than bare 'invest'
+        # (which sits inside "investigating", i.e. every blotter item).
+        "scope_terms": ["contract", "procurement", "funding", "invests",
+                        "investment", "program", "equipment",
+                        "modernization", "national", "headquarters"],
         "source_name_candidates": ["RCMP — News", "RCMP News",
                                    "Canada.ca — RCMP News"],
         "source_id_env": "RCMP_NEWS_SOURCE_ID",
@@ -247,6 +265,14 @@ def run(limit: int = MAX_ENTRIES_PER_FEED, dry_run: bool = False) -> int:
             parsed = _parse_feed(feed["feed_url"])
             if parsed.bozo and not parsed.entries:
                 raise RuntimeError(f"feed parse error: {parsed.bozo_exception}")
+            if not parsed.entries:
+                # Loud failure (2026-07-28): the DND and RCMP feeds went dark
+                # for weeks because a renamed dept slug returns a VALID empty
+                # feed, which recorded as success. Zero entries is never
+                # success; it is a dead slug or a moved publisher.
+                raise RuntimeError(
+                    "feed returned zero entries: dead dept slug or moved "
+                    "publisher; refusing to record silence.")
             stats = collect_feed(feed, parsed.entries, source_id, keywords,
                                  fetcher, limit, dry_run)
             log.info("Feed %s: %s%s", feed["name"], stats, " (DRY RUN)" if dry_run else "")

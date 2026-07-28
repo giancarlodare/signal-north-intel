@@ -8,7 +8,15 @@ A notice is KEPT if either:
 
 A kept notice is additionally marked defence_relevant=True if it matched
 one of the dual-use defence keywords specifically.
+
+Matching is WHOLE-WORD, case-insensitive (operator 2026-07-28): substring
+matching tagged a CMHC "Default Real Estate Services" tender defence_relevant
+(the same failure class as public_safety's Bendix 'ems'-in-"Systems"), and a
+false defence tag flows through apply_public_safety into member-facing and
+public surfaces. Precision over recall is the accepted tradeoff for the
+keep-vs-skip collectors that also route through this predicate.
 """
+import re
 from dataclasses import dataclass
 
 from . import config
@@ -44,7 +52,38 @@ def load_keywords(path: str | None = None) -> Keywords:
     return Keywords(general=tuple(general), defence=tuple(defence))
 
 
+def _word_pattern(kw: str) -> re.Pattern:
+    # Word-boundary guards only on edges that ARE word characters: 'ops/'
+    # (the "OPS/..." Ottawa Police Service prefix) must still match with a
+    # word directly after the slash, while 'uas' must not match inside
+    # "quashed". Lookarounds rather than \b so the guard is one-sided.
+    #
+    # PLURAL TOLERANCE (operator 2026-07-28): each word token accepts an
+    # optional s/es INSIDE the boundary, so 'forensic' matches "forensics"
+    # and 'port of entry' matches "ports of entry" (phrases pluralize the
+    # head noun, not the last word). The boundary guards are unchanged, so
+    # the Bendix substring class stays closed: 'ems' still cannot match
+    # inside "Systems" because the lookbehind blocks it, plural or not.
+    pre = r"(?<!\w)" if re.match(r"\w", kw[:1]) else ""
+    post = r"(?!\w)" if re.match(r"\w", kw[-1:]) else ""
+    body = r"\s+".join(
+        re.escape(tok) + r"(?:e?s)?" for tok in kw.split(" ") if tok)
+    return re.compile(pre + body + post, re.IGNORECASE)
+
+
 def _matches_any(text: str, keywords: tuple[str, ...]) -> str | None:
+    lower = text.lower()
+    for kw in keywords:
+        if _word_pattern(kw).search(lower):
+            return kw
+    return None
+
+
+def _substring_matches_any(text: str, keywords: tuple[str, ...]) -> str | None:
+    """The PRE-2026-07-28 substring matcher, kept ONLY so the deterministic
+    re-tag pass (src.retag_defence) can distinguish a verified false positive
+    (substring hit, no whole-word hit) from a tag whose source text is not
+    stored. Never call this from a collector."""
     lower = text.lower()
     for kw in keywords:
         if kw in lower:

@@ -29,7 +29,12 @@ export const COVERAGE_STATUS: CoverageStatusCell[] = [
   },
   {
     label: "Not yet covered",
-    text: "Federal defence procurement; provinces beyond Ontario",
+    // Operator 2026-07-28: the Ontario Tenders Portal (direct ministry and
+    // OPP operational solicitations) forbids automated collection at source
+    // (robots), so it is a DISCLOSED boundary, never a claimed coverage.
+    // OPP is carried via Infrastructure Ontario capital signal and the
+    // provincial agency layer; direct ministry tenders are not collected.
+    text: "Direct Ontario ministry tenders (the Ontario Tenders Portal forbids automated collection; OPP carried via capital and agency signal); federal defence procurement; provinces beyond Ontario",
     tone: "faint",
   },
 ];

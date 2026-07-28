@@ -175,9 +175,11 @@ def _one(embedded):
     return embedded
 
 
-def compute(buyer: dict, links: list) -> tuple:
+def compute_lags(buyer: dict, links: list) -> tuple:
     """Group signals per procurement, walk the ladder, attribute to the org,
-    and collect lags per (org, transition). Returns (profile_rows, coverage)."""
+    and collect raw lags per (org, transition). Returns
+    ({(org_id, from, to): [lags]}, coverage). Split out of compute() so the
+    partial-pooling pass (src.pool_arcs) shares the exact cell construction."""
     per_proc = defaultdict(list)
     per_proc_org = defaultdict(lambda: defaultdict(int))
     for l in links:
@@ -205,6 +207,12 @@ def compute(buyer: dict, links: list) -> tuple:
             org_id = max(per_proc_org[pid].items(), key=lambda kv: kv[1])[0]
         for g, h, lag in trs:
             per_org_transition[(org_id, g, h)].append(lag)
+    return per_org_transition, coverage
+
+
+def compute(buyer: dict, links: list) -> tuple:
+    """(profile_rows, coverage): the aggregated per-cell view of compute_lags."""
+    per_org_transition, coverage = compute_lags(buyer, links)
     return aggregate(per_org_transition), coverage
 
 

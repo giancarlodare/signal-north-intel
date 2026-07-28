@@ -131,3 +131,73 @@ training system
 # "stops"/"laptops" never did and still cannot match).
 wps
 ops/
+
+# ============ PROPOSED ADDITIONS (operator program 2026-07-28) ============
+# Staged for the impact diff; NOT read by collectors until merged into
+# keywords.txt on operator approval, category by category.
+
+# --- Weapons / use-of-force ---
+firearm
+ammunition
+conducted energy weapon
+cew
+taser
+less-lethal
+less lethal
+use of force
+
+# --- Dispatch / CAD / NG9-1-1 ---
+computer aided dispatch
+computer-aided dispatch
+cad system
+ng9-1-1
+ng911
+psap
+dispatch console
+p25
+trunked radio
+
+# --- Records / RMS / digital evidence ---
+records management system
+rms
+digital evidence
+digital evidence management
+body-worn camera
+body worn camera
+bwc
+in-car camera
+in car camera
+interview recording
+
+# --- Fleet / vehicles ---
+patrol vehicle
+pursuit
+prisoner transport
+upfit
+
+# --- Forensics depth ---
+forensic services
+
+# --- Radio ---
+radio
+portable radio
+
+# --- Grants language ---
+community safety
+crime prevention
+victim services
+gun and gang
+community safety and policing
+
+# --- Training ---
+use of force training
+firearms training
+recruit training
+
+# --- Facility construction (keep-path gap) ---
+fire hall
+fire station
+police station
+police headquarters
+emergency operations centre
+emergency operations center

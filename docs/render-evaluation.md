@@ -69,3 +69,36 @@ and drain-capped like the other collectors.
 
 Each adapter is its own probe-validate-PR cycle with the standard single-go
 gate; nothing enables without the operator's go after a validation table.
+
+## Addendum 2026-07-28 (operator: render adapter as multi-source unlock)
+
+Updates from today's probes, and the operator's reprioritization:
+
+* **Ontario Newsroom is OFF the render list.** The endpoint hunt found the
+  JSON API behind the JS shell (api.news.ontario.ca/api/v1/releases, 200,
+  releases with ids/dates/ministries). It becomes a plain-requests
+  collector with its own design; render machinery would have been wasted
+  on it. Standing lesson encoded in the newsroom design: hunt the API
+  before renting a browser.
+* **Group-purchasing surfaces join the candidate list** (pass 6-7):
+  oecm.ca/marketplace (client-rendered, 30 scripts) and
+  kineticgpo.ca/solicitations (rate-limited to plain requests) carry
+  broader-public-sector opportunities. Queued BEHIND the police-vertical
+  unlocks; each needs its own robots + provenance gate before any build.
+* **BUILD ORDER CHANGE (operator 2026-07-28): Biddingo/DRPS FIRST**, the
+  eScribe boards second. DRPS is a core GTA regional service, a police
+  service's full public bid history with awards, and the single
+  highest-value render target; the operator wants Durham covered
+  specifically.
+* Step 1 of the DRPS build remains a robots + structure probe of
+  biddingo.com (never assumed, even with provenance settled), then the
+  adapter, validation against the tier-1 tender bars, operator go, and
+  enablement inside daily-tenders, whose Playwright step already exists,
+  so the marginal cost stays runner minutes only.
+
+Cost restated for the program cap: $0 API spend at collection (no LLM, no
+SaaS); GitHub Actions runner minutes only (Playwright install ~40s plus
+seconds per rendered page, on the workflow that already installs
+Chromium); extraction of collected documents rides the capped daily
+forward pass; any DRPS awarded-history backlog is sized at validation and
+comes to the operator as an envelope before draining.
