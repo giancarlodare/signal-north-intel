@@ -50,6 +50,14 @@ jobs:
         if: steps.guard.outputs.should_run == 'true'
         run: pip install -r requirements.txt
 
+      # Robots-drift watch (operator 2026-07-28): quiet while the OTP wall
+      # stands; goes RED the week the /esop disallow narrows or lifts, so
+      # the provincial collector build starts immediately. Reads robots.txt
+      # only, never the walled paths.
+      - name: Robots drift watch (walled provincial hosts)
+        if: steps.guard.outputs.should_run == 'true'
+        run: python scripts/robots_drift_watch.py
+
       - name: Run discovery (propose-only)
         if: steps.guard.outputs.should_run == 'true'
         env:
