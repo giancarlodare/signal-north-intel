@@ -37,8 +37,16 @@ pools). Per cell, y = log1p(median(lags)) and v = the bootstrap variance
 of that log-median.
 
 * Population level, per transition and per stratum (see P1): grand mean mu
-  and between-cell variance tau^2, estimated by method of moments from the
-  cells' (y, v) (DerSimonian-Laird).
+  and between-cell variance tau^2 from the cells' (y, v), estimated by
+  PAULE-MANDEL (build note 2026-07-28, second correction: the first corpus
+  run used DerSimonian-Laird, whose truncation collapsed every group to
+  tau^2 = 0, complete pooling, sector averages dressed as cell figures;
+  operator rejected that as the overclaim this design exists to avoid).
+  BOUNDARY RULE: when even PM lands at tau^2 = 0, heterogeneity is not
+  estimable and the pass reports pool_uninformative for the group's cells;
+  a cell keeps its own unpooled figure and is never snapped to the sector
+  mean, because "cannot prove services differ" is not "services are
+  identical" (operator 2026-07-28).
 * Cell level: the pooled cell estimate is the precision-weighted blend
     theta_cell = w x y_cell + (1 - w) x mu,
     w = tau^2 / (tau^2 + v_cell)

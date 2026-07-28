@@ -15,11 +15,15 @@ pooled to 84d, an estimate no reader should ever see labeled "median").
     bootstrap variance of that log-median (fixed seed). Cells at n=1 have no
     v; it is imputed as c/n where c is the group's mean of v*n (bootstrap
     median variance scales roughly as 1/n);
-  * population per (transition, stratum): DerSimonian-Laird method-of-moments
-    estimate of the grand mean mu and between-cell variance tau^2 over the
-    cells' (y, v) (P1 strata: public-safety services and boards vs
+  * population per (transition, stratum): PAULE-MANDEL estimate of the grand
+    mean mu and between-cell variance tau^2 over the cells' (y, v)
+    (operator 2026-07-28: DerSimonian-Laird's truncation collapsed the first
+    corpus run to complete pooling, sector averages dressed as cell figures;
+    PM keeps cells' identity where heterogeneity is estimable, and at the
+    tau^2 = 0 boundary the pipeline reports pool_uninformative rather than
+    the sector mean). P1 strata: public-safety services and boards vs
     municipalities; a stratum with fewer than MIN_PRIOR_CELLS contributing
-    cells falls back to the unstratified transition pool, labeled as such);
+    cells falls back to the unstratified transition pool, labeled as such;
   * cell: precision-weighted shrinkage
       theta = w * y + (1 - w) * mu,   w = tau^2 / (tau^2 + v)
     so a data-rich cell keeps its own signal and a thin cell leans on the
@@ -108,7 +112,9 @@ def _effective_vars(cells: list) -> list:
 
 
 def dl_pool(cells: list) -> tuple:
-    """DerSimonian-Laird over [(n, y, v), ...] -> (mu, tau2)."""
+    """DerSimonian-Laird over [(n, y, v), ...] -> (mu, tau2). Retained for
+    reference and tests; the pipeline uses pm_pool (operator 2026-07-28:
+    DL's truncation collapsed the first corpus run to complete pooling)."""
     ys = [y for _, y, _ in cells]
     vs = _effective_vars(cells)
     k = len(cells)
@@ -126,26 +132,75 @@ def dl_pool(cells: list) -> tuple:
     return mu, tau2
 
 
+def _q_at(tau2: float, ys: list, vs: list) -> tuple:
+    """Generalized Q statistic and its weighted mean at a given tau2."""
+    w = [1.0 / (v + tau2) for v in vs]
+    mu = sum(wi * y for wi, y in zip(w, ys)) / sum(w)
+    return sum(wi * (y - mu) ** 2 for wi, y in zip(w, ys)), mu
+
+
+def pm_pool(cells: list) -> tuple:
+    """Paule-Mandel over [(n, y, v), ...] -> (mu, tau2): bisection for the
+    tau2 whose generalized Q equals its expectation k-1. Q(tau2) is
+    decreasing, so the root is unique when Q(0) > k-1.
+
+    BOUNDARY (operator 2026-07-28): when Q(0) <= k-1 the observed spread is
+    already within noise and PM, like DL, returns tau2 = 0. The pipeline
+    treats that as POOLING UNINFORMATIVE, never as complete pooling:
+    "cannot prove services differ" is not "services are identical", so no
+    cell is snapped to the sector mean. See compute_pooled."""
+    ys = [y for _, y, _ in cells]
+    vs = _effective_vars(cells)
+    k = len(cells)
+    if k == 1:
+        return ys[0], 0.0
+    q0, mu0 = _q_at(0.0, ys, vs)
+    if q0 <= k - 1:
+        return mu0, 0.0
+
+    lo, hi = 0.0, max(vs) + 1.0
+    while _q_at(hi, ys, vs)[0] > k - 1:
+        hi *= 2.0
+        if hi > 1e6:
+            break
+    for _ in range(80):
+        mid = (lo + hi) / 2.0
+        if _q_at(mid, ys, vs)[0] > k - 1:
+            lo = mid
+        else:
+            hi = mid
+    tau2 = (lo + hi) / 2.0
+    return _q_at(tau2, ys, vs)[1], tau2
+
+
 def shrink(y: float, v: float, mu: float, tau2: float) -> float:
-    """The pooled cell estimate theta on the log scale."""
-    if tau2 <= 0 and v <= 0:
+    """The pooled cell estimate theta on the log scale. At the tau2 = 0
+    boundary the cell KEEPS ITS OWN y (w = 1), never the sector mean: the
+    boundary means heterogeneity is not estimable, and snapping to mu there
+    is the complete-pooling overclaim the operator rejected 2026-07-28."""
+    if tau2 <= 0:
         return y
     w = tau2 / (tau2 + v) if (tau2 + v) > 0 else 1.0
     return w * y + (1.0 - w) * mu
 
 
-def _theta_of(target: list, siblings: list, iters: int) -> float:
+def _theta_of(target: list, siblings: list, iters: int) -> tuple:
+    """(theta, tau2) for the target cell against its sibling group, PM."""
     cells = [cell_stats(ls, iters) for ls in siblings] + [cell_stats(target, iters)]
     vs = _effective_vars(cells)
-    mu, tau2 = dl_pool(cells)
-    return shrink(cells[-1][1], vs[-1], mu, tau2)
+    mu, tau2 = pm_pool(cells)
+    return shrink(cells[-1][1], vs[-1], mu, tau2), tau2
 
 
-def pooled_estimate(target_lags: list, sibling_lags: list) -> dict:
+def pooled_estimate(target_lags: list, sibling_lags: list) -> dict | None:
     """theta + two-level-bootstrap CI for one cell against its prior group.
     `sibling_lags` is a list of lag lists for the OTHER cells in the group.
-    Returns day-scale {'median': int, 'ci_low': int, 'ci_high': int}."""
-    point = _theta_of(target_lags, sibling_lags, CELL_ITERS)
+    Returns day-scale {'median': int, 'ci_low': int, 'ci_high': int}, or
+    None when PM lands on the tau2 = 0 boundary: pooling is uninformative
+    for this group and no pooled figure exists to report."""
+    point, tau2 = _theta_of(target_lags, sibling_lags, CELL_ITERS)
+    if tau2 <= 0:
+        return None
 
     rng = random.Random(BOOTSTRAP_SEED)
     thetas = []
@@ -156,7 +211,7 @@ def pooled_estimate(target_lags: list, sibling_lags: list) -> dict:
         sibs = [sibling_lags[rng.randrange(len(sibling_lags))]
                 for _ in sibling_lags] if sibling_lags else []
         s_b = [[rng.choice(ls) for _ in ls] for ls in sibs]
-        thetas.append(_theta_of(t_b, s_b, CELL_ITERS_FAST))
+        thetas.append(_theta_of(t_b, s_b, CELL_ITERS_FAST)[0])
     thetas.sort()
     return {
         "median": round(math.expm1(point)),
@@ -215,10 +270,10 @@ def compute_pooled(per_org_transition: dict, org_meta: dict) -> list:
         ci_lo, ci_hi = bootstrap_median_ci(sv)
 
         group = groups_strat[(g, h, st)]
-        method = "eb_dl_stratified"
+        method = "eb_pm_stratified"
         if len(group) < MIN_PRIOR_CELLS:
             group = groups_flat[(g, h)]
-            method = "eb_dl_unstratified_fallback"
+            method = "eb_pm_unstratified_fallback"
 
         row = {
             "organization_id": org_id, "org_name": name or "(unattributed)",
@@ -234,13 +289,22 @@ def compute_pooled(per_org_transition: dict, org_meta: dict) -> list:
                         "pooled_method": None, "prior_cells": 0})
         else:
             est = pooled_estimate(lags, siblings)
-            row.update({
-                "pooled": est,
-                "pooled_status": pooled_status(len(sv), est["median"],
-                                               est["ci_low"], est["ci_high"]),
-                "pooled_method": method,
-                "prior_cells": len(group),
-            })
+            if est is None:
+                # PM boundary: the group's spread is within noise, so tau2
+                # is not estimable. No pooled figure exists; the cell keeps
+                # only its unpooled measurement. NEVER the sector mean.
+                row.update({"pooled": None,
+                            "pooled_status": "pool_uninformative",
+                            "pooled_method": method,
+                            "prior_cells": len(group)})
+            else:
+                row.update({
+                    "pooled": est,
+                    "pooled_status": pooled_status(len(sv), est["median"],
+                                                   est["ci_low"], est["ci_high"]),
+                    "pooled_method": method,
+                    "prior_cells": len(group),
+                })
         rows.append(row)
     return rows
 
@@ -252,7 +316,10 @@ def _report(rows: list) -> None:
     for r in rows:
         tr = f"{GRADE_LABEL.get(r['from_grade'], r['from_grade'])}->" \
              f"{GRADE_LABEL.get(r['to_grade'], r['to_grade'])}"
-        if r["pooled"] is None:
+        if r["pooled"] is None and r["pooled_status"] == "pool_uninformative":
+            pooled = (f"pool uninformative (tau2=0 boundary, {r['prior_cells']} "
+                      f"cells: spread within noise; cell keeps its own figure)")
+        elif r["pooled"] is None:
             pooled = "no pool (group of 1)"
         else:
             p = r["pooled"]

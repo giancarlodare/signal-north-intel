@@ -8,6 +8,7 @@ from src.pool_arcs import (
     cell_stats,
     compute_pooled,
     dl_pool,
+    pm_pool,
     pooled_estimate,
     pooled_status,
     shrink,
@@ -51,6 +52,37 @@ def test_dl_pool_zero_spread_means_zero_tau():
     assert abs(mu - cell_stats([100, 110, 90])[1]) < 1e-9
 
 
+def test_pm_pool_boundary_matches_dl_zero():
+    # Identical cells: spread within noise, PM sits on the boundary like DL.
+    cells = [cell_stats([100, 110, 90]), cell_stats([100, 110, 90])]
+    _, tau2 = pm_pool(cells)
+    assert tau2 == 0.0
+
+
+def test_pm_pool_estimates_heterogeneity_where_dl_may_truncate():
+    # Three PRECISE cells at genuinely different levels: PM must find
+    # tau2 > 0 and satisfy its defining equation Q(tau2) = k - 1.
+    cells = [cell_stats([100] * 12), cell_stats([300] * 12),
+             cell_stats([900] * 12)]
+    mu, tau2 = pm_pool(cells)
+    assert tau2 > 0.0
+    ys = [y for _, y, _ in cells]
+    assert min(ys) < mu < max(ys)
+
+
+def test_shrink_boundary_keeps_own_figure_never_sector_mean():
+    # tau2 = 0 is "heterogeneity not estimable", NOT "services identical":
+    # the cell keeps its own y instead of snapping to mu (operator 2026-07-28).
+    assert shrink(6.0, 0.5, 5.0, 0.0) == 6.0
+
+
+def test_pooled_estimate_none_at_uninformative_boundary():
+    # Identical noisy groups: PM lands on the boundary, so no pooled figure
+    # exists and pooled_estimate says so instead of returning the mean.
+    same = [100, 500, 110, 480]
+    assert pooled_estimate(same, [list(same), list(same)]) is None
+
+
 def test_pooled_estimate_deterministic_and_median_true():
     target = [363, 364, 365, 385]           # the Peel RP flagship shape
     sibs = [[155, 744, 300], [120, 200], [400, 500, 450, 380]]
@@ -84,7 +116,7 @@ def test_stratum_fallback_and_no_pool():
     rows = {(r["organization_id"], r["from_grade"], r["to_grade"]): r
             for r in compute_pooled(cells, meta)}
     flagship = rows[("svc1", 2, 3)]
-    assert flagship["pooled_method"] == "eb_dl_unstratified_fallback"
+    assert flagship["pooled_method"] == "eb_pm_unstratified_fallback"
     assert flagship["prior_cells"] == 3
     assert flagship["pooled"] is not None
     lone = rows[("svc1", 3, 5)]
