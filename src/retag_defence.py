@@ -76,8 +76,13 @@ def run(dry_run: bool = True) -> dict:
         log.info("  by doc_type %-14s keep=%-4d flip=%-4d unverifiable=%d",
                  t, c["keep"], c["flip"], c["unverifiable"])
     for d in flips[:20]:
-        log.info("  FLIP %s [%s] %s", d["id"], d.get("doc_type"),
-                 (d.get("title") or "")[:90])
+        text = f"{d.get('title') or ''} {d.get('content') or ''}"
+        kw = _substring_matches_any(text, keywords.defence) or "?"
+        i = text.lower().find(kw)
+        snippet = text[max(0, i - 30):i + len(kw) + 30].replace("\n", " ")
+        log.info("  FLIP %s [%s] %s | substring '%s' in: ...%s...",
+                 d["id"], d.get("doc_type"), (d.get("title") or "")[:70],
+                 kw, snippet)
     if len(flips) > 20:
         log.info("  ... and %d more flips", len(flips) - 20)
 
