@@ -97,6 +97,14 @@ BOARDS = [
         # Re-probe on a later daily red-check; unpark by flipping back True.
         # (History: unparked 2026-07-14 after the 2026-07-11 park.)
         "enabled": False,
+        "parked_reason": (
+            "site-wide WAF 415 returned 2026-07-28 (run 30350142055; probe "
+            "30359688633: 415 under collector, renamed, and browser UAs "
+            "alike -- client-level, not UA). Second occurrence of the "
+            "2026-07-11 wall, which lifted once before; re-probe "
+            "periodically and unpark when it lifts. Proxy: the 88 collected "
+            "TPSB PDFs stay in corpus; Toronto CKAN tenders + TPS awards "
+            "continue."),
         # Verified in-browser 2026-07-10 (the earlier /meetings guess 404s).
         # Structure: year headings, then meeting dates, some with links.
         "listing_urls": ["https://tpsb.ca/home/current-and-past-meetings/"],
