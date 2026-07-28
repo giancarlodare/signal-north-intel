@@ -62,6 +62,42 @@ TABS = [
     ("bidresults-bids", "award_notice"),
 ]
 
+# MERX BREADTH ROSTER (docs/merx-breadth-design.md, operator go 2026-07-28):
+# the provincial agency layer, provenance-first. Each buyer:
+#   slug        the public MERX buyer page (merx.com/<slug>)
+#   source_url  the sources-row key; ENABLEMENT GATE: a buyer collects for
+#               real only when its sources row exists (operator paste after
+#               validation clears); until then it runs in --dry-run only.
+#   required    True = a missing sources row is a broken deploy (Ottawa,
+#               already live); False = validation candidate, skipped quietly
+#               in real runs until enabled.
+#   tabs        per-buyer (tab-slug, doc_type) mapping. IO's tab set differs
+#               from Ottawa's (step-1 probe: awarded-contracts 404s), so
+#               candidate tabs are DISCOVERED in the validation dry-run: a
+#               404 tab is recorded absent for candidates, never a loud
+#               failure; required buyers keep the loud guard.
+BUYERS = [
+    {"slug": "cityofottawa", "name": "City of Ottawa",
+     "source_url": "https://www.merx.com/cityofottawa",
+     "required": True, "tabs": TABS},
+    # IO first in priority (operator 2026-07-28): carries the OPP capital
+    # signal (OPP Modernization Phase Three, Ontario Place OPP Detachment,
+    # step-1 probe run 30354788516). Provenance link checked in validation.
+    {"slug": "infrastructureontario", "name": "Infrastructure Ontario",
+     "source_url": "https://www.merx.com/infrastructureontario",
+     "required": False,
+     "tabs": [("open-bids", "tender_notice"),
+              ("closed-bids", "tender_notice"),
+              ("awarded-bids", "award_notice"),
+              ("bidresults-bids", "award_notice")]},
+    {"slug": "oeb", "name": "Ontario Energy Board",
+     "source_url": "https://www.merx.com/oeb",
+     "required": False, "tabs": TABS},
+    {"slug": "metrolinx", "name": "Metrolinx",
+     "source_url": "https://www.merx.com/metrolinx",
+     "required": False, "tabs": TABS},
+]
+
 import os as _os
 
 # Per-run cap on NEW abstracts (board-minutes style). MERX_NEW_PER_TAB
@@ -105,8 +141,8 @@ CLOSING_RE = re.compile(
 STATUS_RE = re.compile(r"This solicitation is\s+([A-Z]+)")
 
 
-def listing_url(tab: str, page: int) -> str:
-    return f"{BASE}/{BUYER_SLUG}/solicitations/{tab}?pageNumber={page}&selectedContent=BUYER"
+def listing_url(tab: str, page: int, slug: str = BUYER_SLUG) -> str:
+    return f"{BASE}/{slug}/solicitations/{tab}?pageNumber={page}&selectedContent=BUYER"
 
 
 def merx_hash(merx_id: str, doc_type: str) -> str:
@@ -170,7 +206,7 @@ def parse_abstract(text: str) -> dict:
 
 def build_payload(merx_id: str, url: str, title: str, doc_type: str,
                   abstract: dict, body: str, source_id: Optional[str],
-                  keywords: Keywords) -> dict:
+                  keywords: Keywords, buyer_name: str = BUYER_NAME) -> dict:
     result = evaluate(title, body[:MAX_STORED_CHARS], "", keywords)
     return {
         "source_id": source_id,
@@ -183,48 +219,82 @@ def build_payload(merx_id: str, url: str, title: str, doc_type: str,
         # (amended-solicitation ceiling) still needs a valid value, and
         # published_on=None carries the null-date signal. Matches board_minutes.
         "date_precision": "day",
-        "reference_number": abstract["sol_num"],   # Ottawa's own hard key
+        "reference_number": abstract["sol_num"],   # the buyer's own hard key
         "content_hash": merx_hash(merx_id, doc_type),
         "content": body[:MAX_STORED_CHARS] or None,
         "defence_relevant": result.defence_relevant,
-        "buyer_name": BUYER_NAME,
+        "buyer_name": buyer_name,
     }
 
 
 def collect(dry_run: bool = True) -> dict:
+    """Walk the BUYERS roster. Ottawa behaves exactly as before; validation
+    candidates run only in --dry-run until their sources row exists."""
     keywords = load_keywords()
     fetcher = PoliteFetcher()
     sources = supabase_client.fetch_rows("sources", "id,url")
-    source_id = next((s["id"] for s in sources
-                      if (s.get("url") or "").rstrip("/") == SOURCE_URL.rstrip("/")), None)
-    if not source_id and not dry_run:
-        raise RuntimeError(
-            f"no sources row for {SOURCE_URL}; apply the MERX/Windsor sources seed first")
+    totals = {"inserted": 0, "errors": 0, "per_buyer": {}}
+    for buyer in BUYERS:
+        source_id = next(
+            (s["id"] for s in sources
+             if (s.get("url") or "").rstrip("/") == buyer["source_url"].rstrip("/")),
+            None)
+        if not source_id and not dry_run:
+            if buyer["required"]:
+                raise RuntimeError(f"no sources row for {buyer['source_url']}; "
+                                   f"apply the MERX sources seed first")
+            log.info("[merx %s] not enabled (no sources row); skipping",
+                     buyer["slug"])
+            continue
+        stats = _collect_buyer(buyer, source_id, keywords, fetcher, dry_run)
+        totals["per_buyer"][buyer["slug"]] = stats
+        totals["inserted"] += stats["inserted"]
+        totals["errors"] += stats["errors"]
+    return totals
 
+
+def _collect_buyer(buyer: dict, source_id: Optional[str], keywords: Keywords,
+                   fetcher: PoliteFetcher, dry_run: bool) -> dict:
+    slug = buyer["slug"]
     stats = {"inserted": 0, "skipped_duplicate": 0, "errors": 0, "per_tab": {}}
     val = {"abstracts": 0, "solnum": 0, "closing": 0}
     run_hashes: set[str] = set()   # in-run dedupe (awarded/bidresults overlap)
 
-    for tab, doc_type in TABS:
+    for tab, doc_type in buyer["tabs"]:
         tval = {"ids_seen": 0, "new": 0, "pages": 0}
         stats["per_tab"][tab] = tval
         queue: list[tuple[str, str, str]] = []   # (merx_id, url, title)
         known_pages = 0
         page = 1
         while page <= PAGE_MAX_PER_TAB:
-            resp = fetcher.get(listing_url(tab, page))
+            resp = fetcher.get(listing_url(tab, page, slug))
             if resp is None:
-                raise RuntimeError(
-                    f"[merx {tab}] robots.txt would not allow the listing; "
-                    f"refusing to record silence")
+                # Candidates are in TAB DISCOVERY: an absent tab (404 or a
+                # fetch refusal) is recorded, not raised, so the validation
+                # dry-run maps each buyer's real tab set. Required buyers
+                # keep the loud guard: their tabs are proven.
+                if buyer["required"]:
+                    raise RuntimeError(
+                        f"[merx {slug} {tab}] listing unfetchable; "
+                        f"refusing to record silence")
+                tval["absent"] = True
+                log.info("[merx %s %s] tab absent or unfetchable; recorded",
+                         slug, tab)
+                break
             tval["pages"] += 1
-            links = solicitation_links(resp.text, listing_url(tab, page))
-            # LOUD-FAILURE GUARD: every tab carried a full page in the probe,
-            # so an empty first page means gating or markup change, not truth.
+            links = solicitation_links(resp.text, listing_url(tab, page, slug))
+            # LOUD-FAILURE GUARD: every Ottawa tab carried a full page in the
+            # probe, so an empty first page there means gating or markup
+            # change, not truth. Candidates record the empty honestly.
             if page == 1 and not links:
-                raise RuntimeError(
-                    f"[merx {tab}] page 1 returned 0 solicitation links: "
-                    f"gated or markup changed. Refusing to record silence.")
+                if buyer["required"]:
+                    raise RuntimeError(
+                        f"[merx {slug} {tab}] page 1 returned 0 solicitation "
+                        f"links: gated or markup changed. Refusing to record "
+                        f"silence.")
+                tval["absent"] = True
+                log.info("[merx %s %s] page 1 empty; recorded absent", slug, tab)
+                break
             page_new = 0
             for merx_id, url, text in links:
                 tval["ids_seen"] += 1
@@ -242,7 +312,7 @@ def collect(dry_run: bool = True) -> dict:
             # known front pages to reach the uncollected deep history.
             if ((not BACKFILL_MODE and known_pages >= KNOWN_PAGE_STOP)
                     or len(queue) >= NEW_PER_TAB
-                    or not has_next_page(resp.text, listing_url(tab, page), tab, page)):
+                    or not has_next_page(resp.text, listing_url(tab, page, slug), tab, page)):
                 break
             page += 1
 
@@ -262,7 +332,8 @@ def collect(dry_run: bool = True) -> dict:
                 val["solnum"] += 1 if abstract["sol_num"] else 0
                 val["closing"] += 1 if abstract["closing_on"] else 0
                 payload = build_payload(merx_id, url, title, doc_type,
-                                        abstract, body, source_id, keywords)
+                                        abstract, body, source_id, keywords,
+                                        buyer_name=buyer["name"])
                 if dry_run:
                     log.info("[dry-run] %-13s merx=%s ref=%-16s close=%s :: %s",
                              doc_type, merx_id, abstract["sol_num"],
@@ -281,17 +352,18 @@ def collect(dry_run: bool = True) -> dict:
 
     # The enablement bar reads this line (docs/merx-windsor-design.md section
     # 5: >= 90% of sampled abstracts parse Solicitation Number AND Closing
-    # Date; open and awarded tabs nonzero).
+    # Date; open and awarded tabs nonzero). Per-buyer since the breadth
+    # roster; absent tabs print as -1 so a discovery miss is unmistakable.
     a = val["abstracts"] or 1
-    log.info("VALIDATION [merx-ottawa]: open_tab=%d awarded_tab=%d "
-             "bidresults_tab=%d abstracts=%d solnum_parsed=%d (%d%%) "
+    tabline = " ".join(
+        f"{t}={-1 if v.get('absent') else v['ids_seen']}"
+        for t, v in stats["per_tab"].items())
+    log.info("VALIDATION [merx-%s]: %s abstracts=%d solnum_parsed=%d (%d%%) "
              "closing_parsed=%d (%d%%)",
-             stats["per_tab"]["open-bids"]["ids_seen"],
-             stats["per_tab"]["awarded-bids"]["ids_seen"],
-             stats["per_tab"]["bidresults-bids"]["ids_seen"],
+             slug, tabline,
              val["abstracts"], val["solnum"], round(100 * val["solnum"] / a),
              val["closing"], round(100 * val["closing"] / a))
-    log.info("merx-ottawa: %s%s", stats, " (DRY RUN)" if dry_run else "")
+    log.info("merx-%s: %s%s", slug, stats, " (DRY RUN)" if dry_run else "")
     if not dry_run and source_id:
         supabase_client.update_source_last_collected(
             source_id, datetime.now(timezone.utc))
