@@ -139,6 +139,13 @@ SOLNUM_TITLE_RE = re.compile(r"-\s*(\d{4,6}-\d{4,6}-[A-Z]\d{2})\s*\|\s*MERX")
 CLOSING_RE = re.compile(
     r"Closing\s+Date\b(?:(?!Previous)[^0-9]){0,40}(\d{4})/(\d{1,2})/(\d{1,2})")
 STATUS_RE = re.compile(r"This solicitation is\s+([A-Z]+)")
+# IO reference fallback (breadth validation 2026-07-28, run 30354809909):
+# Infrastructure Ontario's refs are NN-NNN(N) and often appear only in the
+# solicitation TITLE, prefixed by the instrument type ("RFP 24-1335 PDC
+# Advisory..."). The prefix anchor keeps stray number-dash tokens (dates,
+# addresses) out; missing stays None, never fabricated.
+SOLNUM_IO_RE = re.compile(r"\bRF[PQ]S?O?(?:uote)?\s+(\d{2}-\d{3,4})\b",
+                          re.IGNORECASE)
 
 
 def listing_url(tab: str, page: int, slug: str = BUYER_SLUG) -> str:
@@ -191,7 +198,8 @@ def has_next_page(html: str, base_url: str, tab: str, page: int) -> bool:
 def parse_abstract(text: str) -> dict:
     """{sol_num, closing_on, status} from the abstract page's linearized
     text. Missing fields stay None: never fabricate a reference or a date."""
-    sm = SOLNUM_RE.search(text) or SOLNUM_TITLE_RE.search(text)
+    sm = (SOLNUM_RE.search(text) or SOLNUM_TITLE_RE.search(text)
+          or SOLNUM_IO_RE.search(text))
     cm = CLOSING_RE.search(text)
     closing = None
     if cm:
