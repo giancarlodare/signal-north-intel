@@ -99,6 +99,15 @@ def test_build_payload_defence_tagging_rides_the_shared_matcher():
     assert p["defence_relevant"] is True
 
 
+class FakeRequest:
+    def __init__(self, url, method="POST", post_data='{"startResult":0,"maxRow":10}'):
+        self.url, self.method, self.post_data = url, method, post_data
+
+    def all_headers(self):
+        return {"content-type": "application/json;charset=UTF-8",
+                ":authority": "api.biddingo.com"}
+
+
 class FakeResponse:
     def __init__(self, url, status, body):
         self.url, self.status, self._body = url, status, body
@@ -106,21 +115,41 @@ class FakeResponse:
     def text(self):
         return self._body
 
+    def json(self):
+        import json as _json
+        return _json.loads(self._body)
+
+
+class FakeRequestContext:
+    """Serves canned paged replay responses; records the bodies posted."""
+
+    def __init__(self, paged_bodies):
+        self._paged = list(paged_bodies)
+        self.posted = []
+
+    def post(self, url, headers=None, data=None, timeout=None):
+        self.posted.append(data)
+        body = self._paged.pop(0) if self._paged else '{"bidInfoList": []}'
+        return FakeResponse(url, 200, body)
+
 
 class FakePage:
-    """Replays a canned response through the handler on goto(), the way
-    Playwright fires response events during navigation."""
+    """Replays canned request/response events through the handlers on goto(),
+    the way Playwright fires them during navigation."""
 
-    def __init__(self, responses):
-        self._responses = responses
-        self._handler = None
+    def __init__(self, events, paged_bodies=()):
+        self._events = events
+        self._handlers = {}
+        self.request = FakeRequestContext(paged_bodies)
 
-    def on(self, _event, handler):
-        self._handler = handler
+    def on(self, event, handler):
+        self._handlers[event] = handler
 
     def goto(self, url, **kw):
-        for r in self._responses:
-            self._handler(r)
+        for ev in self._events:
+            kind = "request" if isinstance(ev, FakeRequest) else "response"
+            if kind in self._handlers:
+                self._handlers[kind](ev)
 
     def wait_for_timeout(self, _ms):
         pass
@@ -129,13 +158,44 @@ class FakePage:
 LIST_URL = "https://api.biddingo.com/restapi/bidding/list/noauthorize/1/41137979"
 
 
+def _load_events(body):
+    return [FakeRequest(LIST_URL), FakeResponse(LIST_URL, 200, body)]
+
+
 def test_read_bid_list_parses_captured_response():
     body = ('{"bidCount": 2, "bidInfoList": ['
             '{"tenderNumber": "DRPS-2026-002", "tenderId": 1},'
             '{"tenderNumber": "DRPS-2026-001", "tenderId": 2}]}')
     rows, count, sys_id, org_id = read_bid_list(
-        FakePage([FakeResponse(LIST_URL, 200, body)]), "drps")
+        FakePage(_load_events(body)), "drps")
     assert (len(rows), count, sys_id, org_id) == (2, 2, "1", "41137979")
+
+
+def test_read_bid_list_pages_the_replay_until_bidcount():
+    # First load returns 1 of 3 (the app's own maxRow=10 shape scaled down);
+    # the paged replay serves the full portfolio, deduped on tenderId.
+    body = ('{"bidCount": 3, "bidInfoList": ['
+            '{"tenderNumber": "DRPS-2026-002", "tenderId": 1}]}')
+    paged = [('{"bidCount": 3, "bidInfoList": ['
+              '{"tenderNumber": "DRPS-2026-002", "tenderId": 1},'
+              '{"tenderNumber": "DRPS-2026-001", "tenderId": 2},'
+              '{"tenderNumber": "2023-0002", "tenderId": 3}]}')]
+    page = FakePage(_load_events(body), paged_bodies=paged)
+    rows, count, _, _ = read_bid_list(page, "drps")
+    assert len(rows) == 3 and count == 3
+    # The replay mutates ONLY the paging fields of the app's own body.
+    import json as _json
+    sent = _json.loads(page.request.posted[0])
+    assert sent["maxRow"] == 100 and sent["startResult"] == 0
+
+
+def test_read_bid_list_replay_still_short_raises():
+    body = ('{"bidCount": 5, "bidInfoList": ['
+            '{"tenderNumber": "DRPS-2026-002", "tenderId": 1}]}')
+    paged = ['{"bidCount": 5, "bidInfoList": []}']
+    with pytest.raises(RuntimeError, match="silently truncate"):
+        read_bid_list(FakePage(_load_events(body), paged_bodies=paged),
+                      "drps")
 
 
 def test_read_bid_list_never_observed_raises():
@@ -147,18 +207,12 @@ def test_read_bid_list_never_observed_raises():
 
 def test_read_bid_list_zero_rows_raises():
     with pytest.raises(RuntimeError, match="0 bids"):
-        read_bid_list(FakePage([FakeResponse(
-            LIST_URL, 200, '{"bidCount": 0, "bidInfoList": []}')]), "drps")
-
-
-def test_read_bid_list_undercount_means_paging_appeared_raises():
-    body = ('{"bidCount": 50, "bidInfoList": ['
-            '{"tenderNumber": "DRPS-2026-002", "tenderId": 1}]}')
-    with pytest.raises(RuntimeError, match="paging"):
-        read_bid_list(FakePage([FakeResponse(LIST_URL, 200, body)]), "drps")
+        read_bid_list(FakePage(_load_events(
+            '{"bidCount": 0, "bidInfoList": []}')), "drps")
 
 
 def test_read_bid_list_non_200_raises():
     with pytest.raises(RuntimeError, match="HTTP 403"):
-        read_bid_list(FakePage([FakeResponse(LIST_URL, 403, "denied")]),
+        read_bid_list(FakePage([FakeRequest(LIST_URL),
+                                FakeResponse(LIST_URL, 403, "denied")]),
                       "drps")

@@ -8,12 +8,14 @@ Access method, decided on probe evidence (runs 30356741517 + 30356971071,
     product), the renamed UA evaluates clean and the wildcard default applies.
     can_fetch(/m/drps): UA=True, wildcard=True.
   * the /m/<slug> page is an Angular shell that populates UNDER THE HONEST UA
-    (no browser-UA requirement, unlike bids&tenders) and feeds itself from ONE
+    (no browser-UA requirement, unlike bids&tenders) and feeds itself from one
     public REST call: POST api.biddingo.com/restapi/bidding/list/noauthorize/
     <sysId>/<orgId> -- "noauthorize" is Biddingo's own name for the endpoint.
-    The response carries the buyer's ENTIRE public bid portfolio in one JSON
-    (DRPS: all 38 bids, refs back to 2023); the mat-paginator is client-side
-    (a Next click fires no data call).
+    The call is SERVER-PAGED ({"startResult": 0, "maxRow": 10} body; the
+    response reports the portfolio size as bidCount), and replaying the
+    page's own call with a larger maxRow through the page's request context
+    returns the full portfolio (DRPS: all 38 bids, refs back to 2023) --
+    run 30357811409.
   * each row has a dedicated tenderNumber field (the DRPS bid reference,
     printed verbatim: "DRPS-2026-002", "DRPS 2025-003", "2023-0002",
     "RFP-0100-2023" -- heterogeneous, so NO title parsing is ever attempted),
@@ -21,9 +23,12 @@ Access method, decided on probe evidence (runs 30356741517 + 30356971071,
     publishedDate, and tenderId for the public detail URL
     /<slug>/bid/<sysId>/<orgId>/<tenderId>/verification.
 
-So the collector renders the page once with the house Playwright stack and
-reads the CAPTURED list response -- no DOM scraping, no replayed calls, no
-guessed request bodies, one page load per buyer per run.
+So the collector renders the page once with the house Playwright stack,
+reads the CAPTURED list response, and when the first page undercounts
+bidCount it replays the page's OWN call with only the two paging fields
+changed (Method B, as in tenders_bidsandtenders) -- no DOM scraping, no
+guessed request shapes, one page load plus at most a few paged data calls
+per buyer per run.
 
 Mapping to the spine (same rules as tenders_bidsandtenders): bidStatus
 Awarded -> award_notice (grade 5); everything else (Open, Closed, Cancelled,
@@ -163,16 +168,37 @@ def build_payload(buyer: dict, source_id, row: dict,
     }
 
 
+# The list endpoint is server-paged: the app's own first POST asks for
+# {"startResult": 0, "maxRow": 10} and the response reports the full
+# portfolio size as bidCount (probe run 30357811409: maxRow=100 replayed
+# through the page's request context returns all 38 DRPS rows, HTTP 200).
+# The collector replays the captured call page by page -- same Method-B
+# pattern as tenders_bidsandtenders -- never guessing a request shape, only
+# mutating the two paging fields of the body the app itself sent.
+PAGE_ROWS = 100          # rows per replayed page
+PORTFOLIO_MAX = 3000     # safety cap on a buyer's paged portfolio
+
+
 def read_bid_list(page, slug: str) -> tuple:
-    """Render the buyer page and return (rows, bid_count, sys_id, org_id)
-    from the captured noauthorize list response. Raises when the call is
-    never observed or the response undercounts its own bidCount."""
+    """Render the buyer page, then page the captured noauthorize list call
+    until the full bidCount is in hand. Returns (rows, bid_count, sys_id,
+    org_id). Raises when the call is never observed, a page fails, or the
+    paged total still undercounts bidCount."""
     captured: dict = {}
 
-    def on_response(resp):
-        m = LIST_CALL_RE.match(resp.url)
-        if m and "body" not in captured:
+    def on_request(req):
+        m = LIST_CALL_RE.match(req.url)
+        if m and req.method == "POST" and "url" not in captured:
+            captured["url"] = req.url
             captured["sys_id"], captured["org_id"] = m.group(1), m.group(2)
+            captured["post_data"] = req.post_data or ""
+            try:
+                captured["headers"] = req.all_headers()
+            except Exception:
+                captured["headers"] = dict(req.headers)
+
+    def on_response(resp):
+        if LIST_CALL_RE.match(resp.url) and "body" not in captured:
             captured["status"] = resp.status
             try:
                 captured["body"] = resp.text()
@@ -180,11 +206,12 @@ def read_bid_list(page, slug: str) -> tuple:
                 captured["body"] = ""
                 captured["error"] = repr(e)
 
+    page.on("request", on_request)
     page.on("response", on_response)
     page.goto(buyer_page_url(slug), wait_until="networkidle", timeout=60000)
     page.wait_for_timeout(2000)
 
-    if "body" not in captured:
+    if "body" not in captured or "url" not in captured:
         raise RuntimeError(
             f"[{slug}] the bidding/list/noauthorize call was never observed "
             f"on render: endpoint or app changed. Refusing to record silence.")
@@ -193,17 +220,45 @@ def read_bid_list(page, slug: str) -> tuple:
             f"[{slug}] list call HTTP {captured['status']} "
             f"({captured.get('error', 'empty body')}): gated or changed.")
     data = json.loads(captured["body"])
-    rows = data.get("bidInfoList") or []
+    rows = list(data.get("bidInfoList") or [])
     bid_count = data.get("bidCount")
     if not rows:
         raise RuntimeError(
             f"[{slug}] list returned 0 bids (bidCount={bid_count}); a live "
             f"buyer page has a portfolio. Refusing to record silence.")
+
     if isinstance(bid_count, int) and len(rows) < bid_count:
-        raise RuntimeError(
-            f"[{slug}] list returned {len(rows)} rows but bidCount="
-            f"{bid_count}: server-side paging has appeared; extend the "
-            f"collector rather than silently truncate the portfolio.")
+        try:
+            base_body = json.loads(captured["post_data"] or "{}")
+        except ValueError:
+            raise RuntimeError(
+                f"[{slug}] list request body is no longer JSON; cannot page "
+                f"the portfolio honestly. Refusing to truncate.")
+        headers = {k: v for k, v in captured["headers"].items()
+                   if not k.startswith(":")}
+        seen = {r.get("tenderId") for r in rows}
+        start = 0
+        while len(rows) < min(bid_count, PORTFOLIO_MAX):
+            body = {**base_body, "startResult": start, "maxRow": PAGE_ROWS}
+            resp = page.request.post(captured["url"], headers=headers,
+                                     data=json.dumps(body), timeout=45000)
+            if resp.status != 200:
+                raise RuntimeError(
+                    f"[{slug}] paged list replay HTTP {resp.status} at "
+                    f"startResult={start}: gated or changed.")
+            batch = resp.json().get("bidInfoList") or []
+            fresh = [r for r in batch if r.get("tenderId") not in seen]
+            if not fresh:
+                break
+            rows.extend(fresh)
+            seen.update(r.get("tenderId") for r in fresh)
+            start += PAGE_ROWS
+            page.wait_for_timeout(2000)    # politeness between pages
+        if len(rows) < bid_count:
+            raise RuntimeError(
+                f"[{slug}] paged the portfolio to {len(rows)} rows but "
+                f"bidCount={bid_count}: replay shape changed. Refusing to "
+                f"silently truncate.")
     return rows, bid_count, captured["sys_id"], captured["org_id"]
 
 
