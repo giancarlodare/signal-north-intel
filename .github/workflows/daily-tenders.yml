@@ -68,3 +68,16 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python -m src.tenders_bidsandtenders
+
+      # Biddingo buyer pages (first buyer: DRPS). Rides this workflow because
+      # the Chromium install is already paid above. Raises without its sources
+      # row, so this step goes live only when the operator pastes the
+      # 2026-07-28_biddingo_drps_source_seed migration at enablement. Ordered
+      # after bids&tenders: a Biddingo failure must not cost the tier-1 fleet,
+      # and vice versa the step still runs when the fleet step fails.
+      - name: Run Biddingo collector (DRPS)
+        if: steps.guard.outputs.should_run == 'true' && (success() || failure())
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.tenders_biddingo
