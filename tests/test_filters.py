@@ -78,3 +78,19 @@ def test_punctuation_edged_keyword_still_matches():
     kw = Keywords(general=(), defence=("ops/",))
     assert evaluate("Portal", "see https://example.com/ops/plan", "", kw).defence_relevant
     assert not evaluate("Develops/ships weekly", "", "", kw).defence_relevant
+
+
+# --- Plural tolerance (operator 2026-07-28): s/es inside the boundary --------
+
+def test_plural_tolerance_recovers_plurals():
+    kw = Keywords(general=("forensic", "port of entry"), defence=("radio",))
+    assert evaluate("Forensics laboratory services", "", "", kw).kept
+    assert evaluate("Ports of entry modernization", "", "", kw).kept
+    assert evaluate("Portable radios purchase", "", "", kw).defence_relevant
+
+
+def test_plural_tolerance_keeps_bendix_class_closed():
+    # The hard constraint: plural tolerance must not reopen substring hits.
+    kw = Keywords(general=("ems",), defence=("uas", "ppe"))
+    r = evaluate("Bendix Air Brake Systems", "quashed appeals shipped", "", kw)
+    assert not r.kept and not r.defence_relevant

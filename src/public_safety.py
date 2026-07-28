@@ -30,7 +30,7 @@ is_public_safety() to gate the member-facing default selection.
 """
 import re
 
-from .filters import Keywords
+from .filters import Keywords, _word_pattern
 
 # End-user org_types that ARE public-safety: any item whose resolved end-user
 # is one of these is relevant by construction. police_service/police_board are
@@ -74,8 +74,11 @@ def _keyword_hit(text: str, keywords: Keywords) -> bool:
     public surface."""
     if not text:
         return False
+    # One matcher across the system (filters._word_pattern): whole-word
+    # boundaries plus the 2026-07-28 plural tolerance, so this gate and the
+    # collectors' keep/tag path can never disagree on what a keyword means.
     for kw in (*keywords.general, *keywords.defence):
-        if kw and re.search(r"\b" + re.escape(kw) + r"\b", text, re.IGNORECASE):
+        if kw and _word_pattern(kw).search(text):
             return True
     return False
 

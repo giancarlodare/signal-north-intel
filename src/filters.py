@@ -57,9 +57,18 @@ def _word_pattern(kw: str) -> re.Pattern:
     # (the "OPS/..." Ottawa Police Service prefix) must still match with a
     # word directly after the slash, while 'uas' must not match inside
     # "quashed". Lookarounds rather than \b so the guard is one-sided.
+    #
+    # PLURAL TOLERANCE (operator 2026-07-28): each word token accepts an
+    # optional s/es INSIDE the boundary, so 'forensic' matches "forensics"
+    # and 'port of entry' matches "ports of entry" (phrases pluralize the
+    # head noun, not the last word). The boundary guards are unchanged, so
+    # the Bendix substring class stays closed: 'ems' still cannot match
+    # inside "Systems" because the lookbehind blocks it, plural or not.
     pre = r"(?<!\w)" if re.match(r"\w", kw[:1]) else ""
     post = r"(?!\w)" if re.match(r"\w", kw[-1:]) else ""
-    return re.compile(pre + re.escape(kw) + post, re.IGNORECASE)
+    body = r"\s+".join(
+        re.escape(tok) + r"(?:e?s)?" for tok in kw.split(" ") if tok)
+    return re.compile(pre + body + post, re.IGNORECASE)
 
 
 def _matches_any(text: str, keywords: tuple[str, ...]) -> str | None:
