@@ -117,3 +117,15 @@ def test_cluster_missing_fields_degrade_safely():
     # Missing title/org_type must not raise; a bare, unresolvable member is not
     # public-safety (precision over recall).
     assert not ps.cluster_is_public_safety([{}], KW)
+
+
+def test_keyword_matching_is_whole_word_not_substring():
+    # The Bendix lesson (2026-07-27): 'ems' must not match 'Systems', and the
+    # same for any keyword embedded in a longer word. Real whole-word uses of
+    # the same keywords still pass.
+    assert not ps.is_public_safety(
+        "municipality",
+        "Ottawa Transit Services RFSO for Bendix Air Brake Systems and Components",
+        KW)
+    assert ps.is_public_safety("municipality", "EMS station generator", KW)
+    assert not ps.is_public_safety("municipality", "Air brake systems supply", KW)

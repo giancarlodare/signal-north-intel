@@ -44,10 +44,18 @@ export default async function PortalHome() {
     listEvents(supabase),
     listSaved(supabase),
   ]);
-  const latest = briefs[0] ?? null;
-  const leadHeadline = latest
-    ? ((await getBriefItems(supabase, latest.id))[0]?.headline ?? null)
-    : null;
+  // Same fallback as the brief page: the panel features the newest published
+  // brief that actually has a member-visible item.
+  let latest = briefs[0] ?? null;
+  let leadHeadline: string | null = null;
+  for (const b of briefs) {
+    const its = await getBriefItems(supabase, b.id);
+    if (its.length > 0) {
+      latest = b;
+      leadHeadline = its[0]?.headline ?? null;
+      break;
+    }
+  }
   const stage3 = watches !== null;
   const nBuyers = (watches ?? []).filter((w) => w.kind === "buyer").length;
   const nTopics = (watches ?? []).filter((w) => w.kind === "keyword").length;

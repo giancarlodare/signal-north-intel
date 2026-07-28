@@ -109,6 +109,16 @@ export default async function BriefPage({
   searchParams: { brief?: string };
 }) {
   const supabase = createClient();
+  // Session diagnostic (2026-07-27): names whether this server render holds
+  // the member JWT or fell back to anon, which RLS answers with clean zero
+  // rows. Shows in Vercel function logs as [portal-data] render session.
+  const {
+    data: { user: renderUser },
+  } = await supabase.auth.getUser();
+  console.error(
+    "[portal-data] render session:",
+    renderUser ? `${renderUser.email} (${renderUser.id.slice(0, 8)})` : "ANON",
+  );
   const briefs = await listPublishedBriefs(supabase);
 
   if (briefs.length === 0) {
@@ -124,9 +134,23 @@ export default async function BriefPage({
     );
   }
 
-  const selected =
-    briefs.find((b) => b.id === searchParams.brief) ?? briefs[0];
-  const items = await getBriefItems(supabase, selected.id);
+  // An explicitly selected brief renders exactly (operator preview); the
+  // default walks newest-first to the first brief with a member-visible item,
+  // so an honest-empty latest week never blanks the member view while a real
+  // issue sits behind it (operator decision 2026-07-27).
+  const explicit = briefs.find((b) => b.id === searchParams.brief) ?? null;
+  let selected = explicit ?? briefs[0];
+  let items = await getBriefItems(supabase, selected.id);
+  if (!explicit) {
+    for (const b of briefs) {
+      const its = b.id === selected.id ? items : await getBriefItems(supabase, b.id);
+      if (its.length > 0) {
+        selected = b;
+        items = its;
+        break;
+      }
+    }
+  }
   const saved = await listSaved(supabase);
   const savingEnabled = saved !== null;
   const savedSet = savedIds(saved);

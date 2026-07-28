@@ -124,7 +124,7 @@ export default function SiteInteractions() {
         const f = (n: string) => encodeURIComponent(field(n).value);
         const role = form.querySelector(".chip.is-active");
         location.href =
-          "mailto:briefings@signalnorth.ca?subject=Access request - " +
+          "mailto:giancarlo@signalnorthintel.com?subject=Access request - " +
           f("org") +
           "&body=Name: " +
           f("name") +

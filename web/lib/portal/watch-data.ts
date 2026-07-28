@@ -36,22 +36,37 @@ export interface SavedItem {
 export async function listWatches(
   supabase: SupabaseClient,
 ): Promise<Watch[] | null> {
+  // No relationship embed here: this query drives the whole Watching page's
+  // live/disabled state, so it stays a plain single-table select (embeds
+  // depend on FK schema-cache resolution and are the fragile part on a
+  // freshly created table). Buyer names resolve in a second plain query.
   const { data, error } = await supabase
     .from("member_watches")
-    .select("id, kind, keyword, organization_id, organizations(canonical_name)")
+    .select("id, kind, keyword, organization_id")
     .order("created_at", { ascending: true });
-  if (error) return null;
-  return ((data ?? []) as unknown as Record<string, unknown>[]).map((w) => {
-    const org = one(w.organizations as
-      { canonical_name: string | null } | { canonical_name: string | null }[] | null);
-    return {
-      id: w.id as string,
-      kind: w.kind as "keyword" | "buyer",
-      keyword: (w.keyword as string) ?? null,
-      organizationId: (w.organization_id as string) ?? null,
-      buyerName: (org?.canonical_name as string) ?? null,
-    };
-  });
+  if (error) {
+    console.error("[watch-data] listWatches:", error.message);
+    return null;
+  }
+  const rows = (data ?? []) as unknown as Record<string, unknown>[];
+  const orgIds = [...new Set(rows.map((w) => w.organization_id as string).filter(Boolean))];
+  const names = new Map<string, string>();
+  if (orgIds.length) {
+    const { data: orgs, error: orgErr } = await supabase
+      .from("organizations")
+      .select("id, canonical_name")
+      .in("id", orgIds);
+    if (orgErr) console.error("[watch-data] org names:", orgErr.message);
+    for (const o of (orgs ?? []) as { id: string; canonical_name: string | null }[])
+      if (o.canonical_name) names.set(o.id, o.canonical_name);
+  }
+  return rows.map((w) => ({
+    id: w.id as string,
+    kind: w.kind as "keyword" | "buyer",
+    keyword: (w.keyword as string) ?? null,
+    organizationId: (w.organization_id as string) ?? null,
+    buyerName: names.get(w.organization_id as string) ?? null,
+  }));
 }
 
 export async function listEvents(
@@ -66,7 +81,10 @@ export async function listEvents(
     )
     .order("created_at", { ascending: false })
     .limit(limit);
-  if (error) return null;
+  if (error) {
+    console.error("[watch-data] listEvents:", error.message);
+    return null;
+  }
   return ((data ?? []) as unknown as Record<string, unknown>[]).map((e) => {
     const s = one(e.signals as Record<string, unknown> | Record<string, unknown>[] | null);
     const org = one(
@@ -95,7 +113,10 @@ export async function listSaved(
         "organizations(canonical_name)))",
     )
     .order("saved_at", { ascending: false });
-  if (error) return null;
+  if (error) {
+    console.error("[watch-data] listSaved:", error.message);
+    return null;
+  }
   return ((data ?? []) as unknown as Record<string, unknown>[]).map((r) => {
     const bi = one(r.brief_items as Record<string, unknown> | Record<string, unknown>[] | null);
     const s = one((bi?.signals ?? null) as Record<string, unknown> | Record<string, unknown>[] | null);
@@ -131,7 +152,10 @@ export async function listFollowableBuyers(
     )
     .eq("included", true)
     .eq("briefs.status", "published");
-  if (error) return null;
+  if (error) {
+    console.error("[watch-data] listFollowableBuyers:", error.message);
+    return null;
+  }
   const seen = new Map<string, string>();
   for (const r of (data ?? []) as unknown as Record<string, unknown>[]) {
     const s = one(r.signals as Record<string, unknown> | Record<string, unknown>[] | null);

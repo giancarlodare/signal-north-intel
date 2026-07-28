@@ -66,9 +66,16 @@ _FACILITY_PATTERNS = [
 
 
 def _keyword_hit(text: str, keywords: Keywords) -> bool:
-    low = (text or "").lower()
+    """WHOLE-WORD, case-insensitive keyword match. Substring matching put an
+    Ottawa Transit "Bendix Air Brake Systems" tender on the public-safety
+    homepage because 'ems' is inside 'Systems' (found 2026-07-27, the same
+    class as the pilot's 'contracting' false positive). Word boundaries are
+    mandatory anywhere the public-safety predicate feeds a member-facing or
+    public surface."""
+    if not text:
+        return False
     for kw in (*keywords.general, *keywords.defence):
-        if kw and kw in low:
+        if kw and re.search(r"\b" + re.escape(kw) + r"\b", text, re.IGNORECASE):
             return True
     return False
 
