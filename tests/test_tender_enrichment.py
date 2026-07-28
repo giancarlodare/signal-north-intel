@@ -110,9 +110,14 @@ class _Db:
         self.updated.append((table, rid, payload))
 
 
-def _run_collector(monkeypatch, rows, existing=None):
+def _run_collector(monkeypatch, rows, existing=None, open_rows=None):
+    # The collector reads BOTH the new-tenders and open-tenders CSVs (the
+    # 2026-07-28 capture-leak fix), so the mock is url-aware.
     db = _Db(existing)
-    monkeypatch.setattr(main, "fetch_csv_rows", lambda url: rows)
+    from src import config
+    by_url = {config.NEW_TENDER_NOTICES_URL: rows,
+              config.OPEN_TENDER_NOTICES_URL: open_rows or []}
+    monkeypatch.setattr(main, "fetch_csv_rows", lambda url: by_url.get(url, []))
     for name in ("get_document_by_hash", "insert_document", "update_row"):
         monkeypatch.setattr(main.supabase_client, name, getattr(db, name))
     keywords = main.load_keywords()
@@ -129,6 +134,14 @@ def test_new_notice_inserts_enriched_document(monkeypatch):
     assert doc["unspsc_codes"] == ["25132100", "72151600"]
     assert doc["buyer_name"].startswith("Department of National Defence")
     assert "Solicitation number: W6399-27-TR05" in doc["content"]
+
+
+def test_open_file_only_notice_is_captured(monkeypatch):
+    # The leak regression: a notice absent from the small NEW window but
+    # present in the full OPEN file must still be captured.
+    db, stats = _run_collector(monkeypatch, [], open_rows=[_row()])
+    assert stats["inserted"] == 1
+    assert db.inserted[0]["reference_number"] == "W6399-27-TR05"
 
 
 def test_duplicate_at_amendment_zero_skips(monkeypatch):

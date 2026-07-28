@@ -134,7 +134,16 @@ def parse_tender_row(row: dict, fields: list) -> dict:
 def process_tender_notices(source_id: str, keywords: Keywords) -> dict:
     stats = {"seen": 0, "kept": 0, "inserted": 0, "skipped_duplicate": 0,
              "refreshed_amendment": 0}
-    rows = fetch_csv_rows(config.NEW_TENDER_NOTICES_URL)
+    # BOTH files, capture-leak fix (operator 2026-07-28, cross-check run
+    # 30351123061): the NEW-tenders CSV is a small rolling window (2 rows
+    # that day), so reading only it once daily leaked 95% of keep-worthy
+    # notices; the OPEN file carries every currently-open notice (883 that
+    # day) and content-hash dedupe makes the overlap free. NEW is still read
+    # first so a notice that is published and closed between daily runs is
+    # not lost to the open-only view.
+    rows = []
+    for url in (config.NEW_TENDER_NOTICES_URL, config.OPEN_TENDER_NOTICES_URL):
+        rows.extend(fetch_csv_rows(url))
     if not rows:
         return stats
     fields = list(rows[0].keys())
