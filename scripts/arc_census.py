@@ -25,6 +25,18 @@ REPORT, not a pipeline. It writes nothing.
 Accrual is measured on the document's own event date over the trailing 12
 months, so it reflects when the public record was made, not when we
 collected it.
+
+ACCRUAL CAVEAT (operator correction, 2026-07-29). The trailing-12 mean is
+BLENDED and reads high. Months in which a historical backfill drain landed
+(2025-10 and 2026-05 in the first census) carry collection volume, not
+market activity, and the month's event dates are the publisher's, not the
+drain's. Strip those months and organic accrual is closer to 15-20/month.
+
+  - One arc per weekly issue is comfortably covered either way.
+  - "The bench refills faster than we drain it" is NOT settled and is not
+    to be carried forward as if it were. If two arcs an issue is ever
+    considered, re-derive the rate on ORGANIC months only, and say which
+    months were excluded and why.
 """
 import os
 import sys
@@ -185,7 +197,20 @@ def main() -> int:
     for m in sorted(months):
         print(f"  {m}  {months[m]:4d}  {'#' * min(months[m], 60)}")
     print(f"\n  trailing-12 precursor total: {recent_total}")
-    print(f"  mean per month: {recent_total / 12:.1f}")
+    print(f"  BLENDED mean per month: {recent_total / 12:.1f}   "
+          f"(reads high: includes backfill-drain months)")
+    # Organic proxy: drop the two largest months, which are where a historical
+    # drain landing shows up as a spike. Reported alongside, never instead of,
+    # the blended figure, and never used to claim the bench outruns the drain.
+    vals = sorted(months.values(), reverse=True)
+    trimmed = vals[2:]
+    if trimmed:
+        med = sorted(trimmed)[len(trimmed) // 2]
+        print(f"  ORGANIC proxy (top 2 months dropped): "
+              f"mean {sum(trimmed) / len(trimmed):.1f}/month, median {med}/month")
+        print(f"    dropped: {', '.join(m for m in sorted(months, key=lambda k: -months[k])[:2])}")
+    print("  Use the ORGANIC figure for any cadence question above one arc "
+          "per issue.")
 
     print("\n" + "=" * 100)
     print("EDITORIAL SUPPLY READ")

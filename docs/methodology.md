@@ -170,6 +170,43 @@ one that looks like a clean zero.
 * Product surfaces claim only what is live. Roadmap features are labeled as
   roadmap on the pricing table itself, never checked as if shipped.
 
+### 7.1 Earliness is a claim about the record, not about the future
+
+The line the whole product rests on, and the one most easily blurred:
+
+> **"Months before the solicitation" is a claim about when the public
+> record exists. It is not a claim about our ability to time a future
+> event.**
+
+A budget line, a board decision, a staff report and a capital plan are
+published months before the tender that follows them. Saying so asserts
+nothing about the future: it is a statement about documents that already
+exist, each of which we can link. Saying "the tender lands in Q1" is a
+different kind of sentence entirely, and it needs a statistical apparatus
+that has to earn its way past the significance gate first.
+
+Both sentences sound like earliness. Only one is free. The test on any
+draft copy is mechanical: **strike the sentence and ask whether what
+remains still points at a document a reader can open.** If yes, the claim
+was about the record. If the sentence was doing the work on its own, it
+was a forecast wearing the record's clothes, and it comes out.
+
+Applied consequences:
+
+* Named comparables replace modelled intervals. "Four other services ran
+  this sequence; here are their dates and their links" is a measurement of
+  the past. "The measured interval implies February" is a projection.
+* A comparable set with fewer than two genuine members returns nothing,
+  and the item stays a record item. **Thin arcs are worse than no arcs**:
+  one comparable reads as a pattern while being an anecdote.
+* Every narrative element carries a disconfirming line, naming what would
+  stop the sequence completing. Content marketing omits it; a defensible
+  record cannot.
+* Statistical machinery is retained as an INTERNAL instrument (prediction
+  ledger, significance gates, pooled estimators). Internal use does not
+  require a product claim, and a product claim is not licensed by internal
+  use.
+
 ## 8. Security and access-control posture
 
 * The database is the gate, not the UI. Row-level policies enforce what a

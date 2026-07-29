@@ -278,7 +278,8 @@ def run_extraction(batch_size: int = 20, model: str = DEFAULT_MODEL, dry_run: bo
                    doc_type: str | None = None, doc_types: list | None = None,
                    newest_first: bool = False,
                    exclude_buyers: list | None = None,
-                   include_url_like: list | None = None) -> dict:
+                   include_url_like: list | None = None,
+                   envelope: str | None = None) -> dict:
     """Process up to batch_size captured documents.
 
     doc_types (a list) scopes the run to several types at once; the daily forward
@@ -378,6 +379,20 @@ def run_extraction(batch_size: int = 20, model: str = DEFAULT_MODEL, dry_run: bo
             log.info("Token usage [%s]: docs=%d input=%d output=%d",
                      host, b.get("docs", 0), b.get("input_tokens", 0),
                      b.get("output_tokens", 0))
+    # Close the loop the guard depends on: an unrecorded run is exactly the
+    # hole that made the Toronto envelope unmeasurable. Raised, never
+    # swallowed -- silent non-recording would let the next batch's guard
+    # certify room that has already been spent.
+    if envelope and not dry_run:
+        from .envelope_guard import record_run
+        record_run(
+            envelope, model, usage, stats["documents_processed"],
+            usage_by_host=usage_by_host,
+            run_url=(f"{os.environ.get('GITHUB_SERVER_URL', '')}/"
+                     f"{os.environ.get('GITHUB_REPOSITORY', '')}/actions/runs/"
+                     f"{os.environ.get('GITHUB_RUN_ID', '')}"
+                     if os.environ.get("GITHUB_RUN_ID") else None),
+        )
     log.info("Extraction complete%s: %s", " (DRY RUN)" if dry_run else "", stats)
     return stats
 
@@ -413,6 +428,10 @@ if __name__ == "__main__":
     parser.add_argument("--newest-first", action="store_true",
                         help="process the freshest event dates first, so a capped run "
                              "drains closing-soon documents ahead of stale ones")
+    parser.add_argument("--envelope", default=None,
+                        help="the declared cost envelope this run spends against; its "
+                             "measured token cost is appended to extraction_spend so "
+                             "the pre-dispatch guard can bind the next batch")
     args = parser.parse_args()
 
     doc_types = [t.strip() for t in args.doc_types.split(",") if t.strip()] if args.doc_types else None
@@ -426,5 +445,6 @@ if __name__ == "__main__":
                             doc_type=args.doc_type, doc_types=doc_types,
                             newest_first=args.newest_first,
                             exclude_buyers=exclude_buyers,
-                            include_url_like=include_url_like)
+                            include_url_like=include_url_like,
+                            envelope=args.envelope)
     sys.exit(0 if result["errors"] == 0 else 1)

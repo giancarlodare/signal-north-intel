@@ -33,6 +33,14 @@ on:
         description: "Override the doc_types list for a targeted drain"
         type: string
         default: "award_notice,board_minutes,news_release"
+      # The declared envelope this batch spends against. The guard below
+      # reads it, compares cumulative measured spend to the declared amount,
+      # and SKIPS the batch if it would exceed. There is no "no envelope"
+      # option: an undeclared spend is what the guard exists to stop.
+      envelope:
+        description: "Declared envelope key this batch spends against"
+        type: string
+        required: true
 
 concurrency:
   group: extract-backfill
@@ -51,7 +59,22 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      # THE BINDING CHECK (operator 2026-07-29). Measurement is not a limit;
+      # this is the limit. Three outcomes: PROCEED, SKIP (green, gated below,
+      # surfaced), UNMEASURABLE (red, raises). An envelope whose cumulative
+      # spend cannot be measured is never certified as having room.
+      - name: Envelope guard (pre-dispatch)
+        id: guard
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: >
+          python -m src.envelope_guard
+          --envelope "${{ inputs.envelope }}"
+          --planned-docs ${{ inputs.limit }}
+
       - name: Extract award / board-minutes backlog into signals
+        if: steps.guard.outputs.proceed == 'true'
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -73,4 +96,25 @@ jobs:
           python -m src.signal_extractor
           --doc-types "${{ inputs.doc_types }}"
           --newest-first --limit ${{ inputs.limit }}
+          --envelope "${{ inputs.envelope }}"
           ${{ inputs.include_hosts != '' && format('--include-hosts "{0}"', inputs.include_hosts) || '--exclude-buyers "City of Hamilton,City of Brampton,City of Kitchener,City of Vaughan,Halton Region"' }}
+
+      # A skip must be visible, not silent. The guard already printed the
+      # arithmetic; this puts it on the run summary so a skipped batch reads
+      # as a decision rather than as a run that did nothing.
+      - name: Surface the skip
+        if: steps.guard.outputs.proceed != 'true'
+        run: |
+          {
+            echo "## Batch SKIPPED by the envelope guard"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| envelope | \`${{ inputs.envelope }}\` |"
+            echo "| declared | \$${{ steps.guard.outputs.declared_usd }} |"
+            echo "| spent to date | \$${{ steps.guard.outputs.spent_usd }} |"
+            echo "| this batch would add | \$${{ steps.guard.outputs.projected_usd }} |"
+            echo "| docs the envelope still affords | ${{ steps.guard.outputs.docs_affordable }} |"
+            echo ""
+            echo "Lower the cap to the affordable count, or bring the operator a new envelope."
+          } >> "$GITHUB_STEP_SUMMARY"
