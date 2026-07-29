@@ -49,12 +49,19 @@ from arc_census import (  # noqa: E402
 # Toronto's two hosts: the CKAN API host the collector actually reads, and
 # the human-facing catalogue used as the publisher-artifact URL.
 TORONTO_HOSTS = ("ckan0.cf.opendata.inter.prod-toronto.ca", "open.toronto.ca")
-# Deliberately broad: a false positive here is cheap (I read the sample), a
-# false negative would wrongly exclude Toronto from the drain.
-POLICE_TERMS = ("police", "constable", "tps ", "cruiser", "body-worn",
-                "body worn", "in-car camera", "firearm", "taser", "cew ",
-                "forensic", "911", "emergency communication", "detention",
-                "public safety", "law enforcement")
+# STRICT. The first pass used a deliberately broad list and "911" matched
+# Toronto's own reference numbers (9117163121, 9119157126...), inflating the
+# hit rate to 8.8% on rows about parks, transit EAs and zoning studies. A
+# term that matches a document key is not a topic match. These are terms that
+# cannot appear except in police-related text.
+POLICE_TERMS = ("police", "constable", "body-worn camera", "body worn camera",
+                "law enforcement", "taser", "conducted energy weapon",
+                "in-car camera", "prisoner transport")
+# Kept separate: real public-safety vocabulary that a city ALSO uses for
+# non-police purposes (fire, paramedic, general facilities). Counted and
+# reported apart so neither number is quietly doing the other's work.
+ADJACENT_TERMS = ("forensic", "emergency communication", "detention",
+                  "public safety", "paramedic", "fire services")
 
 # Board/service pairs to test in the merge simulation. Each tuple is
 # (canonical target, aliases folded into it). These are proposed, not
@@ -83,9 +90,17 @@ def host(url: str) -> str:
     return urlparse(url or "").netloc or "(no host)"
 
 
-def police_hit(*fields: str) -> bool:
+def _hit(terms, *fields: str) -> bool:
     blob = " ".join((f or "") for f in fields).lower()
-    return any(t in blob for t in POLICE_TERMS)
+    return any(t in blob for t in terms)
+
+
+def police_hit(*fields: str) -> bool:
+    return _hit(POLICE_TERMS, *fields)
+
+
+def adjacent_hit(*fields: str) -> bool:
+    return _hit(ADJACENT_TERMS, *fields)
 
 
 # --------------------------------------------------------------------------
@@ -110,14 +125,21 @@ def s1_toronto(docs: list) -> None:
         print(f"    {str(b)[:44]:44s} {n:6d}")
 
     hits = [d for d in captured if police_hit(d.get("title"), d.get("content"))]
-    pct = 100 * len(hits) / (len(captured) or 1)
-    print(f"\n  POLICE-RELATED (title or content matches any of "
-          f"{len(POLICE_TERMS)} terms): {len(hits)} / {len(captured)} "
-          f"({pct:.1f}%)")
-    print("\n  sample of matches (up to 15):")
-    for d in hits[:15]:
+    adj = [d for d in captured
+           if d not in hits and adjacent_hit(d.get("title"), d.get("content"))]
+    print(f"\n  POLICE (strict terms: {', '.join(POLICE_TERMS)}):")
+    print(f"    {len(hits)} / {len(captured)} "
+          f"({100 * len(hits) / (len(captured) or 1):.2f}%)")
+    print(f"  ADJACENT public-safety vocabulary, non-police "
+          f"({', '.join(ADJACENT_TERMS)}):")
+    print(f"    {len(adj)} / {len(captured)} "
+          f"({100 * len(adj) / (len(captured) or 1):.2f}%)")
+
+    print("\n  ALL police-strict matches (title, newest first):")
+    for d in sorted(hits, key=lambda r: str(r.get("published_on") or ""),
+                    reverse=True)[:40]:
         print(f"    {str(d.get('published_on'))[:10]}  "
-              f"{(d.get('title') or '')[:88]}")
+              f"{(d.get('title') or '')[:100]}")
     if not hits:
         print("    (none)")
 

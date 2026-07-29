@@ -20,7 +20,10 @@ const FEATURES: { name: string; cells: TierCells }[] = [
   { name: "Watchlists and alerts", cells: [false, false, true, true] },
   { name: "Expiring-contract tracking", cells: [false, false, true, true] },
   { name: "Pricing and incumbent intelligence", cells: [false, false, true, true] },
-  { name: "Demand-arc foresight views", cells: [false, false, true, true] },
+  // Sourced demand arcs are LIVE at Weekly and above (operator 2026-07-29):
+  // a dated, deep-linked chain of public-record events with named comparable
+  // precedents. No statistical claim, so no in-development marker.
+  { name: "Sourced demand arcs", cells: [false, true, true, true] },
   { name: "Multiple seats", cells: [false, false, false, true] },
   { name: "Custom coverage", cells: [false, false, false, true] },
   { name: "API access", cells: [false, false, false, true] },
@@ -30,7 +33,7 @@ const FEATURES: { name: string; cells: TierCells }[] = [
 const FAQ: { q: string; a: string }[] = [
   {
     q: "What is Signal North?",
-    a: "The intelligence network for public safety and defence procurement in Canada. We continuously map the entire public record, tenders, awards, budgets, board and council decisions, legislative debate, and vendor activity, so anyone who buys or sells in this sector can see the whole market in one place, with foresight into where it is heading.",
+    a: "The intelligence network for public safety and defence procurement in Canada. We continuously map the entire public record, tenders, awards, budgets, board and council decisions, legislative debate, and vendor activity, so anyone who buys or sells in this sector can see the whole market in one place, and can follow a single need from the first mention to the award.",
   },
   {
     q: "Who is Signal North for?",
@@ -66,7 +69,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "How is this different from a tender-notification service?",
-    a: "Tender alerts tell you an RFP has been posted, by which point the opportunity is often already shaped. Signal North maps the whole market continuously and surfaces activity as it forms, months before a formal solicitation. It is the difference between reacting to the market and understanding it.",
+    a: "Tender alerts tell you an RFP has been posted, by which point the opportunity is often already shaped. Signal North maps the whole market continuously and surfaces activity as it forms. A budget line, a board decision, a staff report: these are public months before the solicitation, and we put them in front of you with the link to each one. It is the difference between reacting to the market and understanding it.",
   },
   {
     q: "Do I need a long-term commitment?",
