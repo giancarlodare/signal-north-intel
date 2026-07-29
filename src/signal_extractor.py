@@ -26,6 +26,7 @@ import logging
 import os
 import unicodedata
 from typing import Callable, Optional
+from urllib.parse import urlparse
 
 import prompts
 
@@ -313,12 +314,26 @@ def run_extraction(batch_size: int = 20, model: str = DEFAULT_MODEL, dry_run: bo
         return stats
     log.info("Processing %d documents%s", len(docs), " (DRY RUN — no writes)" if dry_run else "")
 
+    # Token usage is accumulated BOTH in total and per url host, so a run that
+    # mixes scopes (an unscoped drain sweeping up the tail of a scoped one)
+    # still yields an attributable measurement per source. Without this the
+    # per-run counter is a single sum and a commingled batch can only ever be
+    # estimated after the fact, which is not a measurement (operator, cost
+    # discipline, 2026-07-28).
     usage: dict = {}
+    usage_by_host: dict = {}
     for doc in docs:
         try:
             source_name = supabase_client.get_source_name(doc["source_id"])
+            doc_usage: dict = {}
             raw_signals, stamp = extract_signals(doc, source_name, model,
-                                                 usage_totals=usage)
+                                                 usage_totals=doc_usage)
+            host = urlparse(doc.get("url") or "").netloc or "(no host)"
+            bucket = usage_by_host.setdefault(host, {})
+            for k, v in doc_usage.items():
+                usage[k] = usage.get(k, 0) + v
+                bucket[k] = bucket.get(k, 0) + v
+            bucket["docs"] = bucket.get("docs", 0) + 1
             for raw in raw_signals:
                 payload = build_signal_payload(raw, doc["id"], stamp, resolve_org,
                                                resolve_cat, doc.get("doc_type"))
@@ -356,6 +371,13 @@ def run_extraction(batch_size: int = 20, model: str = DEFAULT_MODEL, dry_run: bo
                  usage.get("input_tokens", 0), usage.get("output_tokens", 0),
                  usage.get("cache_write_tokens", 0),
                  usage.get("cache_read_tokens", 0))
+        # Per-host attribution: makes a commingled batch measurable per scope
+        # rather than reconstructable-by-estimate.
+        for host, b in sorted(usage_by_host.items(),
+                              key=lambda kv: -kv[1].get("input_tokens", 0)):
+            log.info("Token usage [%s]: docs=%d input=%d output=%d",
+                     host, b.get("docs", 0), b.get("input_tokens", 0),
+                     b.get("output_tokens", 0))
     log.info("Extraction complete%s: %s", " (DRY RUN)" if dry_run else "", stats)
     return stats
 
