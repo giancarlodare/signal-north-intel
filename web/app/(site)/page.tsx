@@ -62,6 +62,28 @@ const CAPS: { id: string; name: string; label: string; rows: CapRow[] }[] = [
 // the whole register section is omitted when the data is unavailable, so the
 // transparency feature can never show a stale list.
 
+// REAL comparables, pulled from the corpus by scripts/arc_diagnostics.py
+// (run 30414996586, category body-worn-cameras). Every URL is a publisher
+// record. NO interval figure is asserted: the census can measure a clean
+// precursor-to-outcome span for only ONE buyer in this category, and a single
+// span is an anecdote, not a pattern. See docs/methodology.md 7.1.
+const PRECEDENTS = [
+  {
+    buyer: "Greater Sudbury Police Service",
+    precursorUrl:
+      "https://www.gsps.ca/media/jjhagu3j/gspsb-agenda-public_sept-18-2024.pdf",
+    outcomeUrl:
+      "https://www.gsps.ca/media/5jbhqksf/gspsb-agenda-public_jan-22-2025.pdf",
+  },
+  {
+    buyer: "Toronto Police Service",
+    precursorUrl:
+      "https://tpsb.ca/wp-content/uploads/2026/04/Board-Budget-Meeting-Agenda_November27.pdf",
+    outcomeUrl:
+      "https://tpsb.ca/wp-content/uploads/2026/04/SPECIAL_PUBLIC_MEETING_AGENDA_JAN_09.pdf",
+  },
+] as const;
+
 const ARC_STEPS = [
   { kind: "On the record", date: "Nov 2025", title: "A news story", body: "Regional press reports the camera fleet is out of warranty, raised at a board meeting." },
   { kind: "On the record", date: "Feb 2026", title: "A budget line", body: "$7.1M carried in the capital budget for camera and evidence renewal." },
@@ -414,7 +436,7 @@ export default async function SiteHome() {
             <div className="section-head">
               <span className="section-head__num">04</span>
               <h2 className="t-title">
-                Predictive modelling on the next phase of your opportunity.
+                The public record of a purchase, before the purchase.
               </h2>
             </div>
             <div className="arc">
@@ -456,14 +478,28 @@ export default async function SiteHome() {
                     flexWrap: "wrap",
                   }}
                 >
-                  <span className="arc__kind">Predicted</span>
-                  <span className="arc__date">Q1 2027</span>
+                  {/* Both label and heading point at the PRESENT. The final
+                      node is the reader's position in the file, not a
+                      forecast, so it carries no date of its own. */}
+                  <span className="arc__kind">Current stage</span>
                 </div>
-                <h3>The forecast</h3>
+                <h3>Where this sits today</h3>
                 <p className="arc__body">
-                  A tender, February to March 2027, and unlikely to slip past
-                  June. Modelled from the measured interval between these steps
-                  across comparable organisations.
+                  Four steps in, with vendors invited and no solicitation yet
+                  posted. Other services have stood exactly here.{" "}
+                  <a href={PRECEDENTS[0].precursorUrl} className="src-link">
+                    Greater Sudbury put body-worn cameras to its board in
+                    September 2024
+                  </a>{" "}
+                  and{" "}
+                  <a href={PRECEDENTS[0].outcomeUrl} className="src-link">
+                    carried the decision that January
+                  </a>
+                  .{" "}
+                  <a href={PRECEDENTS[1].outcomeUrl} className="src-link">
+                    Toronto&apos;s board took the same step in January 2023
+                  </a>
+                  . Every one of those is a document you can open.
                 </p>
               </article>
             </div>
@@ -478,11 +514,14 @@ export default async function SiteHome() {
               }}
             >
               <p style={{ margin: 0, fontSize: 16, maxWidth: 560 }}>
-                A sample file, read top to bottom, showing how a prediction is
-                built. Every step is a public document, and public buying
-                follows this same sequence almost every time. Because we measure
-                how long each step takes at comparable services, we can model
-                when the tender lands, months before it is posted.
+                A sample file, read top to bottom. Every step is a public
+                document with a link to it. Public buying follows this sequence,
+                and we show you where a file has got to and who else has walked
+                the same one, so you arrive before the solicitation rather than
+                after it. What would stop it: a file can stall on a budget that
+                does not survive the next cycle, or be absorbed into a shared
+                regional contract and never reach a tender of its own. When that
+                happens the record says so, and so do we.
               </p>
               <a className="btn btn--primary" href="/contact">
                 Request access

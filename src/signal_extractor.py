@@ -26,6 +26,7 @@ import logging
 import os
 import unicodedata
 from typing import Callable, Optional
+from urllib.parse import urlparse
 
 import prompts
 
@@ -277,7 +278,8 @@ def run_extraction(batch_size: int = 20, model: str = DEFAULT_MODEL, dry_run: bo
                    doc_type: str | None = None, doc_types: list | None = None,
                    newest_first: bool = False,
                    exclude_buyers: list | None = None,
-                   include_url_like: list | None = None) -> dict:
+                   include_url_like: list | None = None,
+                   envelope: str | None = None) -> dict:
     """Process up to batch_size captured documents.
 
     doc_types (a list) scopes the run to several types at once; the daily forward
@@ -313,12 +315,26 @@ def run_extraction(batch_size: int = 20, model: str = DEFAULT_MODEL, dry_run: bo
         return stats
     log.info("Processing %d documents%s", len(docs), " (DRY RUN — no writes)" if dry_run else "")
 
+    # Token usage is accumulated BOTH in total and per url host, so a run that
+    # mixes scopes (an unscoped drain sweeping up the tail of a scoped one)
+    # still yields an attributable measurement per source. Without this the
+    # per-run counter is a single sum and a commingled batch can only ever be
+    # estimated after the fact, which is not a measurement (operator, cost
+    # discipline, 2026-07-28).
     usage: dict = {}
+    usage_by_host: dict = {}
     for doc in docs:
         try:
             source_name = supabase_client.get_source_name(doc["source_id"])
+            doc_usage: dict = {}
             raw_signals, stamp = extract_signals(doc, source_name, model,
-                                                 usage_totals=usage)
+                                                 usage_totals=doc_usage)
+            host = urlparse(doc.get("url") or "").netloc or "(no host)"
+            bucket = usage_by_host.setdefault(host, {})
+            for k, v in doc_usage.items():
+                usage[k] = usage.get(k, 0) + v
+                bucket[k] = bucket.get(k, 0) + v
+            bucket["docs"] = bucket.get("docs", 0) + 1
             for raw in raw_signals:
                 payload = build_signal_payload(raw, doc["id"], stamp, resolve_org,
                                                resolve_cat, doc.get("doc_type"))
@@ -356,6 +372,27 @@ def run_extraction(batch_size: int = 20, model: str = DEFAULT_MODEL, dry_run: bo
                  usage.get("input_tokens", 0), usage.get("output_tokens", 0),
                  usage.get("cache_write_tokens", 0),
                  usage.get("cache_read_tokens", 0))
+        # Per-host attribution: makes a commingled batch measurable per scope
+        # rather than reconstructable-by-estimate.
+        for host, b in sorted(usage_by_host.items(),
+                              key=lambda kv: -kv[1].get("input_tokens", 0)):
+            log.info("Token usage [%s]: docs=%d input=%d output=%d",
+                     host, b.get("docs", 0), b.get("input_tokens", 0),
+                     b.get("output_tokens", 0))
+    # Close the loop the guard depends on: an unrecorded run is exactly the
+    # hole that made the Toronto envelope unmeasurable. Raised, never
+    # swallowed -- silent non-recording would let the next batch's guard
+    # certify room that has already been spent.
+    if envelope and not dry_run:
+        from .envelope_guard import record_run
+        record_run(
+            envelope, model, usage, stats["documents_processed"],
+            usage_by_host=usage_by_host,
+            run_url=(f"{os.environ.get('GITHUB_SERVER_URL', '')}/"
+                     f"{os.environ.get('GITHUB_REPOSITORY', '')}/actions/runs/"
+                     f"{os.environ.get('GITHUB_RUN_ID', '')}"
+                     if os.environ.get("GITHUB_RUN_ID") else None),
+        )
     log.info("Extraction complete%s: %s", " (DRY RUN)" if dry_run else "", stats)
     return stats
 
@@ -391,6 +428,10 @@ if __name__ == "__main__":
     parser.add_argument("--newest-first", action="store_true",
                         help="process the freshest event dates first, so a capped run "
                              "drains closing-soon documents ahead of stale ones")
+    parser.add_argument("--envelope", default=None,
+                        help="the declared cost envelope this run spends against; its "
+                             "measured token cost is appended to extraction_spend so "
+                             "the pre-dispatch guard can bind the next batch")
     args = parser.parse_args()
 
     doc_types = [t.strip() for t in args.doc_types.split(",") if t.strip()] if args.doc_types else None
@@ -404,5 +445,6 @@ if __name__ == "__main__":
                             doc_type=args.doc_type, doc_types=doc_types,
                             newest_first=args.newest_first,
                             exclude_buyers=exclude_buyers,
-                            include_url_like=include_url_like)
+                            include_url_like=include_url_like,
+                            envelope=args.envelope)
     sys.exit(0 if result["errors"] == 0 else 1)

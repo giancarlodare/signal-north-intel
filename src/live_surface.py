@@ -108,7 +108,7 @@ def project(signals, today: date) -> tuple:
             "date_precision": doc.get("date_precision") or "day",
             "reference_number": doc.get("reference_number"),
             "url": doc.get("url"),
-            "category_slug": s.get("category_slug"),
+            "category_slug": category_slug(s),
             # Open tag array, not a fixed domain boolean (generic-shape rule,
             # docs/spine-vertical-seam.md). The VERTICAL semantics are the tag
             # values this vertical happens to emit.
@@ -117,6 +117,27 @@ def project(signals, today: date) -> tuple:
     # Soonest-closing first: the member's most urgent opportunity leads.
     rows.sort(key=lambda r: r["closing_on"])
     return rows, rejected
+
+
+def category_slug(signal: dict) -> str | None:
+    """The signal's category slug, from the EMBED or a flat key.
+
+    The slug lives on `categories`, never on `signals`. Selecting a bare
+    `category_slug` from signals 400s the whole PostgREST query and takes the
+    nightly run red (2026-07-30 and 07-31: "column signals.category_slug does
+    not exist"). The bug stayed latent while member_live_items was unpasted,
+    because table_present() returned early; pasting the migration un-skipped
+    the writer and exposed it on the next run.
+
+    Accepts either shape so a caller holding an already-flattened row (the
+    unit tests, and any future projection that pre-normalizes) still works.
+    """
+    embedded = signal.get("categories")
+    if isinstance(embedded, list):
+        embedded = embedded[0] if embedded else None
+    if isinstance(embedded, dict):
+        return embedded.get("slug")
+    return signal.get("category_slug")
 
 
 def table_present() -> bool:
@@ -152,7 +173,8 @@ def run(dry_run: bool = True, today: date | None = None) -> dict:
 
     signals = supabase_client.fetch_all_rows_where(
         "signals",
-        "id,title,public_safety,suppressed,evidence_grade,category_slug,"
+        "id,title,public_safety,suppressed,evidence_grade,"
+        "categories(slug),"
         "organizations(canonical_name),"
         "documents!inner(doc_type,published_on,date_precision,url,"
         "reference_number,defence_relevant)",
