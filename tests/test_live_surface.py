@@ -153,3 +153,32 @@ def test_run_apply_deletes_then_rewrites(monkeypatch):
     assert calls["deleted"] == [("member_live_items", {"id": "not.is.null"})]
     assert len(calls["inserted"]) == 2
     assert all("refreshed_at" in p for p in calls["inserted"])
+
+
+# --- category slug resolution (regression: the 2026-07-30/31 red nights) -----
+# The slug lives on `categories`, not on `signals`. Selecting a bare
+# `category_slug` from signals 400s the whole query and takes the nightly run
+# red. These pin BOTH the shape the DB actually returns and the select string.
+def test_category_slug_reads_the_embed():
+    assert ls.category_slug({"categories": {"slug": "fleet"}}) == "fleet"
+
+
+def test_category_slug_reads_a_list_embed():
+    assert ls.category_slug({"categories": [{"slug": "alpr"}]}) == "alpr"
+
+
+def test_category_slug_falls_back_to_a_flat_key():
+    assert ls.category_slug({"category_slug": "cyber"}) == "cyber"
+
+
+def test_category_slug_is_none_when_absent():
+    assert ls.category_slug({}) is None
+    assert ls.category_slug({"categories": []}) is None
+
+
+def test_signals_select_never_asks_signals_for_category_slug():
+    """The select string is the thing that broke; assert on it directly."""
+    import inspect
+    src = inspect.getsource(ls.run)
+    assert "categories(slug)" in src
+    assert "evidence_grade,category_slug" not in src
