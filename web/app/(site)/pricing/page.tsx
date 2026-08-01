@@ -3,6 +3,7 @@
 // glyph (a design element in Giancarlo's files, not generated copy).
 import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
+import InquiryDialog from "@/components/site/InquiryDialog";
 
 export const metadata = { title: "Pricing — Signal North" };
 
@@ -148,27 +149,15 @@ export default function PricingPage() {
                     </th>
                     <th className="tier-col-hot">
                       <span className="tier-name">Signal North Pro</span>
-                      <span className="tier-price">$1,900 / mo</span>
-                      <span className="tier-meta">Billed annually</span>
-                      <a
-                        className="btn btn--primary"
-                        style={{ padding: "10px 18px", letterSpacing: "0.1em" }}
-                        href="/contact"
-                      >
-                        Request access
-                      </a>
+                      <span className="tier-price">$19,000 / yr</span>
+                      <span className="tier-meta">or $1,900 / mo</span>
+                      <InquiryDialog tier="pro" variant="primary" />
                     </th>
                     <th>
                       <span className="tier-name">Signal North Enterprise</span>
-                      <span className="tier-price">Request a quote</span>
+                      <span className="tier-price">from $45,000 / yr</span>
                       <span className="tier-meta">Custom terms</span>
-                      <a
-                        className="btn btn--ghost"
-                        style={{ padding: "10px 18px", letterSpacing: "0.1em" }}
-                        href="/contact"
-                      >
-                        Request access
-                      </a>
+                      <InquiryDialog tier="enterprise" />
                     </th>
                   </tr>
                 </thead>
