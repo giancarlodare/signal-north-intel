@@ -297,3 +297,38 @@
   height: 1px;
   overflow: hidden;
 }
+
+/* ---------- Tier table: row groups, the break, partial cells ---------- */
+/* The break between "The record" and "Monitoring" is the whole story of the
+   ladder: above it is a publication you READ, below it is a system that
+   WATCHES on your behalf. It is a rule, not decoration. */
+.tier-table .tier-group th {
+  text-align: left;
+  padding: 28px 0 10px;
+  font-size: var(--fs-label);
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: none;
+  border-bottom: 1px solid var(--line);
+}
+.tier-table .tier-group--break th {
+  border-top: 2px solid var(--navy);
+  padding-top: 40px;
+}
+/* "Partial" and seat counts read as words. A half-glyph is a puzzle. */
+.tier-table .tier-partial {
+  text-align: center;
+  font-size: var(--fs-small);
+  color: var(--muted);
+}
+.tier-neutrality {
+  margin: 0;
+  max-width: 720px;
+  font-size: var(--fs-ui);
+  line-height: 1.75;
+  color: var(--muted);
+  border-left: 2px solid var(--line);
+  padding-left: var(--sp-5);
+}
