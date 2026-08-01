@@ -81,6 +81,25 @@ export function isSitePath(path: string): boolean {
   return (SITE_PATHS as readonly string[]).includes(path);
 }
 
+// MACHINE ENDPOINTS. These are called by third parties that will never carry
+// a Supabase session cookie, and they authenticate themselves by a mechanism
+// STRONGER than one: the Stripe webhook verifies an HMAC signature over the
+// raw body and refuses outright without STRIPE_WEBHOOK_SECRET.
+//
+// Without this exemption the gate would redirect an unauthenticated POST to
+// /login (307), in EVERY flag state, because an API route is neither a site
+// path nor a member path. Stripe would read the redirect as a failed delivery
+// and retry forever, so a paying member would never be granted access and the
+// only symptom would be silence.
+//
+// Keep this list minimal and keep the rule literal: a path belongs here only
+// if it carries its own cryptographic authentication.
+const MACHINE_PATHS = ["/api/stripe/webhook"] as const;
+
+export function isMachinePath(path: string): boolean {
+  return (MACHINE_PATHS as readonly string[]).includes(path);
+}
+
 // The gate decision for a request, given the flag, the role, and the path.
 // Pure and unit-testable (no I/O), so the policy is verified by test, not by
 // reading middleware control flow.
@@ -97,6 +116,9 @@ export function gate(args: {
   path: string;
 }): GateOutcome {
   const { enabled, authenticated, role, path } = args;
+  // Checked BEFORE the authentication branch and in every flag state: these
+  // endpoints authenticate themselves and must be reachable while dark.
+  if (isMachinePath(path)) return "allow";
   if (!authenticated) {
     if (path === "/login") return "allow";
     // Magic-link landing: must be reachable unauthenticated in every flag

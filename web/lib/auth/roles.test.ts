@@ -113,3 +113,32 @@ test("/auth/confirm reachable unauthenticated in every flag state", () => {
     "allow"
   );
 });
+
+// --- machine endpoints (Stripe webhook) -------------------------------------
+// These must be reachable in EVERY flag state by a caller with no session,
+// because they authenticate themselves. A redirect here would be read by
+// Stripe as a failed delivery and retried forever, and the only symptom of a
+// member paying and never being granted access would be silence.
+test("the stripe webhook is allowed unauthenticated while the portal is dark", () => {
+  assert.equal(
+    gate({ enabled: false, authenticated: false, role: "member", path: "/api/stripe/webhook" }),
+    "allow",
+  );
+});
+
+test("the stripe webhook is allowed unauthenticated once the portal is live", () => {
+  assert.equal(
+    gate({ enabled: true, authenticated: false, role: "member", path: "/api/stripe/webhook" }),
+    "allow",
+  );
+});
+
+test("no OTHER api path is exempted by accident", () => {
+  for (const p of ["/api/stripe", "/api/stripe/webhook/x", "/api", "/api/anything"]) {
+    assert.equal(
+      gate({ enabled: false, authenticated: false, role: "member", path: p }),
+      "to-login",
+      p,
+    );
+  }
+});

@@ -1,33 +1,83 @@
 // Pricing page (Claude Design handoff: marketing-site/pricing.html).
 // The tier table's feature-absent cells use the handoff's typographic dash
 // glyph (a design element in Giancarlo's files, not generated copy).
+import { Fragment } from "react";
 import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
+import InquiryDialog from "@/components/site/InquiryDialog";
 
 export const metadata = { title: "Pricing — Signal North" };
 
 const DASH = "—";
 
-type TierCells = [boolean, boolean, boolean, boolean];
-const FEATURES: { name: string; cells: TierCells }[] = [
-  { name: "Weekly headline digest", cells: [true, true, true, true] },
-  { name: "Grant eligibility teaser", cells: [true, true, true, true] },
-  { name: "Full weekly intelligence brief", cells: [false, true, true, true] },
-  { name: "Sourced publisher records", cells: [false, true, true, true] },
-  { name: "Full platform dashboard", cells: [false, false, true, true] },
-  { name: "Network and market intelligence", cells: [false, false, true, true] },
-  { name: "Buyer and agency profiles", cells: [false, false, true, true] },
-  { name: "Watchlists and alerts", cells: [false, false, true, true] },
-  { name: "Expiring-contract tracking", cells: [false, false, true, true] },
-  { name: "Pricing and incumbent intelligence", cells: [false, false, true, true] },
-  // Sourced demand arcs are LIVE at Weekly and above (operator 2026-07-29):
-  // a dated, deep-linked chain of public-record events with named comparable
-  // precedents. No statistical claim, so no in-development marker.
-  { name: "Sourced demand arcs", cells: [false, true, true, true] },
-  { name: "Multiple seats", cells: [false, false, false, true] },
-  { name: "Custom coverage", cells: [false, false, false, true] },
-  { name: "API access", cells: [false, false, false, true] },
-  { name: "Priority support and standing", cells: [false, false, false, true] },
+// Cells carry four states, not two: a partial Free tier and a seat count are
+// both honest table content, and forcing them into a boolean would have meant
+// either a lie or a footnote.
+type CellValue = true | false | "partial" | string;
+type TierCells = [CellValue, CellValue, CellValue, CellValue];
+
+// THE RULE THAT GOVERNS THIS TABLE (operator 2026-07-29):
+// Everything checked in an OPEN column (Free, Weekly) must EXIST TODAY. A
+// closed column (Pro, Enterprise) describes what that tier will include when
+// it opens, and the closed state is the honest marker doing the work. The line
+// we do not cross is a checkmark in a column someone can pay for.
+//
+// Four rows are checked at Weekly that are BUILD-BEFORE-LAUNCH, not shipped:
+// the weekly email send, the composed arc body field, the issue archive, and
+// the subscription guard. Weekly does not open until all four exist and the
+// lens is tightened (operator ruling 2026-08-01). They are listed because the
+// table describes the tier as it will ship, and the tier is not purchasable
+// until it does.
+//
+// CUT, and not to be reinstated by inheritance:
+//   Service-by-service read  -- no schema, no component, no design. v2.
+//   Expiring-contract tracking -- 0 of 548 awards carry an end date, so it is
+//     a capability claim we cannot honour. Returns only when the end-date
+//     extraction exists behind it (task #56).
+const GROUPS: { title: string; rows: { name: string; cells: TierCells }[] }[] = [
+  {
+    title: "The brief",
+    rows: [
+      { name: "Weekly email", cells: ["partial", true, true, true] },
+      { name: "The composed arc", cells: [false, true, true, true] },
+      { name: "Issue archive", cells: [false, true, true, true] },
+    ],
+  },
+  {
+    title: "The record",
+    rows: [
+      { name: "Full item list", cells: ["partial", true, true, true] },
+      // "a source link on every item" is honest as written: 0 documents in the
+      // corpus have no link. What it must never become is "a link to the
+      // record", which 68 of them (49 listing anchors + 19 portal landings)
+      // would not satisfy. The per-item provenance label carries that nuance.
+      { name: "Source link on every item", cells: [false, true, true, true] },
+      { name: "Saved items", cells: [false, true, true, true] },
+    ],
+  },
+  {
+    // THE BREAK. Everything above is a publication you READ; everything below
+    // is a system that WATCHES your buyers and categories on your behalf. That
+    // distinction is what makes the price gap legible, and it decides which
+    // tier any future feature belongs to.
+    title: "Monitoring",
+    rows: [
+      { name: "Closing-soon board", cells: [false, false, true, true] },
+      { name: "Watchlists", cells: [false, false, true, true] },
+      { name: "Alerts", cells: [false, false, true, true] },
+      { name: "Buyer profiles", cells: [false, false, true, true] },
+      { name: "Arc lookup on demand", cells: [false, false, true, true] },
+    ],
+  },
+  {
+    title: "Team",
+    rows: [
+      { name: "Seats", cells: ["1", "1", "3", "Unlimited"] },
+      { name: "API and webhooks", cells: [false, false, false, true] },
+      { name: "Coverage requests", cells: [false, false, false, true] },
+      { name: "Priority support", cells: [false, false, true, true] },
+    ],
+  },
 ];
 
 const FAQ: { q: string; a: string }[] = [
@@ -41,15 +91,11 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "How is the annual price billed?",
-    a: "Signal North Weekly and Signal North Pro are billed annually. Enterprise memberships are custom, pricing depends on seats, coverage and scope, so we build a quote around what your team needs.",
-  },
-  {
-    q: "What is included in the Founding Member offer?",
-    a: "Founding Members get Pro-level access at $5,000 per year, locked for two years, plus priority standing. It is early access at a founding rate before pricing rises as the network's track record deepens. Founding membership is limited and offered only during our launch period.",
+    a: "Annual is the headline price and monthly is available at a premium: a year costs the same as ten months, so paying annually is two months free. Enterprise is custom, priced on seats, coverage and scope.",
   },
   {
     q: "Can I upgrade or change tiers later?",
-    a: "Yes. You can move up a tier at any time as your needs grow. Founding Members keep their locked rate for the full two years regardless of later price changes.",
+    a: "Yes. You can move up a tier at any time as your needs grow, and the change is prorated against what you have already paid.",
   },
   {
     q: "How current is the data?",
@@ -73,7 +119,7 @@ const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "Do I need a long-term commitment?",
-    a: "Signal North Weekly and Pro are annual memberships. Founding Members lock a two-year rate. Enterprise terms are set as part of your custom agreement.",
+    a: "Signal North Weekly and Pro are annual memberships, and monthly is available at a premium. Enterprise terms are set as part of your custom agreement.",
   },
   {
     q: "How do I get started?",
@@ -81,9 +127,14 @@ const FAQ: { q: string; a: string }[] = [
   },
 ];
 
-function Cell({ on, hot }: { on: boolean; hot?: boolean }) {
-  const cls = (on ? "tier-check" : "tier-dash") + (hot ? " tier-col-hot" : "");
-  return <td className={cls}>{on ? "✓" : DASH}</td>;
+function Cell({ v, hot }: { v: CellValue; hot?: boolean }) {
+  const hotCls = hot ? " tier-col-hot" : "";
+  if (v === true) return <td className={"tier-check" + hotCls}>✓</td>;
+  if (v === false) return <td className={"tier-dash" + hotCls}>{DASH}</td>;
+  // "partial" and seat counts render as words, not glyphs: a half-check would
+  // be a glyph the reader has to guess at.
+  const label = v === "partial" ? "Partial" : v;
+  return <td className={"tier-partial" + hotCls}>{label}</td>;
 }
 
 export default function PricingPage() {
@@ -124,7 +175,7 @@ export default function PricingPage() {
                     <th></th>
                     <th>
                       <span className="tier-name">Signal North Free</span>
-                      <span className="tier-price">Free</span>
+                      <span className="tier-price">$0</span>
                       <span className="tier-meta">No card required</span>
                       <a
                         className="btn btn--ghost"
@@ -136,77 +187,64 @@ export default function PricingPage() {
                     </th>
                     <th>
                       <span className="tier-name">Signal North Weekly</span>
-                      <span className="tier-price">$390 / mo</span>
-                      <span className="tier-meta">Billed annually</span>
+                      <span className="tier-price">$3,900 / yr</span>
+                      <span className="tier-meta">or $390 / mo</span>
                       <a
                         className="btn btn--ghost"
                         style={{ padding: "10px 18px", letterSpacing: "0.1em" }}
                         href="/contact"
                       >
-                        Request access
+                        Join Weekly
                       </a>
                     </th>
                     <th className="tier-col-hot">
                       <span className="tier-name">Signal North Pro</span>
-                      <span className="tier-price">$1,900 / mo</span>
-                      <span className="tier-meta">Billed annually</span>
-                      <a
-                        className="btn btn--primary"
-                        style={{ padding: "10px 18px", letterSpacing: "0.1em" }}
-                        href="/contact"
-                      >
-                        Request access
-                      </a>
+                      <span className="tier-price">$19,000 / yr</span>
+                      <span className="tier-meta">or $1,900 / mo</span>
+                      <InquiryDialog tier="pro" variant="primary" />
                     </th>
                     <th>
                       <span className="tier-name">Signal North Enterprise</span>
-                      <span className="tier-price">Request a quote</span>
+                      <span className="tier-price">from $45,000 / yr</span>
                       <span className="tier-meta">Custom terms</span>
-                      <a
-                        className="btn btn--ghost"
-                        style={{ padding: "10px 18px", letterSpacing: "0.1em" }}
-                        href="/contact"
-                      >
-                        Request access
-                      </a>
+                      <InquiryDialog tier="enterprise" />
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {FEATURES.map((f) => (
-                    <tr key={f.name}>
-                      <td className="tier-feature">{f.name}</td>
-                      <Cell on={f.cells[0]} />
-                      <Cell on={f.cells[1]} />
-                      <Cell on={f.cells[2]} hot />
-                      <Cell on={f.cells[3]} />
-                    </tr>
+                  {GROUPS.map((g) => (
+                    <Fragment key={g.title}>
+                      <tr
+                        className={
+                          "tier-group" +
+                          (g.title === "Monitoring" ? " tier-group--break" : "")
+                        }
+                        data-group={g.title}
+                      >
+                        <th scope="rowgroup" colSpan={5}>
+                          {g.title}
+                        </th>
+                      </tr>
+                      {g.rows.map((f) => (
+                        <tr key={f.name}>
+                          <td className="tier-feature">{f.name}</td>
+                          <Cell v={f.cells[0]} />
+                          <Cell v={f.cells[1]} />
+                          <Cell v={f.cells[2]} hot />
+                          <Cell v={f.cells[3]} />
+                        </tr>
+                      ))}
+                    </Fragment>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            <aside className="founding-callout" data-testid="founding-callout">
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                <span
-                  className="t-label"
-                  style={{ color: "var(--red-on-dark)", letterSpacing: "0.2em" }}
-                >
-                  Limited · launch period only
-                </span>
-                <h2 className="founding-callout__title">
-                  Founding Member: $5,000/yr (locked for two years)
-                </h2>
-                <p className="founding-callout__body" style={{ margin: 0 }}>
-                  Pro-level access at the founding rate, with priority standing.
-                  Limited founding memberships, available during launch. Lock
-                  your rate before it rises.
-                </p>
-              </div>
-              <a className="btn btn--primary" href="/contact">
-                Become a Founding Member
-              </a>
-            </aside>
+            <p className="tier-neutrality" data-testid="neutrality-line">
+              The record is the same for everyone. A higher tier buys more ways
+              to work with it, never a different version of the truth, and never
+              earlier access to it.
+            </p>
 
             <div className="faq" style={{ maxWidth: 860 }}>
               <h2 className="t-title" style={{ fontSize: 36, paddingBottom: 18 }}>
