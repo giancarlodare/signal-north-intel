@@ -6,19 +6,35 @@ name: Daily municipal tenders (bids&tenders)
 # grow to a job matrix across municipalities later without touching the other
 # collectors.
 #
-# Same dual-UTC + guard pattern as daily-collect (both crons fire, the guard
-# keeps whichever lands at 6am Eastern). Offset to :47 so it does not contend
-# with the :17 main collector. workflow_dispatch bypasses the guard.
+# Offset to :47 so it does not contend with the :17 main collector.
 #
 # LOUD FAILURE BY DESIGN: the collector RAISES on an empty Open grid (gated or
 # broken), so a silent-empty run turns the whole job RED in Actions rather than
 # quietly recording nothing. There is deliberately no healthcheck ping to
 # suppress; a red run IS the alert.
 
+# THE 17-NIGHT GAP (operator 2026-08-01). This workflow collected NOTHING on
+# a schedule between 2026-07-15 and 2026-08-01. Every scheduled run was green
+# and every scheduled run was empty.
+#
+# Cause: two crons fired and a guard kept whichever landed at 06:00 Eastern,
+# on the assumption that GitHub delivers cron within the hour. It does not for
+# this workflow -- all 30 runs in that window arrived 14:00-18:00 UTC, i.e.
+# 10am-2pm Eastern, so the hour never equalled 06 and every step resolved
+# `skipped`. The job then exits success, which is why nothing ever alerted.
+# (daily-collect survived only because an external dispatcher calls its
+# workflow_dispatch API at 10:17 UTC, bypassing the same broken guard.)
+#
+# Fix: ONE cron, NO guard. The dual-cron + guard pattern existed only to hit
+# 6am across a DST change; the cost of that precision was total silence. A
+# single cron drifts by an hour between EDT and EST, which is immaterial for a
+# daily collector, and a late GitHub delivery now means a late run rather than
+# no run. One cron also keeps this to ONE render pass per day across 15
+# municipal portals, which the politeness discipline requires -- dropping the
+# guard while keeping both crons would have doubled the load on those hosts.
 on:
   schedule:
-    - cron: "47 10 * * *"  # 6:47am EDT (UTC-4) fallback
-    - cron: "47 11 * * *"  # 6:47am EST (UTC-5) fallback
+    - cron: "47 10 * * *"  # 6:47am EDT / 5:47am EST. Runs whenever it lands.
   workflow_dispatch: {}
 
 concurrency:
@@ -29,41 +45,21 @@ jobs:
   tenders:
     runs-on: ubuntu-latest
     steps:
-      - name: Check whether it's actually 6am Eastern right now
-        id: guard
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "should_run=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          hour=$(TZ="America/Toronto" date +%H)
-          if [ "$hour" = "06" ]; then
-            echo "should_run=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "should_run=false" >> "$GITHUB_OUTPUT"
-            echo "Skipping: it's ${hour}:00 in America/Toronto, not 06:00."
-          fi
-
       - uses: actions/checkout@v4
-        if: steps.guard.outputs.should_run == 'true'
 
       - uses: actions/setup-python@v5
-        if: steps.guard.outputs.should_run == 'true'
         with:
           python-version: "3.12"
 
       - name: Install dependencies
-        if: steps.guard.outputs.should_run == 'true'
         run: pip install -r requirements.txt
 
       - name: Install Playwright + Chromium
-        if: steps.guard.outputs.should_run == 'true'
         run: |
           pip install playwright
           python -m playwright install --with-deps chromium
 
       - name: Run bids&tenders collector
-        if: steps.guard.outputs.should_run == 'true'
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -76,7 +72,7 @@ jobs:
       # after bids&tenders: a Biddingo failure must not cost the tier-1 fleet,
       # and vice versa the step still runs when the fleet step fails.
       - name: Run Biddingo collector (DRPS)
-        if: steps.guard.outputs.should_run == 'true' && (success() || failure())
+        if: success() || failure()
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

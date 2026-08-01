@@ -164,7 +164,14 @@ export default async function AccountPage({
               </span>
             ) : null}
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              {(["founding", "pro", "weekly"] as const).map((t) => (
+              {/* FOUNDING IS NEVER MEMBER-FACING (operator 2026-08-01). It is
+                  a private offer made in conversation, so it appears on no
+                  public or member surface: not the pricing page, not the FAQ,
+                  not here. It stays in TIER_LABELS and in the Stripe config so
+                  an operator-provisioned founding subscription still RENDERS
+                  correctly above; what is removed is the path by which a
+                  member could select it. */}
+              {(["pro", "weekly"] as const).map((t) => (
                 <form action={startCheckout} key={t}>
                   <input type="hidden" name="tier" value={t} />
                   <button
