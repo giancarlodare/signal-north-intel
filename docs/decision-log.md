@@ -141,3 +141,25 @@ Date, what, why, and the run or test evidence.
 | Date | Change | Evidence |
 |---|---|---|
 | 2026-08-01 | Autonomy contract added to CLAUDE.md; this log created | docs only |
+| 2026-08-01 | Branch deletion confirmed permanently unavailable (see below) | proxy returns `ERR branch deletion is not allowed` |
+
+---
+
+## 2026-08-01 — Branch deletion is permanently unavailable; stop treating it as a bug
+
+**Finding.** Ref deletion is refused by the Claude Code git proxy, not by
+GitHub. Reproduced against a throwaway branch with the raw receive-pack POST:
+
+    HTTP 403
+    ERR branch deletion is not allowed
+
+The GitHub App's scopes are correct (read/write on code, pull requests and
+workflows, repo in the selected list) and pushes that CREATE refs succeed
+through the same endpoint in the same session. Only the zero-sha ref update
+that expresses a deletion is rejected, and the response carries an Anthropic
+request id rather than a GitHub one.
+
+**Decided.** This is environmental and not fixable from the operator's side.
+Branch cleanup is a human task done in the GitHub UI, or avoided entirely by
+enabling *Settings -> General -> Automatically delete head branches* so merged
+PRs clean themselves up. No further retries.
