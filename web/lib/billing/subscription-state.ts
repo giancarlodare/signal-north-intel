@@ -14,12 +14,20 @@ export interface SubscriptionRow {
   event_created_at: string;
 }
 
-// Stripe statuses that mean "this member is paid up right now". Deliberately
-// an ALLOW-LIST: a status Stripe adds in future defaults to no access, which
-// is the safe direction. 'past_due' is excluded on purpose -- recovering a
-// failed payment is a Stripe dashboard task (operator 2026-08-01), and while
-// it is unrecovered the member is not paid up.
-export const ACCESS_STATUSES = new Set(["active", "trialing"]);
+// Stripe statuses that mean "this member keeps access right now".
+// Deliberately an ALLOW-LIST: a status Stripe adds in future defaults to no
+// access, which is the safe direction.
+//
+// 'past_due' IS graced (operator 2026-08-01). A member whose card expired
+// would otherwise lose access on day one while Stripe is still retrying the
+// charge, which is the wrong experience for someone who has been paying. The
+// grace is self-limiting and needs no recovery flow from us: Stripe's retry
+// schedule exhausts into 'canceled' or 'unpaid', both excluded below, so
+// access drops by itself at the right moment.
+//
+// 'unpaid' and 'canceled' stay out. They are the terminal states, and they
+// are what makes the grace a grace rather than an indefinite free ride.
+export const ACCESS_STATUSES = new Set(["active", "trialing", "past_due"]);
 
 export function grantsAccess(row: SubscriptionRow | null): boolean {
   if (!row) return false;

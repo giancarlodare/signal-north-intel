@@ -82,11 +82,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ received: true, handled: false });
     }
     const sub = await stripe.subscriptions.retrieve(subId);
-    const memberId =
-      (sub.metadata?.sn_member_id as string | undefined) ?? null;
+    // MATCHING NEVER USES EMAIL (operator 2026-08-01). Checkout's own customer
+    // email can diverge from the verified account address, so every fallback
+    // below is an explicit member id we stamped ourselves. If all four are
+    // absent the subscription is unattributable and we say so loudly rather
+    // than guessing from an address.
+    const memberId = await resolveMemberId(stripe, event, sub);
     if (!memberId) {
-      // Loud: a subscription with no member id cannot be projected, and
-      // silently returning 200 would hide a real broken checkout.
       console.error("[stripe-webhook] subscription", subId, "has no sn_member_id");
       return NextResponse.json({ error: "unattributable subscription" }, { status: 422 });
     }
@@ -144,6 +146,39 @@ export async function POST(req: Request) {
     console.error("[stripe-webhook] failed:", (e as Error).message);
     return NextResponse.json({ error: "handler failed" }, { status: 500 });
   }
+}
+
+// The four places sn_member_id is stamped at checkout, read in descending
+// order of directness. Any ONE of them is sufficient; email is not among them.
+async function resolveMemberId(
+  stripe: Stripe,
+  event: Stripe.Event,
+  sub: Stripe.Subscription,
+): Promise<string | null> {
+  const fromSub = sub.metadata?.sn_member_id;
+  if (fromSub) return fromSub;
+
+  if (event.type === "checkout.session.completed") {
+    const s = event.data.object as Stripe.Checkout.Session;
+    const fromSession = s.metadata?.sn_member_id ?? s.client_reference_id;
+    if (fromSession) return fromSession;
+  }
+
+  // Last resort: the Customer we created carries it too, which survives even
+  // a subscription created by hand in the dashboard against that customer.
+  const custId =
+    typeof sub.customer === "string" ? sub.customer : sub.customer?.id ?? null;
+  if (custId) {
+    try {
+      const cust = await stripe.customers.retrieve(custId);
+      if (!("deleted" in cust) && cust.metadata?.sn_member_id) {
+        return cust.metadata.sn_member_id;
+      }
+    } catch (e) {
+      console.error("[stripe-webhook] customer lookup failed:", (e as Error).message);
+    }
+  }
+  return null;
 }
 
 async function subscriptionIdFor(

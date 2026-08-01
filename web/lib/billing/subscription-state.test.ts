@@ -27,8 +27,13 @@ test("no row means no access", () => {
   assert.equal(grantsPortal(null), false);
 });
 
-test("past_due does NOT grant access; recovery is a dashboard task", () => {
-  assert.equal(grantsAccess(row({ status: "past_due" })), false);
+test("past_due IS graced: Stripe is still retrying a real customer's card", () => {
+  assert.equal(grantsAccess(row({ status: "past_due" })), true);
+});
+
+test("the terminal states end the grace, so it cannot run forever", () => {
+  assert.equal(grantsAccess(row({ status: "unpaid" })), false);
+  assert.equal(grantsAccess(row({ status: "canceled" })), false);
 });
 
 test("unknown and future Stripe statuses default to no access", () => {

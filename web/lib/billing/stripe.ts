@@ -75,10 +75,26 @@ export async function createCheckoutUrl(
   }
   try {
     const stripe = client(cfg.secretKey);
+    // IDENTITY IS PINNED TO THE ACCOUNT, NEVER TO AN EMAIL (operator
+    // 2026-08-01). Stripe Checkout collects its own customer email, which can
+    // diverge from the verified account address; a subscription that cannot be
+    // matched back to an account is the failure mode being designed out here.
+    //
+    // Two halves. First: we create or reuse a Customer carrying sn_member_id
+    // and pass `customer`, rather than passing customer_email and letting
+    // Checkout mint one. That fixes the address to the VERIFIED account email
+    // and makes it non-editable at checkout, so nobody pays under an address
+    // the brief will never reach.
+    const customerId = await customerForMember(stripe, memberId, email);
+    // Second: sn_member_id is stamped in FOUR independent places, so matching
+    // never falls back to comparing email strings. The webhook reads them in
+    // order and any one of them is sufficient.
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [{ price, quantity: 1 }],
-      customer_email: email ?? undefined,
+      ...(customerId
+        ? { customer: customerId }
+        : { customer_email: email ?? undefined }),
       client_reference_id: memberId,
       subscription_data: { metadata: { sn_member_id: memberId } },
       metadata: { sn_member_id: memberId },
@@ -90,6 +106,36 @@ export async function createCheckoutUrl(
     // Logged rather than swallowed: a checkout that silently fails to open is
     // a member who wanted to pay us and could not, with no trace of it.
     console.error("[billing] checkout session failed:", (e as Error).message);
+    return null;
+  }
+}
+
+
+// Create or reuse the Stripe Customer for one member, keyed on sn_member_id
+// in metadata rather than on email, so a member who later changes their
+// address is still the same customer. Returns null on failure, which the
+// caller degrades to customer_email: a checkout that works with a weaker
+// identity guarantee beats no checkout, and the other three id stamps still
+// carry the match.
+async function customerForMember(
+  stripe: Stripe,
+  memberId: string,
+  email: string | null,
+): Promise<string | null> {
+  try {
+    const found = await stripe.customers.search({
+      query: `metadata['sn_member_id']:'${memberId}'`,
+      limit: 1,
+    });
+    const existing = found.data[0];
+    if (existing) return existing.id;
+    const created = await stripe.customers.create({
+      email: email ?? undefined,
+      metadata: { sn_member_id: memberId },
+    });
+    return created.id;
+  } catch (e) {
+    console.error("[billing] customer resolve failed:", (e as Error).message);
     return null;
   }
 }
