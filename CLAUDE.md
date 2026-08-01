@@ -46,3 +46,65 @@ narration. Report honestly; a partial or failed night is stated as such.
   silently. Steady-state scheduled LLM spend is only the capped daily
   forward pass plus the small weekly discovery and monthly calibration
   jobs.
+
+## Autonomy: safe class vs gated class
+
+Operator directive 2026-08-01. The diagnosis behind it: the bottleneck was
+never capability or token budget, it was wall-clock latency on human
+approval. A live_surface fix sat pushed for eleven hours while collection
+died a third night; daily-tenders never ran for seventeen nights behind a
+one-line cron guard. We had built real guardrails (envelope guard,
+loud-failure raises, validation bars, a green suite) and then kept a human
+gate beside every one of them, paying for each guardrail twice. **The point
+of a guardrail is that it buys freedom.**
+
+### SAFE CLASS: merge on green CI, no approval, log it after
+
+* Bug fixes to existing collectors and extractors **where tests cover the fix**.
+* Workflow, cron, and CI configuration.
+* Dependency bumps.
+* Test additions.
+* Documentation.
+* Any change touching only `src/` with no schema change and no
+  member-facing surface.
+
+Conditions, all three required:
+1. Full suite green.
+2. The change introduces **no new silently-swallowed failure path**.
+3. It is logged in `docs/decision-log.md`.
+
+**If it is unclear whether something is in the safe class, it is not. Ask.**
+
+### GATED CLASS: human gate, unchanged
+
+Nothing in the autonomy grant relaxes any of these.
+
+* Migrations and schema changes.
+* Anything member-facing or on the marketing site.
+* Anything that spends money.
+* Anything changing a public claim, a price, or a coverage statement.
+* New data sources with robots or coverage implications.
+* Anything crossing the client-facing gate.
+
+### Ceremony matches blast radius
+
+Probe → design doc → operator approval → build stays for the gated class.
+It is overhead on a collector bug fix. Use judgment, and **default to the
+heavier process whenever the blast radius is unclear.**
+
+### Silent failure is the enemy, not failure
+
+Every automated system reports its own failure, loudly, without a human
+reading a log. If something breaks, the operator knows within minutes, not
+four nights. A monitor that reports success it has not verified is the same
+defect class as a swallowed error, and both are treated as outages.
+
+## State lives in the repo, not in chat
+
+Decisions made only in conversation drift from what the repo actually does.
+
+* `docs/decision-log.md` is the versioned record of what was decided and
+  why. Keep it current; it is the memory that survives a context reset.
+* Overnight and status reports become GitHub issues, not long prose.
+* The morning report is SHORT and links to durable artifacts rather than
+  restating them.
