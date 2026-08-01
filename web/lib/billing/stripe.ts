@@ -4,7 +4,12 @@
 // state is read back live from Stripe's API. Test mode by construction: the
 // key guard in ./config refuses live keys without the explicit go-live flag.
 import Stripe from "stripe";
-import { billingConfig, tierForPrice, type Tier } from "./config";
+import {
+  billingConfig,
+  tierForPrice,
+  type Interval,
+  type Tier,
+} from "./config";
 
 export interface MemberSubscription {
   tier: Tier;
@@ -38,8 +43,9 @@ export async function getMemberSubscription(
     const sub = found.data[0];
     if (!sub) return null;
     const priceId = sub.items.data[0]?.price?.id ?? null;
-    const tier = tierForPrice(priceId, cfg.prices);
-    if (!tier) return null;
+    const match = tierForPrice(priceId, cfg.prices);
+    if (!match) return null;
+    const tier = match.tier;
     const end = sub.items.data[0]?.current_period_end;
     return {
       tier,
@@ -59,14 +65,19 @@ export async function createCheckoutUrl(
   email: string | null,
   tier: Tier,
   origin: string,
+  interval: Interval = "annual",
 ): Promise<string | null> {
   const cfg = billingConfig();
-  if (!cfg || !cfg.prices[tier]) return null;
+  const price = cfg?.prices[tier]?.[interval];
+  if (!cfg || !price) {
+    console.error("[billing] no configured price for", tier, interval);
+    return null;
+  }
   try {
     const stripe = client(cfg.secretKey);
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      line_items: [{ price: cfg.prices[tier], quantity: 1 }],
+      line_items: [{ price, quantity: 1 }],
       customer_email: email ?? undefined,
       client_reference_id: memberId,
       subscription_data: { metadata: { sn_member_id: memberId } },
@@ -75,7 +86,10 @@ export async function createCheckoutUrl(
       cancel_url: `${origin}/portal/account?checkout=cancelled`,
     });
     return session.url ?? null;
-  } catch {
+  } catch (e) {
+    // Logged rather than swallowed: a checkout that silently fails to open is
+    // a member who wanted to pay us and could not, with no trace of it.
+    console.error("[billing] checkout session failed:", (e as Error).message);
     return null;
   }
 }
