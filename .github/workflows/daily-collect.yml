@@ -244,3 +244,31 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: python -m src.board_minutes
+
+      # THE OTHER HALF OF THE DEAD-MAN'S SWITCH (operator 2026-08-01).
+      #
+      # The ping above is deliberately mid-job: it means "collection
+      # succeeded", so a transient Anthropic outage in the extraction step
+      # never pages at 6am. That property is worth keeping. But on its own it
+      # let healthchecks.io show GREEN on three consecutive red nights (Jul 30,
+      # Jul 31, Aug 1) because the run died downstream at live_surface. A
+      # monitor reporting success it has not verified is the same failure class
+      # as the swallowed 400 that cost a day.
+      #
+      # So this is a SECOND signal rather than a moved one, and it must sit
+      # LAST: a step is evaluated once, in order, so an if:failure() placed
+      # mid-job would already have been skipped by the time a later step
+      # breaks. From here it catches a failure at ANY stage and explicitly
+      # fails the check (healthchecks.io flips red on /fail). The monitor now
+      # tracks the whole job; the ping above still means what it always meant.
+      - name: Fail the healthcheck on any job failure
+        if: failure()
+        env:
+          HEALTHCHECK_URL: ${{ secrets.HEALTHCHECK_URL }}
+        run: |
+          if [ -n "$HEALTHCHECK_URL" ]; then
+            curl -fsS -m 10 --retry 5 "${HEALTHCHECK_URL%/}/fail" \
+              && echo "healthcheck FAILED explicitly"
+          else
+            echo "HEALTHCHECK_URL not set; cannot signal failure."
+          fi
