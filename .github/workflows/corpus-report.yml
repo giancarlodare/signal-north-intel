@@ -23,6 +23,7 @@ on:
           - arc_census
           - arc_diagnostics
           - verify_pricing_claims
+          - verify_billing_state
       args:
         description: "Extra arguments for the script (optional)"
         type: string
