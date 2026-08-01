@@ -1,0 +1,49 @@
+name: Corpus report (read-only)
+
+# A permanent home for read-only corpus queries, so answering "what remains"
+# never again requires a throwaway probe branch overriding another workflow.
+# Branch deletion is refused by the git proxy (docs/decision-log.md
+# 2026-08-01), which made every probe branch permanent litter; this workflow
+# removes the reason to create them.
+#
+# READ-ONLY BY CONSTRUCTION: the script choices below write nothing and call
+# no LLM, and there is no ANTHROPIC_API_KEY in this job's environment, so a
+# script that tried to spend money here could not.
+
+on:
+  workflow_dispatch:
+    inputs:
+      script:
+        description: "Which read-only report to run"
+        type: choice
+        required: true
+        options:
+          - host_residue
+          - count_backlog
+          - arc_census
+          - arc_diagnostics
+          - verify_pricing_claims
+      args:
+        description: "Extra arguments for the script (optional)"
+        type: string
+        default: ""
+
+concurrency:
+  group: corpus-report
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run report
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python scripts/${{ inputs.script }}.py ${{ inputs.args }}
