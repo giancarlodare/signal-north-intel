@@ -255,7 +255,8 @@ DEMAND_VOICE = [
     ("Canadian Security", "www.canadiansecuritymag.com"),
     ("Canadian Defence Review", "www.canadiandefencereview.com"),
     ("Vanguard", "vanguardcanada.com"),
-    ("Esprit de Corps", "espritdecorps.ca"),
+    # www is load-bearing: the apex is absent from the cert's SANs.
+    ("Esprit de Corps", "www.espritdecorps.ca"),
 ]
 
 # Association layer + news catalogue + research centres (operator addendum
