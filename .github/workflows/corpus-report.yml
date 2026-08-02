@@ -31,6 +31,7 @@ on:
           - civil_works_probe
           # Robots + ONE homepage per rostered host, plus corpus reads.
           - coverage_probe
+          - verify_pastes
       args:
         description: "Extra arguments for the script (optional)"
         type: string
