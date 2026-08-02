@@ -2,7 +2,7 @@
 // pinned without Stripe or a database.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { grantsAccess, grantsPortal, shouldApply } from "./subscription-state";
+import { grantsAccess, grantsPortal, shouldApply } from "./subscription-state.ts";
 
 const row = (over: Record<string, unknown> = {}) =>
   ({

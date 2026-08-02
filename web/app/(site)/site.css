@@ -332,3 +332,18 @@
   border-left: 2px solid var(--line);
   padding-left: var(--sp-5);
 }
+
+/* Visually hidden, still read aloud. The public signup forms sit inline in
+   marketing layout where a visible label would break the line, but an input
+   with no label is unusable on a screen reader. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

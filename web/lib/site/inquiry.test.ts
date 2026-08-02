@@ -2,7 +2,7 @@
 // rules that decide what reaches the database are pinned without a database.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { validateInquiry } from "./inquiry";
+import { validateInquiry } from "./inquiry.ts";
 
 const pro = { tier: "pro", email: "buyer@example.com" };
 const ent = {

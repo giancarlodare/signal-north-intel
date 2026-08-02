@@ -5,6 +5,7 @@ import { Fragment } from "react";
 import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
 import InquiryDialog from "@/components/site/InquiryDialog";
+import FreeBriefForm from "@/components/site/FreeBriefForm";
 
 export const metadata = { title: "Pricing — Signal North" };
 
@@ -177,22 +178,25 @@ export default function PricingPage() {
                       <span className="tier-name">Signal North Free</span>
                       <span className="tier-price">$0</span>
                       <span className="tier-meta">No card required</span>
-                      <a
-                        className="btn btn--ghost"
-                        style={{ padding: "10px 18px", letterSpacing: "0.1em" }}
-                        href="/contact"
-                      >
-                        Sign up
-                      </a>
+                      {/* FREE IS EMAIL CAPTURE, NOT AN ACCOUNT (operator
+                          2026-08-02). The form posts straight to the send
+                          list: no auth.users row, no login, no entitlement.
+                          Kept deliberately distinct from Join Weekly next
+                          door, which is a real signup. */}
+                      <FreeBriefForm source="pricing-free" compact />
                     </th>
                     <th>
                       <span className="tier-name">Signal North Weekly</span>
                       <span className="tier-price">$3,900 / yr</span>
                       <span className="tier-meta">or $390 / mo</span>
+                      {/* WEEKLY IS THE OPEN, BUYABLE COLUMN. It goes to the
+                          signup flow (confirm, then checkout), never to
+                          /contact: a pricing page where nothing can be bought
+                          reads as a waitlist rather than a company. */}
                       <a
-                        className="btn btn--ghost"
+                        className="btn btn--primary"
                         style={{ padding: "10px 18px", letterSpacing: "0.1em" }}
-                        href="/contact"
+                        href="/join"
                       >
                         Join Weekly
                       </a>
