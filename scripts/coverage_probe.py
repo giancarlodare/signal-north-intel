@@ -424,8 +424,12 @@ NEW_CLASSES = [
     ("Ornge", "www.ornge.ca"),
     ("CCC", "www.ccc.ca"),
     ("ISED ITB obligations", "ised-isde.canada.ca"),
+    # The real unknown: read its terms by hand before anything touches it.
     ("NATO NSPA", "www.nspa.nato.int"),
     ("SEDAR+", "www.sedarplus.ca"),
+    # NOT blocked despite the robots.txt 403 (operator 2026-08-02): EDGAR
+    # publishes an official documented API requiring a declared contact
+    # user agent -- the compliant path, and it suits our posture.
     ("SEC EDGAR", "www.sec.gov"),
     # /registry path; also regulatoryregistry.gov.on.ca. RSS + email alerts
     # exist, so this is a FEED, not a scrape (operator 2026-08-02).
@@ -439,6 +443,32 @@ DOMAINS = [("police", POLICE), ("police-fn", POLICE_FN), ("fire", FIRE),
            ("ems", EMS), ("federal", FEDERAL), ("demand-voice", DEMAND_VOICE),
            ("advocacy", ADVOCACY), ("research", RESEARCH), ("news", NEWS),
            ("new-classes", NEW_CLASSES)]
+
+# SCOPE SPLIT (operator 2026-08-02): the coverage page is generated from
+# this field, and the two absent classes must never blur.
+#   claimed  -- buyers inside what we sell today: an absent row is a real
+#               gap and belongs on the page BY NAME.
+#   roadmap  -- rosters that were never part of a coverage claim: absent
+#               is expected and never appears in a "not covered" list.
+# Reachability is a SEPARATE question (it gates the build queue, not the
+# page) and stays in its own column.
+DOMAIN_SCOPE = {"police": "claimed", "police-fn": "claimed",
+                "fire": "claimed", "ems": "claimed", "federal": "claimed",
+                "demand-voice": "roadmap", "advocacy": "roadmap",
+                "research": "roadmap", "news": "roadmap",
+                "new-classes": "roadmap"}
+# Rows that live in a claimed domain but joined the roster after the
+# coverage claim was written (base hospital programs, 2026-08-02).
+SCOPE_OVERRIDES = {
+    "Ontario Base Hospital Group": "roadmap",
+    "RPPEO base hospital (Eastern)": "roadmap",
+    "SWORBHP base hospital (Southwest, LHSC)": "roadmap",
+    "Sunnybrook Prehospital Medicine": "roadmap",
+    "Hamilton HSC CPER base hospital": "roadmap",
+    "Central East Prehospital Care Program": "roadmap",
+    "HSN Centre for Prehospital Care (Sudbury)": "roadmap",
+    "Northwest Regional Base Hospital (TBRHSC)": "roadmap",
+}
 
 
 # STANDING RULE (operator 2026-08-02, from the reachability diagnostic): a
@@ -549,11 +579,14 @@ def main() -> None:
 
     worklist = []
     platforms: Counter = Counter()
+    scope_tally: Counter = Counter()
     for domain, roster in DOMAINS:
         print("\n" + "=" * 78)
-        print(f"DOMAIN: {domain} ({len(roster)} rows)")
+        print(f"DOMAIN: {domain} ({len(roster)} rows, "
+              f"scope={DOMAIN_SCOPE[domain]} unless overridden)")
         print("=" * 78)
         for name, host in roster:
+            scope = SCOPE_OVERRIDES.get(name, DOMAIN_SCOPE[domain])
             hits, n_docs = collected_for(name, host)
             collected = (f"{'; '.join(hits[:2])} ({n_docs} docs)" if hits
                          else (f"host-only: {n_docs} docs" if n_docs else ""))
@@ -584,9 +617,10 @@ def main() -> None:
                 worklist.append((domain, name,
                                  f"{host} unreachable from runner -- confirm "
                                  f"the live domain"))
+            scope_tally[(scope, status)] += 1
             print(f"  {name:42s} {host:34s} robots={p['robots']:16s} "
                   f"platform={p['platform'] or '-':22s} rss={p['rss']} "
-                  f"status={status}")
+                  f"status={status} scope={scope}")
             if collected:
                 print(f"    collected: {collected}")
             if name in TRANSITION_REVIEW:
@@ -595,6 +629,11 @@ def main() -> None:
     print("\nDISBANDED (recorded so a roster refresh never re-adds them):")
     for name, why in DISBANDED:
         print(f"  {name:42s} {why}")
+
+    print("\nSCOPE TALLY (claimed absent = named gaps for the page; "
+          "roadmap absent = never claimed, never listed as uncovered):")
+    for (scope, status), n in sorted(scope_tally.items()):
+        print(f"  {scope:8s} {status:8s} {n}")
 
     print("\n" + "=" * 78)
     print("MEETING-PLATFORM TALLY (from homepage sniff; deeper pages may differ)")

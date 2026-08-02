@@ -91,3 +91,14 @@ ranking).
 3. `rank_key` replaced behind a test suite that pins ordering on fixture
    clusters; old and new rankings printed side by side for two cycles
    (report-only shadow) before the new order drives the draft.
+
+## Addendum (operator 2026-08-02): relevance is (item, context), not a scalar
+
+The approved relevance column is understood as relevance(item,
+generic-context) -- an evaluation of the function at the generic point,
+never the function itself. The scorer's shape must keep context as a
+parameter: generic context ranks the Weekly brief; the same function with
+a member profile as the parameter is the Pro monitoring product. One
+argument, not two systems. Nothing builds member context now; nothing may
+bake in relevance-as-scalar either. Full principles:
+docs/data-architecture-principles.md.
