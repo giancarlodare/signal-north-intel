@@ -54,6 +54,9 @@ on:
           # cross-reference the coverage roster + sources, report what's
           # genuinely missing. Read-only; robots honored.
           - roster_ingest
+          # Fleet validation harness: read-only dry-run of the adapter HTML
+          # parsers against live bucket-A tenants -> the validation table.
+          - fleet_validate
       args:
         description: "Extra arguments for the script (optional)"
         type: string
