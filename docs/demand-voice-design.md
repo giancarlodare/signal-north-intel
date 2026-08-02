@@ -270,6 +270,33 @@ verdict; assess the FEDERAL funding and agreement layer as the route in.
 Scale: Anishinabek Police alone runs 109 sworn officers across 12
 detachments; NAPS is larger. Real buyers.
 
+**Vendor rosters — the association pattern holds on the seller side**
+(operator 2026-08-02): every association publishing a buyer directory also
+publishes a seller directory. CADSI members list
+(defenceandsecurity.ca/en/membership/members-list): 1,700+ companies,
+public and browsable, defence/security/cyber — the count has grown across
+sources (700, 900, now 1,700+), so use the LIVE list, never a cached
+figure. CANSEC (annual, Ottawa, 12,000+ decision-makers) is the second
+half: all exhibitors must be CADSI members, and CADSI describes it as
+serving first responders, police, border and security entities and special
+operations — public safety, not just military. Exhibiting is active
+selling, so annual exhibitor lists are a stronger signal than membership;
+whether historical exhibitor lists are published is to be assessed.
+Expected by the same pattern and still open: OACP corporate/associate
+members and conference tradeshow exhibitors, OAPC industry members; OAFC
+industry members already found in the directory. Four sources = the vendor
+universe across police, fire, EMS and defence.
+
+**Provenance discipline, built into the model, not discovered later:** a
+membership or exhibitor list says a company is IN THE MARKET; award records
+say WHO WINS. Different facts, different confidence, different products.
+Membership feeds the commercial prospect universe; award data feeds
+incumbent intelligence and buyer profiles in the product. A vendor must
+never appear on a member-facing surface as an incumbent because they paid
+association dues — the provenance tag keeps the two from blurring. Robots
+and terms check on each list before collecting; company-level data only,
+never individual contact details (same rule as the OAFC directory).
+
 **OPAAC resolved — the labour comparator works as designed.** The Ontario
 Police Arbitration and Adjudication Commission lives at
 policearbitration.gov.on.ca (a gov.on.ca subdomain, which is why every .ca

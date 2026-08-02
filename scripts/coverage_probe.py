@@ -1,8 +1,9 @@
 """COVERAGE PROBE (operator Coverage Programme, 2026-08-02). Read-only.
 
 One row per buyer/source across five domains: Ontario municipal police
-(including First Nations services), Ontario fire (top 25), Ontario paramedic
-services, Ontario provincial, and federal. Also probes the demand-voice
+(including First Nations services), Ontario fire (the 32 career
+departments; see the FIRE note), Ontario paramedic services, Ontario
+provincial, and federal. Also probes the demand-voice
 layer's candidate sources (coroner inquests, associations, trade press) so
 that design doc rides the same measurement.
 
@@ -64,6 +65,9 @@ ROSTER_INDEXES = [
     ("CACP links page (chiefs assns, all provinces)", "cacp.ca/links.html"),
     ("CPA provincial links (labour assns, all provinces)",
      "cpa-acp.ca/assosiation-links/provincial"),
+    ("OAFC Fire Department and Member Directory (Annex platform; see FIRE "
+     "note for the no-personal-contacts discipline)",
+     "magazine.annexbusinessmedia.com"),
 ]
 
 PLATFORM_PAT = re.compile(
@@ -147,6 +151,21 @@ POLICE_FN = [
     # NAN and IFNA structures, not a municipal-style domain search.
     ("Pikangikum (policing arrangement)", None),
 ]
+# FIRE SEGMENTATION (operator 2026-08-02): drop the "top 25" framing. The
+# OAFC Fire Department and Member Directory (annual, hosted on Annex
+# Business Media, magazine.annexbusinessmedia.com; oafc.on.ca carries the
+# headline statistics) types every one of Ontario's 437 departments:
+# 32 CAREER, 210 composite, 195 volunteer. The buyer universe is the 32
+# career departments -- a published category, not a judgment call; they hold
+# distinct budgets, capital plans and procurement. Composite and volunteer
+# departments buy through the municipality and surface via the
+# council-agenda adapter without their own rows. The directory's industry
+# members section is COMMERCIAL (vendor prospect list), never product.
+# DISCIPLINE: the directory carries chiefs' names and direct emails; ingest
+# it as a roster of departments and municipalities only -- personal contact
+# details never enter the corpus. Check Annex robots/terms before any
+# collection; if restricted, the department list is reconstructable from the
+# OAFC zone breakdown plus municipal sites.
 FIRE = [
     ("Toronto Fire Services", "www.toronto.ca"),
     ("Mississauga Fire", "www.mississauga.ca"),
@@ -215,7 +234,8 @@ EMS = [
     ("Peterborough County-City Paramedics", "www.ptbocounty.ca"),
     ("Northumberland Paramedics", "www.northumberland.ca"),
     ("Dufferin County Paramedics", "www.dufferincounty.ca"),
-    ("Cochrane DSSAB EMS", "www.cdssab.on.ca"),
+    # Old domain now redirects to cdsb.care (reachability probe 2026-08-02).
+    ("Cochrane DSSAB EMS", "cdsb.care"),
     ("Algoma DSSAB EMS", "adsab.on.ca"),
     ("Nipissing DSSAB EMS", "www.dnssab.ca"),
     ("Parry Sound DSSAB EMS", "psdssab.org"),
