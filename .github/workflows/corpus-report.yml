@@ -32,6 +32,12 @@ on:
           # Robots + ONE homepage per rostered host, plus corpus reads.
           - coverage_probe
           - verify_pastes
+          # Network-layer diagnostic (DNS/TCP/TLS/HTTP) for hosts the
+          # coverage probe called unreachable. GETs only; the browser-like
+          # UA it sends is diagnosis-only per operator 2026-08-02.
+          - reachability_probe
+          # Term search over documents metadata; args are the terms.
+          - corpus_search
       args:
         description: "Extra arguments for the script (optional)"
         type: string

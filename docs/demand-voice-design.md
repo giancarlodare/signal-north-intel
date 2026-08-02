@@ -169,12 +169,17 @@ shape. Design first, no build, per the instruction.
 
 1. **Community Safety and Well-Being Plans** — mandatory for all 444
    Ontario municipalities, all public: a demand document by legislative
-   mandate, currently untouched. No single portal exists; the plans live on
-   municipal sites and in council agendas, so this class RIDES the
-   council-agenda/municipal adapter (keystone) plus a one-time enumeration
-   pass, rather than a new collector. Volume ~444 documents plus revision
-   cycles; multi-year freshness; storage trivial. Weight-5-adjacent in this
-   layer's terms: an accountable institutional statement of local need.
+   mandate, currently untouched. RESOLVED (operator 2026-08-02): no
+   registry, no URL pattern — five checked municipalities have completely
+   unrelated paths, so URL construction is out and so is enumeration. Two
+   mechanisms instead: (a) the title is near-universal ("Community Safety
+   and Well-Being Plan"), so discovery is a per-municipality SEARCH QUERY;
+   (b) every plan was approved by council, so the council-agenda adapter
+   reaches them all without hand-listing. CSWB is therefore a DOCUMENT TYPE
+   the classifier recognises, not a source to enumerate. Many plans are
+   joint (county/region for member municipalities), so the real count is
+   well under 444. Weight-5-adjacent in this layer's terms: an accountable
+   institutional statement of local need.
 2. **TB proactive disclosure of contracts over $10k** — partially covered
    ALREADY: our six federal contract-award feeds ride exactly this rail
    (search.open.canada.ca/contracts). The ask is a widening: the all-
@@ -194,17 +199,25 @@ LECA reports; statutory service strategic/business plans (the police
 equivalent of a fire master plan — rides the board/service adapter, and
 the board seeding just approved reaches most of them).
 
-**Fire:** Fire Underwriters Survey grading — NOTE: FUS is a private
-insurance-industry body and its gradings may not be public; if so, that is
-a boundary stated plainly, not a scrape target. NFPA standards updates
+**Fire:** Fire Underwriters Survey grading — RESOLVED (operator
+2026-08-02): fireunderwriters.ca; the grading index is behind a login and
+is a stated BOUNDARY. Public pages (consulting services, dwelling
+protection grade methodology, downloads) are the collectable surface. NFPA standards updates
 (cycle-setters; track update announcements, standards text is paywalled
 and stays unreproduced). Inter-municipal fire protection agreements — in
 council agendas, rides the keystone adapter.
 
 **EMS:** Ornge — its own aircraft/equipment procurement, absent from the
-roster until now. Regional base hospital programs (medical-direction
-standards that drive purchases) — enumeration belongs on the operator
-worklist with the coverage rows.
+roster until now. Regional base hospital programs RESOLVED (operator
+2026-08-02): the Ontario Base Hospital Group (ontariobasehospitalgroup.ca)
+is the consolidated list — eight programs, seven land one air: RPPEO
+(rppeo.ca), SWORBHP at LHSC (sworbhp.ca), Sunnybrook Prehospital Medicine
+(prehospitalmedicine.ca), Hamilton HSC CPER (cper.ca), Central East
+Prehospital Care Program (no standalone domain), HSN Sudbury
+(hsnsudbury.ca/prehospitalcare), Northwest Regional at TBRHSC
+(tbrhsc.net/prehospital-care/), and Ornge Transport Medicine. They set the
+medical directives services buy equipment to meet: an upstream capability
+signal, not just a research source.
 
 **Defence:** Canadian Commercial Corporation; ISED ITB obligations
 database (who owes offsets — published, structured); National
@@ -224,3 +237,117 @@ council-agenda design doc as a requirement.)
 
 **Provincial:** Ontario Regulatory Registry — proposed regulations posted
 for comment before law; pure forward signal, low volume, continuous.
+Confirmed a FEED, not a scrape: ontariocanada.com/registry (also
+regulatoryregistry.gov.on.ca) publishes RSS plus email alerts. The
+Environmental Registry (ero.ontario.ca) is a separate system to assess.
+
+## Worklist resolutions folded in (operator 2026-08-02, evening)
+
+**Inspectorate of Policing is TOP-TIER demand-voice**, not merely an
+oversight row: iopontario.ca publishes inspection reports, Spotlight
+Reports, annual reports, and the Policing Insight Statement — a survey of
+every Ontario chief and board. Weight 5 in this layer's terms.
+
+**OPFFA** (ontariofirefighters.org, UnionActive platform) carries two
+demand-voice assets beyond releases: an annual legislative conference at
+Queen's Park (a demand-voice event in itself) and Section 21 /
+cancer-prevention material tying directly to the fire decontamination
+procurement driver.
+
+**Rescu -> CanROC.** rescu.cc (St. Michael's, 24 hospitals across Southern
+Ontario) has evolved into CanROC, a national resuscitation-sciences network
+with sustained Heart and Stroke funding; CanROC is the better entity to
+track for EMS research.
+
+**FNCPA** (First Nations Chiefs of Police Association) exists as an
+organisation — it holds a CACP board seat — and joins the chiefs layer.
+
+**First Nations policing route-in correction.** FN services procure through
+tripartite agreements under the federal First Nations Policing Policy
+(Public Safety Canada FNIPP, ~52/48 federal/provincial), not municipal
+budgets. Their own sites showing little is expected, not a boundary
+verdict; assess the FEDERAL funding and agreement layer as the route in.
+Scale: Anishinabek Police alone runs 109 sworn officers across 12
+detachments; NAPS is larger. Real buyers.
+
+**Vendor rosters — the association pattern holds on the seller side**
+(operator 2026-08-02): every association publishing a buyer directory also
+publishes a seller directory. CADSI members list
+(defenceandsecurity.ca/en/membership/members-list): 1,700+ companies,
+public and browsable, defence/security/cyber — the count has grown across
+sources (700, 900, now 1,700+), so use the LIVE list, never a cached
+figure. CANSEC (annual, Ottawa, 12,000+ decision-makers) is the second
+half: all exhibitors must be CADSI members, and CADSI describes it as
+serving first responders, police, border and security entities and special
+operations — public safety, not just military. Exhibiting is active
+selling, so annual exhibitor lists are a stronger signal than membership;
+whether historical exhibitor lists are published is to be assessed.
+Expected by the same pattern and still open: OACP corporate/associate
+members and conference tradeshow exhibitors, OAPC industry members; OAFC
+industry members already found in the directory. Four sources = the vendor
+universe across police, fire, EMS and defence.
+
+**Vendor universe: three of four domains sourced** (operator 2026-08-02,
+evening): POLICE — oacp-b2b.ca, OACP's dedicated B2B supplier community
+(year-round purchasing-community access plus an annual B2B Trade Show;
+conference partners page on oacp.ca; 1,200+ members including corporate).
+FIRE — OAFC directory industry members. DEFENCE/SECURITY — CADSI members +
+CANSEC exhibitors. EMS — still open: check whether OAPC has an industry or
+corporate member category; the pattern holding across the other three says
+it should.
+
+**HARD RULE — acronym collisions:** "OACP" is three organisations: Ontario
+(oacp.ca), Ohio (oacp.org), Oklahoma (okchiefs.org). Any collector, query
+or keyword touching OACP must be domain-scoped to oacp.ca / oacp-b2b.ca,
+never acronym-matched — the same false-collision class as the "Collector"
+UA problem, and it would silently seed plausible-looking US data into the
+corpus. Swept 2026-08-02: keywords.txt and all collectors are clean; the
+one exposure was a bare "oacp" in discovery.py's kind-hint regex, now
+domain-scoped. CACP, OAFC and OAPC get the same domain-scoping treatment
+preemptively.
+
+**News tier one consolidates to Annex Business Media** (Blue Line,
+Canadian Firefighter/cdnfirefighter.com, Fire Fighting in Canada, OHS
+Canada, Securite Quebec) which also hosts the OAFC directory: ONE
+robots/terms assessment covers the top news tier and the fire roster —
+highest coverage-per-check on the news list, do it first. Their "New
+products" sections become their own document class: dated vendor product
+announcements, a supply-side signal pairing with this layer and feeding
+the vendor universe. Separate from Annex, assessed individually: The
+Canadian Fire Chief (cafc.ca, CAFC's own bilingual magazine — national
+fire-chief positions, not trade coverage), Canadian Paramedicine, Canadian
+Security, Canadian Defence Review, Vanguard, Esprit de Corps.
+
+**Hyperlocal tier consolidates to Village Media**: 25+ owned Ontario sites
+on one platform (roster at villagemedia.ca/sites/), one adapter and one
+robots/RSS check for the network. Disproportionately valuable because they
+report the council meetings nothing else covers — the agenda says what was
+decided, the local report says what was said and who objected. Metroland
+(Torstar) still to enumerate; check for a shared platform.
+
+**Provenance discipline, built into the model, not discovered later:** a
+membership or exhibitor list says a company is IN THE MARKET; award records
+say WHO WINS. Different facts, different confidence, different products.
+Membership feeds the commercial prospect universe; award data feeds
+incumbent intelligence and buyer profiles in the product. A vendor must
+never appear on a member-facing surface as an incumbent because they paid
+association dues — the provenance tag keeps the two from blurring. Robots
+and terms check on each list before collecting; company-level data only,
+never individual contact details (same rule as the OAFC directory).
+
+**OPAAC resolved — the labour comparator works as designed.** The Ontario
+Police Arbitration and Adjudication Commission lives at
+policearbitration.gov.on.ca (a gov.on.ca subdomain, which is why every .ca
+and .on.ca guess failed), with a dedicated awards page at
+/opacs-role/awards/ plus interest-disputes, rights-disputes, section-40 and
+duty-of-fair-representation sections. Arbitration awards are the decisive
+evidence in police bargaining and they are publicly reachable. CanLII stays
+out on terms; it is not needed.
+
+**Transition-review status class.** A municipality studying OPP costing or
+transition is a tracked coverage status (probe TRANSITION_REVIEW), not a
+discovery-by-search. First member: Sarnia (council motion under debate,
+2026-08) — also our only robots-DISALLOW roster host, so the one service we
+cannot collect from may be about to stop being a buyer. The Sarnia story is
+itself a demand arc: council motion -> costing study -> OCPC application ->
+transition, with procurement consequences at both ends.
