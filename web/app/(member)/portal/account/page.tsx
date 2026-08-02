@@ -11,6 +11,7 @@ import { billingEnabled } from "@/lib/billing/stripe";
 import { getMemberSubscription } from "@/lib/billing/stripe";
 import { TIER_LABELS } from "@/lib/billing/config";
 import { startCheckout } from "./billing-actions";
+import InquiryDialog from "@/components/site/InquiryDialog";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -193,7 +194,17 @@ export default async function AccountPage({
                   an operator-provisioned founding subscription still RENDERS
                   correctly above; what is removed is the path by which a
                   member could select it. */}
-              {(["pro", "weekly"] as const).map((t) => (
+              {/* WEEKLY IS THE ONLY PURCHASABLE TIER (operator 2026-08-02,
+                  settled commercial model). Pro is CLOSED at launch: the
+                  pricing page shows it as Request-early-access, and a member
+                  must not be able to buy from here what nobody can buy from
+                  there -- the same class as the Founding button removed
+                  earlier. Pro instead reuses the pricing page's capture,
+                  prefilled with the member's verified address: a signed-in
+                  member clicking Pro is a stronger demand signal than an
+                  anonymous pricing-page click, and the row lands in the same
+                  tier_inquiries table the operator already reads. */}
+              {(["weekly"] as const).map((t) => (
                 <form action={startCheckout} key={t}>
                   <input type="hidden" name="tier" value={t} />
                   <button
@@ -205,6 +216,7 @@ export default async function AccountPage({
                   </button>
                 </form>
               ))}
+              <InquiryDialog tier="pro" defaultEmail={user?.email} triggerClassName="follow-btn" />
             </div>
             <span style={{ fontSize: 12, color: "var(--faint)" }}>
               Test keys only: no real charge is possible while the portal is

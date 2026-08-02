@@ -12,6 +12,7 @@
 import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { submitInquiry, type InquiryResult } from "@/app/(site)/inquiry-actions";
+import "./inquiry.css";
 
 const LABEL: Record<string, string> = {
   pro: "Request early access",
@@ -46,9 +47,19 @@ function SubmitButton({ tier }: { tier: string }) {
 export default function InquiryDialog({
   tier,
   variant = "ghost",
+  defaultEmail,
+  triggerClassName,
 }: {
   tier: "pro" | "enterprise";
   variant?: "ghost" | "primary";
+  // The trigger renders with the HOST surface's button class (marketing .btn
+  // by default; the account page passes its own), because the host stylesheet
+  // is the only one guaranteed to be loaded outside the panel.
+  triggerClassName?: string;
+  // Prefilled when a signed-in member opens the form (the account page):
+  // their verified address IS the demand signal, and retyping it would just
+  // add a reason to abandon. Still editable, never asserted.
+  defaultEmail?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [state, formAction] = useFormState<InquiryResult | null, FormData>(
@@ -61,7 +72,7 @@ export default function InquiryDialog({
     <>
       <button
         type="button"
-        className={`btn btn--${variant}`}
+        className={triggerClassName ?? `btn btn--${variant}`}
         style={{ padding: "10px 18px", letterSpacing: "0.1em" }}
         onClick={() => setOpen(true)}
         data-inquiry-open={tier}
@@ -124,7 +135,7 @@ export default function InquiryDialog({
 
                 <label className="inquiry-field">
                   <span>Email</span>
-                  <input name="email" type="email" required maxLength={254} />
+                  <input name="email" type="email" required maxLength={254} defaultValue={defaultEmail} />
                 </label>
 
                 {/* Honeypot: hidden from humans and from assistive tech, so
