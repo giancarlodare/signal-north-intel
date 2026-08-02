@@ -29,6 +29,8 @@ on:
           - sourcing_probe
           - disjointness_probe
           - civil_works_probe
+          # Robots + ONE homepage per rostered host, plus corpus reads.
+          - coverage_probe
       args:
         description: "Extra arguments for the script (optional)"
         type: string
