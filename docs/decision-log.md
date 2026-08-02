@@ -299,3 +299,22 @@ handoff. Flagged to operator as content/judgment calls, not changed: 6-vs-7
 stats count; the single-capability section 02 (real-data-or-nothing leaves an
 empty selector rail); the Canadian-owned callout (in screenshots, absent from
 handoff+build); section-01 long-heading ellipsis. Suite 99/99 green.
+
+## Marketing site design corrections, round 3 (2026-08-02)
+
+Rendered each surface locally through the real components with the real fonts
+(EB Garamond / IBM Plex, fetched and injected since the sandbox proxy blocks
+Google Fonts). Applied three more, verified by screenshot:
+
+1. Home 01 point headings wrapped instead of clipping ("Every contract in your
+   category" no longer "...categ..."). site.css: `.point h3` white-space normal.
+2. Home 02 single-capability state collapsed the empty selector rail to a
+   full-width market-record panel. site.css: `.caps[data-placeholder]`.
+3. About mission: added the "Canadian-owned and operated" callout card (dark,
+   shadowed) from the operator's design screenshots. about/page.tsx. COPY
+   TRANSCRIBED from the screenshot -- operator to verify wording.
+
+Still open for the operator (flagged, not changed): 6-vs-7 About stats count;
+the "The market record" heading appearing twice in section 02; pricing button
+emphasis (outline/outline/dark/red) vs the current content-model buttons.
+Suite 99/99 green; typecheck clean.

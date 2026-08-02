@@ -189,6 +189,52 @@ export default async function AboutPage() {
                 </p>
               </div>
             </div>
+            {/* Canadian-owned callout: one of the two deliberate shadows in the
+                design. Copy transcribed from the operator's design screenshots;
+                verify wording. */}
+            <div
+              style={{
+                marginTop: "var(--sp-8)",
+                maxWidth: 760,
+                background: "var(--navy)",
+                borderRadius: "var(--radius)",
+                boxShadow: "var(--shadow-lg)",
+                padding: 40,
+                display: "flex",
+                flexDirection: "column",
+                gap: 14,
+              }}
+            >
+              <span
+                className="t-label"
+                style={{ color: "var(--red-on-dark)", letterSpacing: "0.2em" }}
+              >
+                Canadian-owned and operated
+              </span>
+              <h3
+                style={{
+                  fontFamily: "var(--font-serif)",
+                  fontSize: 28,
+                  lineHeight: 1.3,
+                  color: "#fff",
+                }}
+              >
+                Signal North is a wholly Canadian-owned company, founded and
+                headquartered in Ontario.
+              </h3>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "var(--fs-ui)",
+                  lineHeight: 1.8,
+                  color: "var(--blue-mist)",
+                }}
+              >
+                Critical intelligence for Canada&apos;s public-safety and defence
+                sector should be built and held here: independent, domestic, and
+                accountable to the market it serves.
+              </p>
+            </div>
           </div>
         </section>
 

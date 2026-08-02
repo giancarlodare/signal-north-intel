@@ -321,6 +321,20 @@
    row. (Whether to carry six or seven facts is a content call, flagged.) */
 .sn-site .stats__grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
 
+/* Home 01 point headings: the handoff forces one line with an ellipsis, which
+   clips real words at desktop width ("Every contract in your categ..."). The
+   design screenshots show the full text, so let them wrap. Subgrid keeps the
+   four headings row-aligned regardless of line count. */
+.sn-site .point h3 { white-space: normal; overflow: visible; text-overflow: clip; }
+
+/* Home 02 capabilities: the live build renders a SINGLE real capability
+   (real-data-or-nothing removed 02-06), which left the two-column selector with
+   an empty left rail. While it is the placeholder single-item state, collapse to
+   one column and drop the rail so the market-record panel reads as intentional
+   full width. Remove this rule the day a second capability becomes real. */
+.sn-site .caps[data-placeholder="true"] { grid-template-columns: 1fr; }
+.sn-site .caps[data-placeholder="true"] .caps__list { display: none; }
+
 /* Visually hidden, still read aloud. The public signup forms sit inline in
    marketing layout where a visible label would break the line, but an input
    with no label is unusable on a screen reader. */
