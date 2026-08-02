@@ -218,3 +218,35 @@ error wearing a green tick.
 | 2026-08-02 | ENVELOPE APPROVED: $600 standing for August, guard debits the total, surfaces to queue, unspent stays unspent. Window rulings: imminent +30 -> +35 (scorer peak alignment), grants +45 -> +90 (application-assembly horizon); recent window anchors to last published issue (floor 7 days, no cap, loud when stretched) so cadence slips never skip a day of record. Shell-endpoint work: terms/robots checked first, ambiguity reported not proceeded on; loud-failure shape guard built in from day one. Durham + Waterloo boards migrate to tenant path when adapter exists | operator approvals of record; brief_generator changes this PR, 474 tests green |
 | 2026-08-02 | Digest protocol effective now: two digests/day (shipped / decisions / blocked), DECISION vs FYI labelling, BLOCKING pulls forward, answer-from-the-repo-first. Standing $600 envelope pasted and verified by operator (three rows) | CLAUDE.md digest protocol section |
 | 2026-08-02 eve | Autonomous queue worked: eScribe/CivicWeb adapter (both shapes, api inert-by-default, loud-failure guard, 8 tests) + shell-endpoint probe (all 15 tenants AMBIGUOUS -> api path stopped pending eScribe terms ruling) + standing-programs census (120 programs, PSC-dominated) + roster ingest (dead-domain corrections found) + fleet-validation harness (Hamilton 10mtg/51doc, Kitchener, Oakville clean; 4/6). PRs #152 merged | evening digest of record |
+
+## eScribe automated-access ruling (operator 2026-08-02)
+
+DECISION: proceed with automated collection of eScribe tenant meeting
+records, including the JS-shell runtime API. Operator read the terms:
+- The privacy policy governs personal information only.
+- The terms of use cover cookies and governing law.
+- NEITHER addresses automated access.
+- robots.txt permits on the tenant hosts.
+- These are statutory public records a board is required to publish.
+Silence is not prohibition; proceeding is warranted.
+
+TWO STANDING CONDITIONS (binding):
+1. The loud-failure guard on the shell/api path is non-negotiable. An
+   undocumented endpoint can change without notice, and silent-zero is the
+   failure mode that has already cost a day and four nights. (Built:
+   escribe_adapter.LoudZeroMeetings, day one.)
+2. If eScribe ever publishes terms that DO address automated access, or a
+   tenant's robots.txt changes, we STOP and report it as a boundary rather
+   than grandfathering ourselves in. The coverage/shell probes re-check
+   robots each run; a terms change is a watch item.
+
+Reasoning recorded here so the call is on the record, not in chat.
+
+## Digest cadence fix (operator 2026-08-02)
+
+The "evening" digest fired at 14:25 EDT. Eastern time was computed
+correctly (verified: UTC 18:25 -> 14:25 EDT, and tz-db America/Toronto);
+the defect was FIRING ON WORK-COMPLETION and labelling by convention. Fix:
+digests fire on a fixed Eastern schedule, morning and evening, not when
+work happens to finish. Ad-hoc completion reports are not digests and are
+not labelled as a window.
