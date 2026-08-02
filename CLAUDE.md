@@ -20,6 +20,13 @@ NOT watching in between. Binding rules:
    what genuinely needs the operator's judgment.
 4. **BLOCKING** in the subject line pulls an item forward; otherwise it
    waits for the next window.
+5. **"Needs you tomorrow" look-ahead** (operator addition, same day): each
+   digest carries a short section naming every item that will need the
+   operator the NEXT day -- the item, roughly when it will be ready, and
+   what it unblocks -- so evenings can be cleared in advance rather than
+   discovering at 9pm that the scorer sat idle since noon. Dependency
+   chains are announced a day ahead, never just BLOCKING-flagged at the
+   wall.
 
 ## Time zone
 
