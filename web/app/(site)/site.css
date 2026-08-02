@@ -321,11 +321,13 @@
    row. (Whether to carry six or seven facts is a content call, flagged.) */
 .sn-site .stats__grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
 
-/* Home 01 point headings: the handoff forces one line with an ellipsis, which
-   clips real words at desktop width ("Every contract in your categ..."). The
-   design screenshots show the full text, so let them wrap. Subgrid keeps the
-   four headings row-aligned regardless of line count. */
-.sn-site .point h3 { white-space: normal; overflow: visible; text-overflow: clip; }
+/* Home 01 point headings sit on ONE line each (a single word spilling to a
+   second line looked worse than the ellipsis did). The handoff's 23px clips the
+   longest heading; measured against the real font, 20px fits every heading in
+   the column with no wrap and no ellipsis, and the grid drops to fewer (wider)
+   columns before any heading could overflow. */
+.sn-site .point h3 { white-space: nowrap; overflow: visible; text-overflow: clip; font-size: 20px; }
+.sn-site .point-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 
 /* Home 02 capabilities: the live build renders a SINGLE real capability
    (real-data-or-nothing removed 02-06), which left the two-column selector with
