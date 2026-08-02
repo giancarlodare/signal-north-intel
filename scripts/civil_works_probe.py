@@ -51,10 +51,15 @@ R3_SAFETY = ("police", "fire", "paramedic", "ems", "emergency")
 def main() -> None:
     print("CIVIL-WORKS FALSE-POSITIVE COUNT -- report only, nothing applied")
 
+    # SMALL PAGES, deliberately: joining full document bodies at the default
+    # 1,000-row page exceeds the server statement timeout (57014, seen on the
+    # first dispatch 2026-08-02). Board-minutes bodies run to tens of KB, so
+    # the statement cost is bytes, not rows; 50 rows keeps each well under it.
     raw = sc.fetch_all_rows_where(
         "signals",
         "id,public_safety,documents!inner(id,title,content,buyer_name,url)",
-        {"public_safety": "is.true", "suppressed": "is.false"})
+        {"public_safety": "is.true", "suppressed": "is.false"},
+        page_size=50)
     print(f"public_safety signals scanned: {len(raw)}")
 
     r1, r2, r3 = [], [], []
