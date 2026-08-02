@@ -248,14 +248,33 @@ BOARDS = [
     {
         "name": "London Police Service Board",
         "enabled": False,
+        # NOT A GAP (operator 2026-08-02): two server-side surfaces exist.
+        #  1. pub-london.escribemeetings.com -- an eScribe tenant (confirmed
+        #     via a filestream.ashx document URL): first wave of the eScribe
+        #     adapter alongside Ottawa and Niagara.
+        #  2. londonpoliceserviceboard.com -- dedicated WordPress board site
+        #     publishing full agenda-and-report packages as PDFs under
+        #     /wp-content/uploads/YYYY/MM/ (e.g. "LPSB-OPEN-Agenda-and-
+        #     Report-Package-February-19-2026-Full-Package.pdf"). 2026
+        #     meetings: Jan 15, Feb 19, Mar 19, Apr 16, May 21, Jun 18,
+        #     (no July), Aug 20, Sep 17 special budget, Oct 15, Nov 19,
+        #     Dec 17. Same shape as the TPSB config; enable after the
+        #     standard CI validation dry-run.
+        # COLLISION WARNING (same class as OACP): the City of London, UK
+        # publishes a Police Authority Board at democracy.cityoflondon.gov.uk.
+        # Anything touching "London Police" must be domain-scoped
+        # (londonpolice.ca / londonpoliceserviceboard.com /
+        # pub-london.escribemeetings.com) or the corpus silently takes on
+        # British data.
         "parked_reason": (
-            "no meeting documents server-side anywhere; "
-            "calendar.londonpolice.ca exposes events only; "
-            "londonpoliceboard.ca does not resolve. Revive via a targeted "
-            "re-probe of a board-meeting calendar detail page."),
+            "READY, pending validation dry-run: londonpoliceserviceboard.com "
+            "WordPress packages (server-rendered) + pub-london eScribe "
+            "tenant in the adapter first wave. Was mis-parked as no-surface; "
+            "operator located both 2026-08-02."),
         "source_name_candidates": ["London Police Service Board"],
         "source_id_env": "LPSB_SOURCE_ID",
-        "listing_urls": ["https://calendar.londonpolice.ca/meetings"],
+        "listing_urls": ["https://londonpoliceserviceboard.com/"],
+        "doc_url_patterns": [r"/wp-content/uploads/.+\.pdf$"],
     },
     {
         "name": "Windsor Police Service Board",
