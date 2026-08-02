@@ -188,10 +188,11 @@ export default function LoginPage({
                 color: "var(--blue-ghost)",
               }}
             >
-              Membership is by request while the founding cohort is open.
+              Not a member yet? Signal North Weekly is open. You can be
+              reading this week&apos;s brief today.
             </span>
             <a
-              href="/contact"
+              href="/join"
               style={{
                 fontSize: 12,
                 fontWeight: 600,
@@ -200,7 +201,7 @@ export default function LoginPage({
                 color: "var(--blue-soft)",
               }}
             >
-              Request access
+              Join Weekly
             </a>
           </div>
         </div>

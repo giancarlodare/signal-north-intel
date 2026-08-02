@@ -67,7 +67,7 @@ export default function SiteFooter() {
           >
             <a href="/about">About</a>
             <a href="/pricing">Pricing</a>
-            <a href="/contact">Request access</a>
+            <a href="/join">Join Weekly</a>
             <a href="/login">Log in</a>
             <span style={{ color: "var(--blue-dim)", paddingTop: 10 }}>
               giancarlo@signalnorthintel.com
