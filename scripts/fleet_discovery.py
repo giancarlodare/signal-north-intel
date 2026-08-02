@@ -45,6 +45,12 @@ TENANT_RE = re.compile(
 MEETING_RE = re.compile(r"Meeting\.aspx\?Id=[0-9a-f-]+", re.I)
 DOC_RE = re.compile(
     r"FileStream\.ashx|/filepro/|/document/|Download\.aspx|\.pdf\b", re.I)
+# Depth-2 crawl (operator 2026-08-02): boards link their tenants from
+# meetings pages, not homepages, so when the homepage carries no tenant we
+# follow up to three links whose HREF looks meetings-shaped and read those.
+LINK_RE = re.compile(r"href=[\"']([^\"'#]+)[\"']", re.I)
+MEET_WORDS = re.compile(r"meeting|agenda|minute|board|council", re.I)
+MAX_DEEP_LINKS = 3
 
 _last = 0.0
 
@@ -61,9 +67,27 @@ def get(url: str):
 def find_tenants(host: str) -> set:
     try:
         r = get(f"https://{host}/")
-        return {t.lower() for t in TENANT_RE.findall(r.text)}
     except Exception:  # noqa: BLE001 -- isolation: a dead host is a row, not a stop
         return set()
+    tenants = {t.lower() for t in TENANT_RE.findall(r.text)}
+    if tenants:
+        return tenants
+    # One level deeper. HREF-shape matching only (no HTML parsing); links may
+    # leave the host -- board sites often live on their own domains.
+    followed = 0
+    for m in LINK_RE.finditer(r.text):
+        if followed >= MAX_DEEP_LINKS or tenants:
+            break
+        href = m.group(1)
+        if not MEET_WORDS.search(href):
+            continue
+        followed += 1
+        try:
+            r2 = get(urljoin(r.url, href))
+            tenants |= {t.lower() for t in TENANT_RE.findall(r2.text)}
+        except Exception:  # noqa: BLE001
+            continue
+    return tenants
 
 
 def probe_escribe(tenant: str) -> dict:
@@ -121,6 +145,18 @@ def main() -> int:
              [("fire", n, h) for n, h in FIRE if h] + \
              [("ems", n, h) for n, h in EMS if h]
     n_requests = 0
+    # argv entries that ARE tenant hosts are probed directly -- this is how
+    # the first-wave tenants (pub-ottawa, pub-niagarapolice, pub-london) get
+    # bucketed by name without waiting on enumeration.
+    for h in [a.lower() for a in sys.argv[1:]]:
+        if "escribemeetings" in h or "civicweb" in h:
+            p = probe_escribe(h) if "escribemeetings" in h else probe_civicweb(h)
+            n_requests += 4
+            seen_tenants[h] = p
+            rows.append(("argv", h, h, h, p["bucket"],
+                         p["meetings"], p["docs_sample"], p["note"]))
+        else:
+            roster.append(("argv", h, h))
     for domain, name, host in roster:
         tenants = find_tenants(host)
         n_requests += 1

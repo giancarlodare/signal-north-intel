@@ -39,6 +39,12 @@ tenant at pub-london.escribemeetings.com (confirmed via a filestream.ashx
 URL) plus a dedicated WordPress site publishing full agenda-and-report
 packages -- so ALL FIVE named services (Hamilton, Niagara, Ottawa, London,
 Windsor) close before launch, and London leaves the named-gap list.
+
+**Hamilton moves to the first wave too** (operator 2026-08-02, on the
+discovery result): pub-hamilton.escribemeetings.com is bucket A, so
+Hamilton's committees are collectable the day the adapter exists -- it no
+longer waits for the council route in the second window. Windsor remains
+the one service on the council route (citywindsor.ca clerk).
 Collision warning, same class as OACP: City of London, UK publishes a
 Police Authority Board at democracy.cityoflondon.gov.uk; "London Police"
 queries are domain-scoped, always.
