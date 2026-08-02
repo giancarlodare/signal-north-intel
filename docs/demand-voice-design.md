@@ -107,3 +107,55 @@ weight 1.
 
 Gated: everything above is a new-source build; nothing collects until the
 operator approves this design.
+
+## Addendum (operator 2026-08-02, same day)
+
+**Coroner's inquest documents confirmed top priority.** Scope includes the
+verdicts, the jury recommendations, and the published RESPONSES from named
+services and ministries. Where the Office of the Chief Coroner publishes
+and the archive depth are on the coverage probe / operator worklist.
+
+**University research as a forward signal.** Not a literature sweep:
+CIPSRT (public-safety personnel), Rescu and Sunnybrook Prehospital
+Medicine (EMS), TMU / U of T Criminology / Ontario Tech / Western
+(policing), DRDC (defence, connects to IDEaS), and the SSHRC + CIHR award
+databases — a funded project says what is being studied years before
+findings publish. Award databases are structured downloads (ledger-shaped,
+like Sunshine).
+
+**News catalogue is enumerated, not sampled** — tiers: trade press (adds
+Fire Fighting in Canada, Canadian Paramedicine), national (CBC, CTV,
+Global, CP, Globe, Post), provincial/Queen's Park (TVO, QP Briefing,
+iPolitics), regional dailies one per fleet market, hyperlocal networks
+(Village Media, Metroland) which cover councils nobody else does, and
+international trend-leaders (Police1, GovTech, Route Fifty, Defense News,
+Breaking Defense, Shephard). Robots/feed verdicts per source come from the
+coverage probe; paywalled/disallowing dailies are coverage boundaries.
+
+**Filtering architecture (the actual design problem).** NO keyword
+keep-filter on news — the sewer-CCTV lesson, and news is noisier than
+tenders. Three layers: (1) source-level curation and weighting, which does
+most of the work before anything is read; (2) a cheap-model relevance
+CLASSIFIER, scoped together with the extraction cascade — the cascade is
+what makes this layer affordable at all; (3) author-authority weighting as
+already ruled. Classifier cost is estimated in the catalogue table
+delivered with the coverage report.
+
+**Association layer — its own source class, previously absent entirely.**
+Chiefs/command (CACP, OACP + provincial equivalents, CAFC, OAFC, PCC,
+OAPC), labour (CPA, PAO, OPPA, TPA and large locals, OPFFA/IAFF, CUPE and
+OPSEU paramedic locals), governance (CAPG, OAPSB — boards are where the
+best arcs already come from), municipal lobbying (AMO, ROMA, Ontario Big
+City Mayors, MARCO, FCM), training/standards (CPKN, OPC, CPC, OFC, JIBC),
+oversight/adjacent (CACOLE, CANASA, CADSI). Collected per body:
+submissions and briefs, position papers, resolutions, media releases,
+annual reports, and conference programmes + exhibitor lists (the last
+flagged COMMERCIAL, for the operator's pipeline, not the product).
+
+**The scope rule, designed in rather than assumed:** the advocacy layer is
+collected NATIONALLY (cheap, and national bodies shape provincial asks);
+procurement coverage claims stay ONTARIO + FEDERAL. The data model carries
+the distinction (advocacy sources tagged `claim_scope='advocacy-national'`
+vs procurement `claim_scope='procurement-on-fed'`) and the coverage page
+states both claims separately, so collecting a CACP submission can never
+imply national procurement coverage.

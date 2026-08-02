@@ -210,8 +210,73 @@ DEMAND_VOICE = [
     ("Esprit de Corps", "espritdecorps.ca"),
 ]
 
+# Association layer + news catalogue + research centres (operator addendum
+# 2026-08-02): advocacy collected NATIONALLY, procurement claims stay
+# Ontario+federal -- the distinction is a data-model rule, not a blur.
+# Exhibitor/conference lists are flagged for commercial use, not product.
+ADVOCACY = [
+    ("CACP (national chiefs)", "www.cacp.ca"),
+    ("CAFC (national fire chiefs)", "cafc.ca"),
+    ("Paramedic Chiefs of Canada", "www.paramedicchiefs.ca"),
+    ("Canadian Police Association", "www.cpa-acp.ca"),
+    ("PAO (Police Assn of Ontario)", "pao.ca"),
+    ("OPPA", "oppa.ca"),
+    ("OPFFA (fire labour)", "www.opffa.org"),
+    ("CAPG (police governance)", "capg.ca"),
+    ("OAPSB (police services boards)", "www.oapsb.ca"),
+    ("AMO", "www.amo.on.ca"),
+    ("ROMA", "www.roma.on.ca"),
+    ("Ontario Big City Mayors", "www.ontariobigcitymayors.ca"),
+    ("FCM (national municipal)", "www.fcm.ca"),
+    ("CPKN (police training)", "www.cpkn.ca"),
+    ("Canadian Police College", "www.cpc-ccp.gc.ca"),
+    ("Justice Institute of BC", "www.jibc.ca"),
+    ("CACOLE (oversight)", "www.cacole.ca"),
+    ("CANASA (security industry)", "www.canasa.org"),
+    ("CADSI (defence industry)", "www.defenceandsecurity.ca"),
+    ("BC Assn of Chiefs of Police", None),
+    ("Alberta Assn of Chiefs of Police", None),
+    ("ADPQ (Quebec chiefs)", None),
+    ("Provincial fire chief assns (non-ON)", None),
+]
+RESEARCH = [
+    ("CIPSRT (Regina)", "www.cipsrt-icrtsp.ca"),
+    ("DRDC", "www.canada.ca"),
+    ("SSHRC awards database", "www.sshrc-crsh.gc.ca"),
+    ("CIHR funding database", "cihr-irsc.gc.ca"),
+    ("Rescu (St. Michael's)", None),
+    ("Sunnybrook Prehospital Medicine", "sunnybrook.ca"),
+]
+NEWS = [
+    ("Canadian Paramedicine", "canadianparamedicine.ca"),
+    ("Fire Fighting in Canada", "www.firefightingincanada.com"),
+    ("CBC", "www.cbc.ca"),
+    ("CTV News", "www.ctvnews.ca"),
+    ("Global News", "globalnews.ca"),
+    ("Globe and Mail", "www.theglobeandmail.com"),
+    ("National Post", "nationalpost.com"),
+    ("TVO", "www.tvo.org"),
+    ("iPolitics", "www.ipolitics.ca"),
+    ("QP Briefing", "qpbriefing.com"),
+    ("Toronto Star", "www.thestar.com"),
+    ("Ottawa Citizen", "ottawacitizen.com"),
+    ("Hamilton Spectator", "www.thespec.com"),
+    ("London Free Press", "lfpress.com"),
+    ("Windsor Star", "windsorstar.com"),
+    ("Waterloo Region Record", "www.therecord.com"),
+    ("Village Media (network)", "www.villagemedia.ca"),
+    ("Village Media sample (SooToday)", "www.sootoday.com"),
+    ("Police1", "www.police1.com"),
+    ("Government Technology", "www.govtech.com"),
+    ("Route Fifty", "www.route-fifty.com"),
+    ("Defense News", "www.defensenews.com"),
+    ("Breaking Defense", "breakingdefense.com"),
+    ("Shephard Media", "www.shephardmedia.com"),
+]
+
 DOMAINS = [("police", POLICE), ("police-fn", POLICE_FN), ("fire", FIRE),
-           ("ems", EMS), ("federal", FEDERAL), ("demand-voice", DEMAND_VOICE)]
+           ("ems", EMS), ("federal", FEDERAL), ("demand-voice", DEMAND_VOICE),
+           ("advocacy", ADVOCACY), ("research", RESEARCH), ("news", NEWS)]
 
 
 def probe_host(host: str) -> dict:
