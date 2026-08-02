@@ -28,6 +28,7 @@ on:
           # robots.txt) for the candidate sources it assesses.
           - sourcing_probe
           - disjointness_probe
+          - civil_works_probe
       args:
         description: "Extra arguments for the script (optional)"
         type: string
