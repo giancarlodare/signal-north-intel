@@ -129,6 +129,30 @@ CANADABUYS_NOTICE_TYPES = [
     "Tender Notice",
 ]
 
+# Labour/compensation sources (operator addendum 2026-08-02): the comparator-
+# ledger inputs. Probed separately via `robots-labour` so the corpus sections
+# need not re-run. Association domains here are a SAMPLE of the ~46; full
+# enumeration belongs to the design doc, this establishes the posture pattern.
+# CanLII is probed but its TERMS restrict bulk access regardless of robots --
+# the report must carry that as a boundary, not treat robots as the last word.
+ROBOTS_LABOUR = {
+    "data.ontario.ca": [       # Sunshine list (Open Government Licence)
+        "/dataset/public-sector-salary-disclosure"],
+    "efis.fma.csc.gov.on.ca": ["/"],   # FIR portal (MMAH)
+    "www150.statcan.gc.ca": [          # Police Administration Survey tables
+        "/t1/tbl1/en/tv.action"],
+    "www.labour.gov.on.ca": ["/"],     # Collective Bargaining Info Services
+    "opaac.ca": ["/"],                 # Ont. Police Arbitration & Adjudication
+    "www.opac.on.ca": ["/"],           # legacy commission host, if still live
+    "www.canlii.org": ["/en/on/"],     # fallback; TERMS restrict bulk anyway
+    "www.wsiat.on.ca": ["/"],
+    # Association sample (freshest signal; ~46 total, enumerated in design doc)
+    "www.tpa.ca": ["/"],
+    "oppa.ca": ["/"],
+    "www.ottawapoliceassociation.ca": ["/"],
+    "yrpa.ca": ["/"],
+}
+
 # host -> representative paths we would actually read
 ROBOTS_CANDIDATES = {
     "www.ontario.ca": [           # OFM + Ministry of Health EHS branch
@@ -214,11 +238,11 @@ def _arc_shape(domain: str, docs: dict, categorized_doc_ids: set) -> None:
         print(f"    top buyers: {top}")
 
 
-def robots_report() -> None:
+def robots_report(candidates: dict[str, list[str]], title: str) -> None:
     print("\n" + "=" * 78)
-    print("S5  ROBOTS POSTURE (robots.txt only; no content pages fetched)")
+    print(f"S5  ROBOTS POSTURE: {title} (robots.txt only; no content pages)")
     print("=" * 78)
-    for host, paths in ROBOTS_CANDIDATES.items():
+    for host, paths in candidates.items():
         url = f"https://{host}/robots.txt"
         try:
             resp = requests.get(url, headers={"User-Agent": UA}, timeout=30)
@@ -246,6 +270,15 @@ def robots_report() -> None:
 
 
 def main() -> None:
+    # `robots-labour` runs ONLY the labour robots checks (operator addendum
+    # 2026-08-02), so re-probing a host list does not re-run every corpus
+    # query. Any other invocation runs the full fire/EMS/defence probe.
+    if len(sys.argv) > 1 and sys.argv[1] == "robots-labour":
+        print("SOURCING PROBE -- labour/compensation robots posture only")
+        robots_report(ROBOTS_LABOUR, "labour & compensation sources")
+        print("\nprobe complete (read-only; nothing written)")
+        return
+
     print("SOURCING EXPANSION PROBE -- fire / EMS / defence, read-only")
 
     print("\n" + "=" * 78)
@@ -303,7 +336,7 @@ def main() -> None:
             {"content": f"ilike.*Notice type: {nt}*"})
         print(f"  {nt:36s} {len(rows):6d}")
 
-    robots_report()
+    robots_report(ROBOTS_CANDIDATES, "fire / EMS / defence candidates")
     print("\nprobe complete (read-only; nothing written)")
 
 
