@@ -50,6 +50,10 @@ on:
           # eScribe JS-shell endpoint probe: robots + terms FIRST, then
           # read-only endpoint discovery. Never CALLS a data endpoint.
           - shell_endpoint_probe
+          # Roster-index ingest: parse OACP/OAPSB/etc indexes (HTML + PDF),
+          # cross-reference the coverage roster + sources, report what's
+          # genuinely missing. Read-only; robots honored.
+          - roster_ingest
       args:
         description: "Extra arguments for the script (optional)"
         type: string
