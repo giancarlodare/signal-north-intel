@@ -169,12 +169,17 @@ shape. Design first, no build, per the instruction.
 
 1. **Community Safety and Well-Being Plans** — mandatory for all 444
    Ontario municipalities, all public: a demand document by legislative
-   mandate, currently untouched. No single portal exists; the plans live on
-   municipal sites and in council agendas, so this class RIDES the
-   council-agenda/municipal adapter (keystone) plus a one-time enumeration
-   pass, rather than a new collector. Volume ~444 documents plus revision
-   cycles; multi-year freshness; storage trivial. Weight-5-adjacent in this
-   layer's terms: an accountable institutional statement of local need.
+   mandate, currently untouched. RESOLVED (operator 2026-08-02): no
+   registry, no URL pattern — five checked municipalities have completely
+   unrelated paths, so URL construction is out and so is enumeration. Two
+   mechanisms instead: (a) the title is near-universal ("Community Safety
+   and Well-Being Plan"), so discovery is a per-municipality SEARCH QUERY;
+   (b) every plan was approved by council, so the council-agenda adapter
+   reaches them all without hand-listing. CSWB is therefore a DOCUMENT TYPE
+   the classifier recognises, not a source to enumerate. Many plans are
+   joint (county/region for member municipalities), so the real count is
+   well under 444. Weight-5-adjacent in this layer's terms: an accountable
+   institutional statement of local need.
 2. **TB proactive disclosure of contracts over $10k** — partially covered
    ALREADY: our six federal contract-award feeds ride exactly this rail
    (search.open.canada.ca/contracts). The ask is a widening: the all-
@@ -194,17 +199,25 @@ LECA reports; statutory service strategic/business plans (the police
 equivalent of a fire master plan — rides the board/service adapter, and
 the board seeding just approved reaches most of them).
 
-**Fire:** Fire Underwriters Survey grading — NOTE: FUS is a private
-insurance-industry body and its gradings may not be public; if so, that is
-a boundary stated plainly, not a scrape target. NFPA standards updates
+**Fire:** Fire Underwriters Survey grading — RESOLVED (operator
+2026-08-02): fireunderwriters.ca; the grading index is behind a login and
+is a stated BOUNDARY. Public pages (consulting services, dwelling
+protection grade methodology, downloads) are the collectable surface. NFPA standards updates
 (cycle-setters; track update announcements, standards text is paywalled
 and stays unreproduced). Inter-municipal fire protection agreements — in
 council agendas, rides the keystone adapter.
 
 **EMS:** Ornge — its own aircraft/equipment procurement, absent from the
-roster until now. Regional base hospital programs (medical-direction
-standards that drive purchases) — enumeration belongs on the operator
-worklist with the coverage rows.
+roster until now. Regional base hospital programs RESOLVED (operator
+2026-08-02): the Ontario Base Hospital Group (ontariobasehospitalgroup.ca)
+is the consolidated list — eight programs, seven land one air: RPPEO
+(rppeo.ca), SWORBHP at LHSC (sworbhp.ca), Sunnybrook Prehospital Medicine
+(prehospitalmedicine.ca), Hamilton HSC CPER (cper.ca), Central East
+Prehospital Care Program (no standalone domain), HSN Sudbury
+(hsnsudbury.ca/prehospitalcare), Northwest Regional at TBRHSC
+(tbrhsc.net/prehospital-care/), and Ornge Transport Medicine. They set the
+medical directives services buy equipment to meet: an upstream capability
+signal, not just a research source.
 
 **Defence:** Canadian Commercial Corporation; ISED ITB obligations
 database (who owes offsets — published, structured); National
@@ -256,6 +269,15 @@ budgets. Their own sites showing little is expected, not a boundary
 verdict; assess the FEDERAL funding and agreement layer as the route in.
 Scale: Anishinabek Police alone runs 109 sworn officers across 12
 detachments; NAPS is larger. Real buyers.
+
+**OPAAC resolved — the labour comparator works as designed.** The Ontario
+Police Arbitration and Adjudication Commission lives at
+policearbitration.gov.on.ca (a gov.on.ca subdomain, which is why every .ca
+and .on.ca guess failed), with a dedicated awards page at
+/opacs-role/awards/ plus interest-disputes, rights-disputes, section-40 and
+duty-of-fair-representation sections. Arbitration awards are the decisive
+evidence in police bargaining and they are publicly reachable. CanLII stays
+out on terms; it is not needed.
 
 **Transition-review status class.** A municipality studying OPP costing or
 transition is a tracked coverage status (probe TRANSITION_REVIEW), not a

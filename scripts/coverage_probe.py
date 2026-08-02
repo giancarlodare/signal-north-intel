@@ -142,7 +142,9 @@ POLICE_FN = [
     ("UCCM Anishnaabe Police", "www.uccmpolice.com"),
     ("Wikwemikong Tribal Police", "www.wtps.ca"),
     ("Rama Police Service", "www.ramapolice.ca"),
-    ("Lac Seul Police Service", None),
+    ("Lac Seul Police Service", "lsps.ca"),
+    # No dedicated police site exists; confirm the arrangement against the
+    # NAN and IFNA structures, not a municipal-style domain search.
     ("Pikangikum (policing arrangement)", None),
 ]
 FIRE = [
@@ -223,6 +225,20 @@ EMS = [
     ("Rainy River DSSAB EMS", "www.rrdssab.ca"),
     ("Thunder Bay DSSAB", "www.tbdssab.ca"),
     ("Ministry of Health EHS Branch", "www.ontario.ca"),
+    # Base hospital programs (operator 2026-08-02): the consolidated list is
+    # the Ontario Base Hospital Group, eight programs (seven land, one air).
+    # They set the medical directives services buy equipment to meet -- an
+    # UPSTREAM CAPABILITY SIGNAL, not just a research source. Central East
+    # has no standalone domain of record; Ornge Transport Medicine rides the
+    # Ornge row in new-classes.
+    ("Ontario Base Hospital Group", "ontariobasehospitalgroup.ca"),
+    ("RPPEO base hospital (Eastern)", "rppeo.ca"),
+    ("SWORBHP base hospital (Southwest, LHSC)", "sworbhp.ca"),
+    ("Sunnybrook Prehospital Medicine", "prehospitalmedicine.ca"),
+    ("Hamilton HSC CPER base hospital", "cper.ca"),
+    ("Central East Prehospital Care Program", None),
+    ("HSN Centre for Prehospital Care (Sudbury)", "www.hsnsudbury.ca"),
+    ("Northwest Regional Base Hospital (TBRHSC)", "www.tbrhsc.net"),
 ]
 FEDERAL = [
     ("Department of National Defence", "www.canada.ca"),
@@ -250,6 +266,12 @@ DEMAND_VOICE = [
     ("OAPC (paramedic chiefs)", "oapc.ca"),
     ("OCPC / Tribunals Ontario", "tribunalsontario.ca"),
     ("Auditor General of Ontario", "www.auditor.on.ca"),
+    # gov.on.ca subdomain (why every .ca/.on.ca guess failed). Awards page
+    # at /opacs-role/awards/ plus interest-disputes, rights-disputes,
+    # section-40 and duty-of-fair-representation sections. Arbitration
+    # awards are the decisive evidence in police bargaining; CanLII stays
+    # out on terms and is not needed.
+    ("OPAAC police arbitration awards", "policearbitration.gov.on.ca"),
     ("Blue Line", "www.blueline.ca"),
     ("Canadian Firefighter", "www.firefightingincanada.com"),
     ("Canadian Security", "www.canadiansecuritymag.com"),
@@ -340,6 +362,8 @@ NEW_CLASSES = [
     ("Inspectorate of Policing", "iopontario.ca"),
     ("SIU", "www.siu.on.ca"),
     ("LECA", "www.leca.ca"),
+    # Grading index is behind a login: a stated BOUNDARY. Public pages
+    # (methodology, downloads) are the collectable surface.
     ("Fire Underwriters Survey", "www.fireunderwriters.ca"),
     ("NFPA (standards updates)", "www.nfpa.org"),
     ("Ornge", "www.ornge.ca"),
