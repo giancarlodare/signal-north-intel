@@ -65,6 +65,10 @@ on:
           # (GetCalendarMeetings/PastMeetings) to validate + reveal the JSON
           # shape. Never the subscription/OTP write-methods. Operator-ruled.
           - api_validate
+          # Read-only exposure of the brief ranking as it exists
+          # (lexicographic tuple), with a top-30 decomposition naming the
+          # deciding position per adjacent pair. Report only.
+          - lens_decomposition
       args:
         description: "Extra arguments for the script (optional)"
         type: string
