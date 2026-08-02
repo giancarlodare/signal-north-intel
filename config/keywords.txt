@@ -157,6 +157,100 @@ security operations centre
 security operations center
 penetration testing
 
+
+# --- Fire expansion (operator 2026-08-02: keep-filter widened immediately;
+# --- a narrow keep-filter at drop-at-collection sources is permanent data
+# --- loss, not a labelling gap. AFFF read zero corpus-wide before this.) ---
+pumper
+aerial ladder
+ladder truck
+quint
+aerial platform
+heavy rescue
+brush truck
+apparatus replacement
+bunker gear
+turnout gear
+scba
+self-contained breathing apparatus
+pass device
+gear extractor
+decontamination
+on-scene decon
+cancer prevention
+afff
+fluorine-free foam
+firefighting foam
+pfas
+standpipe
+hydraulic rescue
+extrication
+thermal imaging
+gas detection
+four-gas monitor
+fire dispatch
+station alerting
+mobile data terminal
+fire cad
+apparatus bay
+training tower
+live fire training
+nfpa
+fire master plan
+community risk assessment
+establishing and regulating
+fire protection
+mutual aid
+automatic aid
+fire prevention
+fire chief
+deputy fire chief
+platoon chief
+district chief
+fire prevention officer
+rescue
+tanker
+
+# --- Paramedic / EMS expansion (operator 2026-08-02, same ruling) ---
+emergency response vehicle
+paramedic response unit
+chassis remount
+bariatric ambulance
+monitor defibrillator
+cardiac monitor
+mechanical cpr
+power stretcher
+power cot
+stair chair
+stretcher
+ventilator
+video laryngoscope
+intraosseous
+ambulance dispatch
+central ambulance communications centre
+cacc
+avl
+epcr
+electronic patient care record
+community paramedicine
+mobile integrated health
+response time performance plan
+deployment plan
+paramedic service master plan
+land ambulance
+ambulance act
+base hospital
+chief of paramedic services
+paramedic chief
+primary care paramedic
+advanced care paramedic
+critical care paramedic
+paramedic station
+ambulance base
+deployment post
+fleet replacement
+paging
+
 # ---DEFENCE---
 # Dual-use defence terms. Matches here also set defence_relevant = true.
 
@@ -209,3 +303,35 @@ training system
 # "stops"/"laptops" never did and still cannot match).
 wps
 ops/
+
+# --- Defence expansion (operator 2026-08-02): platforms, policy, capability.
+# --- Contracting-mechanics terms (standing offer, sole source, ACAN, ITB...)
+# --- were deliberately HELD OUT: they mark procurement mechanics, not defence
+# --- subject matter, and here they would defence-tag every stationery RSO.
+# --- The ACAN/RFI distinction is recovered as notice_kind instead. ---
+canadian surface combatant
+river-class
+patrol submarine
+p-8
+cp-140
+f-35
+griffon
+cyclone helicopter
+logistics vehicle modernization
+armoured combat support
+norad
+north warning system
+over-the-horizon radar
+strong secure engaged
+our north strong and free
+industrial and technological benefits
+defence procurement strategy
+isr
+c4isr
+electronic warfare
+satcom
+cyber defence
+sustainment
+in-service support
+issc
+
