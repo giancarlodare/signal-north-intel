@@ -300,6 +300,27 @@
 .sn-site .hero .btn--ghost { color: var(--blue-pale); border-color: var(--navy-line); }
 .sn-site .hero .btn--ghost:hover { background: var(--navy-mid); border-color: var(--navy-mid); color: #fff; }
 
+/* ---------- Design corrections (2026-08-02) ----------
+   Deltas verified against the design-handoff HTML + the operator's design
+   screenshots (authoritative for visual language). Scoped under .sn-site. */
+
+/* BUG: the `hidden` attribute on a tab panel was defeated because the panel's
+   own class sets `display` (e.g. .point-grid{display:grid}), which outranks the
+   UA `[hidden]{display:none}` on equal specificity + source order. Effect: the
+   "For public safety services" panel rendered alongside "For suppliers" (all 8
+   points at once) and the tab click did nothing. Restore hidden universally. */
+.sn-site [hidden] { display: none !important; }
+
+/* The pricing tier price reads in the accent per the design ("price in red");
+   the handoff CSS left it as body ink. Screenshots + brief both show crimson. */
+.sn-site .tier-price { color: var(--red); }
+
+/* The About stat band is ONE row. The handoff shipped six facts; the live build
+   renders seven (it added "sources collected"), and minmax(170px) only fits six
+   per row at desktop, wrapping the seventh. Tighten the track so all fit one
+   row. (Whether to carry six or seven facts is a content call, flagged.) */
+.sn-site .stats__grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+
 /* Visually hidden, still read aloud. The public signup forms sit inline in
    marketing layout where a visible label would break the line, but an input
    with no label is unusable on a screen reader. */

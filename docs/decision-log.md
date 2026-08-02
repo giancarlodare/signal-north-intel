@@ -273,3 +273,29 @@ Also gave the hero's ghost button a light face for the navy ground.
 Verified by static render harness (computed styles + screenshots, resting
 and hover) and the full site suite (99/99 green). One fix corrects the
 header, anchor CTAs, tabs, chips and nav across all five public surfaces.
+
+## Marketing site design corrections, round 2 (2026-08-02)
+
+Verified against the design-handoff HTML (ground truth for structure) + the
+operator's design screenshots (authoritative for visual language), rendered
+locally through the real Next components with real fonts. Three confirmed
+defects fixed in `app/(site)/site.css`, all scoped under `.sn-site`:
+
+1. TAB PANELS SHOWED AT ONCE. The `hidden` attribute on an inactive tab panel
+   was defeated by the panel's own `display` (e.g. `.point-grid{display:grid}`)
+   outranking the UA `[hidden]{display:none}`. "One market, two sides" rendered
+   all 8 points and the tab click did nothing. Fix: `.sn-site [hidden]{display:
+   none!important}`. Verified: supplier shows 4, tab swaps to the agency 4.
+2. TIER PRICE INK. Handoff CSS left `.tier-price` as body ink; brief +
+   screenshots show crimson. Fix: `.sn-site .tier-price{color:var(--red)}`.
+3. ABOUT STATS WRAPPED. Handoff shipped six facts one row; the live build
+   renders seven, and minmax(170px) wrapped the seventh. Fix: minmax(140px) so
+   all fit one row. Verified: 7 in one row; hover reveal (red value + centred
+   note) intact.
+
+Checked and found ALREADY CORRECT (no change): About section-head motif,
+section-04 (no label), FAQ heading/layout, mission two-column — all match the
+handoff. Flagged to operator as content/judgment calls, not changed: 6-vs-7
+stats count; the single-capability section 02 (real-data-or-nothing leaves an
+empty selector rail); the Canadian-owned callout (in screenshots, absent from
+handoff+build); section-01 long-heading ellipsis. Suite 99/99 green.
