@@ -2,6 +2,32 @@
 
 Standing report commands the operator issues in chat; keep these current.
 
+## Digest protocol (operator 2026-08-02, effective immediately)
+
+The operator reads TWO digests a day, morning and evening (Eastern), and is
+NOT watching in between. Binding rules:
+
+1. **No reports as they land.** Everything batches into the two digests.
+   One message each, structured exactly: what shipped / what needs a
+   decision and why / what's blocked. Nothing else.
+2. **DECISION vs FYI.** Anything needing the operator is labelled DECISION
+   at the top. Everything else goes under FYI and gets no reply. Probe
+   results, census output, bucket tables and reachability reports are FYI
+   unless a choice hangs on them.
+3. **Answer your own questions from the codebase first.** Grep before
+   asking. (The costed example: recommending a mail provider without
+   checking that Resend was already wired and domain-verified.) Ask only
+   what genuinely needs the operator's judgment.
+4. **BLOCKING** in the subject line pulls an item forward; otherwise it
+   waits for the next window.
+5. **"Needs you tomorrow" look-ahead** (operator addition, same day): each
+   digest carries a short section naming every item that will need the
+   operator the NEXT day -- the item, roughly when it will be ready, and
+   what it unblocks -- so evenings can be cleared in advance rather than
+   discovering at 9pm that the scorer sat idle since noon. Dependency
+   chains are announced a day ahead, never just BLOCKING-flagged at the
+   wall.
+
 ## Time zone
 
 ALL times shown to the operator are Eastern (America/Toronto), never UTC.
