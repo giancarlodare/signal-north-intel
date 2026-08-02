@@ -30,8 +30,7 @@ export default function ContactPage() {
             >
               <span className="hero__eyebrow">Contact</span>
               <h1 className="hero__title" style={{ fontSize: 54 }}>
-                Tell us who you serve and we will show you what the record
-                holds.
+                Talk to us about coverage, Pro, or Enterprise.
               </h1>
             </div>
             <p
@@ -44,9 +43,10 @@ export default function ContactPage() {
                 color: "var(--blue-mist)",
               }}
             >
-              A briefing takes thirty minutes and runs against your real
-              organisations, the contracts on the record, what is coming back to
-              market, and what the evidence says is forming.
+              Weekly is self-serve: you can join at /join and be reading
+              this week&apos;s brief today. This page is for everything that
+              needs a conversation, coverage requests, Pro early access, and
+              Enterprise terms.
             </p>
           </div>
         </section>

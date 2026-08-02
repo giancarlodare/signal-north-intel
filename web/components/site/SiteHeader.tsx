@@ -45,8 +45,8 @@ export default function SiteHeader({
           <a className="nav-link nav-login" href="/login">
             Log in
           </a>
-          <a className="btn btn--primary btn--nav" href="/contact">
-            Request access
+          <a className="btn btn--primary btn--nav" href="/join">
+            Join Weekly
           </a>
         </div>
       </header>
