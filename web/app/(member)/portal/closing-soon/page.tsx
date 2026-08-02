@@ -9,6 +9,7 @@ import { listLiveItems, shortDate, type LiveItem } from "@/lib/portal/watch-data
 import { dateLabel, formatEventDate } from "@/lib/brief/date-label";
 import { provenanceKind, provenanceLabel } from "@/lib/portal/provenance";
 import Pending from "@/components/portal/Pending";
+import RequirePaid from "@/components/portal/RequirePaid";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -70,6 +71,8 @@ function ItemRow({ item }: { item: LiveItem }) {
 }
 
 export default async function ClosingSoonPage() {
+  // Paywall. The account page deliberately does NOT use this.
+  await RequirePaid();
   const supabase = createClient();
   const items = await listLiveItems(supabase);
   // Freshness is a claim the page proves, not implies (design §Freshness):

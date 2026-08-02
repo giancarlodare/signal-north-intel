@@ -14,6 +14,7 @@ import {
 } from "@/lib/portal/watch-data";
 import { addKeywordWatch, removeWatch, followBuyer } from "../actions";
 import { COVERAGE_STATUS } from "@/lib/marketing/coverage-status";
+import RequirePaid from "@/components/portal/RequirePaid";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -22,6 +23,8 @@ export const metadata = {
 };
 
 export default async function WatchingPage() {
+  // Paywall. The account page deliberately does NOT use this.
+  await RequirePaid();
   const supabase = createClient();
   const [watches, events, buyers] = await Promise.all([
     listWatches(supabase),
