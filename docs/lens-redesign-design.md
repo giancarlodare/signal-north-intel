@@ -102,3 +102,39 @@ a member profile as the parameter is the Pro monitoring product. One
 argument, not two systems. Nothing builds member context now; nothing may
 bake in relevance-as-scalar either. Full principles:
 docs/data-architecture-principles.md.
+
+## Amendment (operator 2026-08-02, evening): three binding changes
+
+**1. Inclusion gates on RELEVANCE, not materiality.** Current rule
+(brief_generator.py:261, verified): defence_relevant OR (public_safety AND
+max_materiality >= 4). Once the split ships this measures the wrong thing:
+the scorer correctly ranks a large civil item last while the lens has
+already admitted it, and a small high-relevance item stays excluded for
+being small. New rule: admission gates on the relevance score; the
+threshold is DECIDED FROM THE CALIBRATION BATCH, delivered showing what a
+floor of 3 versus 4 admits and excludes on real items. Without this the
+split fixes ordering while admission stays broken.
+
+**2. No target brief size.** A relevance floor, and the count follows.
+The composed arc is the curation; the record's job is completeness for the
+window. Bars are never tuned toward an item count; a busy week's long
+record is honest variance.
+
+**3. Window reconciliation (measured, the answer to "what defines
+in-window").** The rule, from brief_generator.py: Path A "recent" admits
+event dates in the LAST 7 DAYS; Path B "imminent" admits future deadlines
+in the NEXT 30 DAYS (45 for grants); everything else drops entirely --
+that is the 11,669-of-12,025 cut. Path B is deadline-based, yes. And it
+DISAGREES with the approved curve exactly where it matters: the scorer's
+actionable-window peak is 21-35 days out, so days 31-35 -- inside the
+scorer's peak band -- are excluded by the lens today for every non-grant
+doc type. The lens is excluding items the scorer ranks highest. The
+candidate fix is widening Path B to at least +35 (grants stay +45), but
+the ruling comes from the side-by-side, not this doc.
+
+**Pre-ruling deliverable (operator):** the 200-signal calibration batch
+PLUS a same-cycle side-by-side -- current lens vs proposed
+(relevance-gated, widened window) on the same signals, two candidate sets
+out, showing what gets admitted that is not today and what gets dropped
+that is, at floor 3 and floor 4. The operator rules from that, not from
+this doc.
