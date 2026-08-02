@@ -24,6 +24,9 @@ on:
           - arc_diagnostics
           - verify_pricing_claims
           - verify_billing_state
+          # Read-only like the rest, plus robots.txt GETs (and only
+          # robots.txt) for the candidate sources it assesses.
+          - sourcing_probe
       args:
         description: "Extra arguments for the script (optional)"
         type: string
