@@ -146,6 +146,9 @@ Date, what, why, and the run or test evidence.
 | 2026-08-02 | Keep-filter widened (general 100->187, defence 37->62) per operator urgency ruling: drop-at-collection = permanent loss. Contracting-mechanics terms held out (would false-tag defence) | suite green; categorization vocab still gated |
 | 2026-08-02 | `scripts/disjointness_probe.py` + corpus-report option (york/peel/london/durham, decides the ~$118) | read-only |
 | 2026-08-02 | Phase 2 pooling estimator PARKED by operator verdict 2026-08-02: internal instrument, publishes only if a cell honestly clears; no operator review gates it | proxy line, off operator queue |
+| 2026-08-02 | NAMED COVERAGE GAP: London Police Service has no source anywhere in the fleet (0.1% police share on london.bidsandtenders; no LPS portal/board source). Surfacing on the coverage page awaits the marketing design pass | disjointness probe run 30748625895 |
+| 2026-08-02 | Peel drain APPROVED by operator: $54 envelope, all 2,824 peelregion.bidsandtenders docs, triple-duty (police+fire+EMS). York/Durham/London portals stay OUT on probe evidence | awaiting envelope row paste, then dispatch |
+| 2026-08-02 | Sunshine+StatCan build GO (design doc approved); collector built, apply blocked until salary-ledger migration pasted | PR pending validation dry-run |
 
 ---
 
