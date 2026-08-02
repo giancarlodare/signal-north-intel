@@ -44,6 +44,19 @@ on:
           # Timing-window census: discard decomposition + widening bands +
           # grant horizon. Pure corpus reads.
           - window_census
+          # Standing-programs census: the undated grant programs by funder +
+          # status hint, readying the surfacing ruling. Pure corpus reads.
+          - standing_programs_census
+          # eScribe JS-shell endpoint probe: robots + terms FIRST, then
+          # read-only endpoint discovery. Never CALLS a data endpoint.
+          - shell_endpoint_probe
+          # Roster-index ingest: parse OACP/OAPSB/etc indexes (HTML + PDF),
+          # cross-reference the coverage roster + sources, report what's
+          # genuinely missing. Read-only; robots honored.
+          - roster_ingest
+          # Fleet validation harness: read-only dry-run of the adapter HTML
+          # parsers against live bucket-A tenants -> the validation table.
+          - fleet_validate
       args:
         description: "Extra arguments for the script (optional)"
         type: string
