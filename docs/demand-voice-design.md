@@ -159,3 +159,68 @@ the distinction (advocacy sources tagged `claim_scope='advocacy-national'`
 vs procurement `claim_scope='procurement-on-fed'`) and the coverage page
 states both claims separately, so collecting a CACP submission can never
 imply national procurement coverage.
+
+## Second batch of source classes (operator 2026-08-02, later the same day)
+
+Assessed in the coverage probe (`new-classes` roster) and assigned here by
+shape. Design first, no build, per the instruction.
+
+**The four prioritised:**
+
+1. **Community Safety and Well-Being Plans** — mandatory for all 444
+   Ontario municipalities, all public: a demand document by legislative
+   mandate, currently untouched. No single portal exists; the plans live on
+   municipal sites and in council agendas, so this class RIDES the
+   council-agenda/municipal adapter (keystone) plus a one-time enumeration
+   pass, rather than a new collector. Volume ~444 documents plus revision
+   cycles; multi-year freshness; storage trivial. Weight-5-adjacent in this
+   layer's terms: an accountable institutional statement of local need.
+2. **TB proactive disclosure of contracts over $10k** — partially covered
+   ALREADY: our six federal contract-award feeds ride exactly this rail
+   (search.open.canada.ca/contracts). The ask is a widening: the all-
+   department bulk dataset (quarterly structured CSV) through the existing
+   CSV-ingest adapter. Feeds the prospect universe directly. Ledger-shaped;
+   quarterly; lag one quarter.
+3. **CITT decisions** — bid-protest rulings exposing how contracts were
+   actually decided. Low volume, high value, continuous publication;
+   nothing else in the record shows evaluation mechanics.
+4. **VOR / standing-offer lists** — who is pre-qualified to sell to whom.
+   Ontario VOR directory (public page layer; the intranet VOR detail is
+   robots-DISALLOWED per the July probe and stays a boundary); federal
+   standing offers ride CanadaBuys data we already collect.
+
+**Police:** Inspectorate of Policing inspections (new under CSPA); SIU and
+LECA reports; statutory service strategic/business plans (the police
+equivalent of a fire master plan — rides the board/service adapter, and
+the board seeding just approved reaches most of them).
+
+**Fire:** Fire Underwriters Survey grading — NOTE: FUS is a private
+insurance-industry body and its gradings may not be public; if so, that is
+a boundary stated plainly, not a scrape target. NFPA standards updates
+(cycle-setters; track update announcements, standards text is paywalled
+and stays unreproduced). Inter-municipal fire protection agreements — in
+council agendas, rides the keystone adapter.
+
+**EMS:** Ornge — its own aircraft/equipment procurement, absent from the
+roster until now. Regional base hospital programs (medical-direction
+standards that drive purchases) — enumeration belongs on the operator
+worklist with the coverage rows.
+
+**Defence:** Canadian Commercial Corporation; ISED ITB obligations
+database (who owes offsets — published, structured); National
+Shipbuilding Strategy documents (canada.ca); NATO NSPA (where Canadian
+firms bid; international host, robots verdict from the probe).
+
+**Vendors:** individual company newsrooms as first-class feeds (per-vendor
+RSS, rides the trade-press collector shape); SEDAR+ and SEC EDGAR filings
+— public vendors disclose Canadian wins before anyone reports them. EDGAR
+is public-domain with a documented API; SEDAR+ terms need reading before
+any collection and may be a boundary.
+
+**Council:** COMMITTEE minutes are first-class in the council-agenda
+design, not an afterthought — budget and protective-services committees
+are where the discussion happens; council ratifies. (Carried into the
+council-agenda design doc as a requirement.)
+
+**Provincial:** Ontario Regulatory Registry — proposed regulations posted
+for comment before law; pure forward signal, low volume, continuous.
