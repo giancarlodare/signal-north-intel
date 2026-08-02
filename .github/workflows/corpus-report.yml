@@ -41,6 +41,9 @@ on:
           # eScribe/CivicWeb tenant discovery: buckets the fleet before any
           # board seeding. Read-only; one shared polite delay, sequential.
           - fleet_discovery
+          # Timing-window census: discard decomposition + widening bands +
+          # grant horizon. Pure corpus reads.
+          - window_census
       args:
         description: "Extra arguments for the script (optional)"
         type: string
