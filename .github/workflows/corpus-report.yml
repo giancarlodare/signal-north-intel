@@ -61,6 +61,10 @@ on:
           # the shell's JS-bundle endpoint candidates. Reads bundles only,
           # never calls a data endpoint.
           - shell_api_discovery
+          # eScribe api-mode validation: calls ONLY the read WebMethods
+          # (GetCalendarMeetings/PastMeetings) to validate + reveal the JSON
+          # shape. Never the subscription/OTP write-methods. Operator-ruled.
+          - api_validate
       args:
         description: "Extra arguments for the script (optional)"
         type: string
