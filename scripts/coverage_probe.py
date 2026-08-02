@@ -274,9 +274,34 @@ NEWS = [
     ("Shephard Media", "www.shephardmedia.com"),
 ]
 
+# Additional source classes (operator 2026-08-02, second batch). Classes
+# with no single host (CSWB plans x444, police strategic plans, committee
+# minutes, inter-municipal fire agreements, company newsrooms, base
+# hospitals) are assessed in the design docs; they ride the municipal/board
+# adapter classes rather than a probeable host and are deliberately not
+# faked here as single rows.
+NEW_CLASSES = [
+    ("CITT procurement decisions", "www.citt-tcce.gc.ca"),
+    ("TB proactive disclosure (all-dept bulk)", "open.canada.ca"),
+    ("Ontario VOR directory", "www.ontario.ca"),
+    ("Inspectorate of Policing", "www.inspectorateofpolicing.ca"),
+    ("SIU", "www.siu.on.ca"),
+    ("LECA", "www.leca.ca"),
+    ("Fire Underwriters Survey", "www.fireunderwriters.ca"),
+    ("NFPA (standards updates)", "www.nfpa.org"),
+    ("Ornge", "www.ornge.ca"),
+    ("CCC", "www.ccc.ca"),
+    ("ISED ITB obligations", "ised-isde.canada.ca"),
+    ("NATO NSPA", "www.nspa.nato.int"),
+    ("SEDAR+", "www.sedarplus.ca"),
+    ("SEC EDGAR", "www.sec.gov"),
+    ("Ontario Regulatory Registry", "www.ontariocanada.com"),
+]
+
 DOMAINS = [("police", POLICE), ("police-fn", POLICE_FN), ("fire", FIRE),
            ("ems", EMS), ("federal", FEDERAL), ("demand-voice", DEMAND_VOICE),
-           ("advocacy", ADVOCACY), ("research", RESEARCH), ("news", NEWS)]
+           ("advocacy", ADVOCACY), ("research", RESEARCH), ("news", NEWS),
+           ("new-classes", NEW_CLASSES)]
 
 
 def probe_host(host: str) -> dict:
