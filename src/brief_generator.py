@@ -42,9 +42,18 @@ from . import brief_copy, supabase_client
 
 log = logging.getLogger(__name__)
 
-RECENT_BACK_DAYS = 7
-DEFAULT_LEAD_DAYS = 30
-LEAD_DAYS_BY_DOCTYPE = {"grant_program": 45, "grant_award": 45}
+RECENT_BACK_DAYS = 7   # FLOOR only: the recent window anchors to the last
+                       # PUBLISHED issue (operator 2026-08-02), so a late or
+                       # missed issue extends the window backward and no day
+                       # of record is ever silently skipped. 7 days is the
+                       # minimum (and the fallback before any issue exists).
+# +35 aligns the imminent window with the approved scorer curve's 21-35-day
+# peak (operator ruling 2026-08-02; the +30 edge was excluding days 31-35).
+DEFAULT_LEAD_DAYS = 35
+# Grants get the horizon a service actually needs to assemble an
+# application (operator ruling 2026-08-02: 45 was tight, and today's one
+# in-corpus item at +46..60 measures the young grants corpus, not the world).
+LEAD_DAYS_BY_DOCTYPE = {"grant_program": 90, "grant_award": 90}
 MAX_LEAD_DAYS = max([DEFAULT_LEAD_DAYS, *LEAD_DAYS_BY_DOCTYPE.values()])
 # Path-specific bar. Path A (recent) is RETROSPECTIVE: a past event earns a place
 # only if it was strong enough to matter, so materiality gates it (full bar).
@@ -97,12 +106,35 @@ def _parse_date(s):
         return None
 
 
-def timing_path(published_on, today: date, doc_type) -> str | None:
+def recent_anchor_days(today: date) -> int:
+    """How far back the recent window reaches: to the last PUBLISHED issue's
+    week_start, floored at RECENT_BACK_DAYS. Continuous coverage regardless
+    of cadence: compose a day late and the window stretches a day; miss a
+    week and it stretches seven -- nothing skips, and the previously-featured
+    dedupe absorbs any overlap. No cap by design (a cap would re-introduce
+    silent loss); a stretched window is announced loudly instead."""
+    rows = supabase_client.fetch_rows_where(
+        "briefs", "week_start",
+        {"status": "eq.published", "order": "week_start.desc"}, limit=1)
+    if not rows:
+        return RECENT_BACK_DAYS
+    last_ws = _parse_date(rows[0].get("week_start"))
+    if last_ws is None:
+        return RECENT_BACK_DAYS
+    back = max(RECENT_BACK_DAYS, (today - last_ws).days)
+    if back > RECENT_BACK_DAYS:
+        log.info("recent window anchored to last published issue "
+                 "(week_start=%s): reaching back %d days", last_ws, back)
+    return back
+
+
+def timing_path(published_on, today: date, doc_type,
+                recent_back: int = RECENT_BACK_DAYS) -> str | None:
     """'recent' (Path A) | 'imminent' (Path B) | None (out of the window)."""
     p = _parse_date(published_on)
     if p is None:
         return None
-    if today - timedelta(days=RECENT_BACK_DAYS) <= p <= today:
+    if today - timedelta(days=recent_back) <= p <= today:
         return "recent"
     if today < p <= today + timedelta(days=lead_days_for(doc_type)):
         return "imminent"
@@ -117,7 +149,7 @@ def _lead_key(sig):
             float(sig.get("amount_max_cad") or 0))
 
 
-def select(signals, today: date):
+def select(signals, today: date, recent_back: int = RECENT_BACK_DAYS):
     """Partition the live corpus into included (in-window AND above the bar),
     the excluded-below-threshold tally, and the out-of-window drop. Returns
     (included_with_path, excluded_count, exclusion_breakdown)."""
@@ -126,7 +158,8 @@ def select(signals, today: date):
     breakdown = Counter()
     for s in signals:
         doc = _one(s.get("documents")) or {}
-        path = timing_path(doc.get("published_on"), today, doc.get("doc_type"))
+        path = timing_path(doc.get("published_on"), today, doc.get("doc_type"),
+                           recent_back)
         if path is None:
             continue           # out of the timing window entirely
         min_mat, min_grade = bar_for(path)
@@ -325,7 +358,8 @@ def run(dry_run: bool = True, today: date | None = None, force: bool = False) ->
         "documents!inner(doc_type,published_on,date_precision,url,defence_relevant)",
         {"suppressed": "is.false"})
 
-    included, excluded, breakdown = select(signals, today)
+    recent_back = recent_anchor_days(today)
+    included, excluded, breakdown = select(signals, today, recent_back)
     proc_by_signal = _procurement_by_signal()
     clusters = cluster(included, proc_by_signal)
     lens_held = apply_lens(clusters)
@@ -337,11 +371,12 @@ def run(dry_run: bool = True, today: date | None = None, force: bool = False) ->
     # are often undated) and the window can be judged against reality.
     diag = Counter()
     in_window_doctypes = Counter()
-    lo = today - timedelta(days=RECENT_BACK_DAYS)
+    lo = today - timedelta(days=recent_back)
     for s in signals:
         doc = _one(s.get("documents")) or {}
         p = _parse_date(doc.get("published_on"))
-        path = timing_path(doc.get("published_on"), today, doc.get("doc_type"))
+        path = timing_path(doc.get("published_on"), today, doc.get("doc_type"),
+                           recent_back)
         if path:
             diag[path] += 1
             in_window_doctypes[doc.get("doc_type") or "unknown"] += 1

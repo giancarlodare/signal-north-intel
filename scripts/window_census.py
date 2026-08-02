@@ -68,11 +68,30 @@ def main() -> int:
     grant_4660: list = []
     grant_6190: list = []
 
+    undated_doctype: Counter = Counter()
+    undated_sigtype: Counter = Counter()
+    undated_relevant = 0
+    undated_relevant_titles: list = []
     for s in signals:
         doc = _one(s.get("documents")) or {}
         p = _parse_date(doc.get("published_on"))
         if p is None:
             buckets["undated"] += 1
+            # Undated signals fail BOTH paths by construction (deliberately
+            # undated beats wrongly dated, but 284 permanently invisible
+            # items deserve a composition answer, operator 2026-08-02).
+            undated_doctype[doc.get("doc_type") or "unknown"] += 1
+            undated_sigtype[s.get("signal_type") or "unknown"] += 1
+            if public_safety.cluster_is_public_safety(
+                    [{"title": s.get("title"),
+                      "defence_relevant": bool(doc.get("defence_relevant")),
+                      "org_type": (_one(s.get("organizations")) or {}).get("org_type")}],
+                    KW) and (s.get("materiality") or 0) >= 2:
+                undated_relevant += 1
+                if len(undated_relevant_titles) < 12:
+                    undated_relevant_titles.append(
+                        ((_one(s.get("organizations")) or {}).get("canonical_name")
+                         or "-", (s.get("title") or "")[:70]))
             continue
         dd = (p - today).days
         b = bucket_of(dd)
@@ -130,6 +149,16 @@ def main() -> int:
           f"{band_3135_relevant} tag-relevant+bar-passing")
     for dt, n in band_3135.most_common():
         print(f"    {dt:24s} {n}")
+
+    print(f"\nUNDATED ({buckets.get('undated', 0)} signals, invisible to both "
+          f"paths by construction):")
+    print("  by doc_type:  ",
+          dict(undated_doctype.most_common(8)))
+    print("  by signal_type:",
+          dict(undated_sigtype.most_common(8)))
+    print(f"  tag-relevant at materiality>=2: {undated_relevant}")
+    for org, t in undated_relevant_titles:
+        print(f"    {org[:30]:30s} {t}")
 
     print(f"\nGRANT HORIZON (deadline-dated grant signals beyond +45):")
     print(f"  +46..60 would admit {len(grant_4660)} signals:")

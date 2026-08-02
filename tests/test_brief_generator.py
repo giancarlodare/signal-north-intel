@@ -37,21 +37,56 @@ def test_old_event_is_out_of_window():
     assert bg.timing_path("2024-05-01", TODAY, "award_notice") is None
 
 
-def test_future_award_uses_default_30_day_lead():
+def test_future_award_uses_default_35_day_lead():
+    # +35 aligns the imminent edge with the scorer curve's 21-35-day peak
+    # (operator ruling 2026-08-02; +30 was excluding days 31-35).
     assert bg.timing_path("2026-08-10", TODAY, "award_notice") == "imminent"  # +26d
-    assert bg.timing_path("2026-08-20", TODAY, "award_notice") is None        # +36d > 30
+    assert bg.timing_path("2026-08-19", TODAY, "award_notice") == "imminent"  # +35d
+    assert bg.timing_path("2026-08-20", TODAY, "award_notice") is None        # +36d > 35
 
 
-def test_grants_get_a_45_day_imminent_window():
-    # A grant deadline 40 days out is imminent (grants=45), where an award is not.
+def test_grants_get_a_90_day_imminent_window():
+    # Grants carry the horizon a service needs to assemble an application
+    # (operator ruling 2026-08-02: 45 was tight; chiefs are the segment).
     assert bg.timing_path("2026-08-24", TODAY, "grant_program") == "imminent"  # +40d
     assert bg.timing_path("2026-08-24", TODAY, "award_notice") is None
-    assert bg.lead_days_for("grant_program") == 45
-    assert bg.lead_days_for("award_notice") == 30
+    assert bg.timing_path("2026-10-12", TODAY, "grant_program") == "imminent"  # +89d
+    assert bg.timing_path("2026-10-14", TODAY, "grant_program") is None        # +91d
+    assert bg.lead_days_for("grant_program") == 90
+    assert bg.lead_days_for("award_notice") == 35
 
 
 def test_undated_is_out_of_window():
     assert bg.timing_path(None, TODAY, "grant_program") is None
+
+
+# --- recent window anchored to the last published issue ----------------------
+def test_recent_window_stretches_with_recent_back():
+    # A 12-day-old event is out at the 7-day floor but in when the anchor
+    # says the last issue published 12 days ago: nothing skips on a late or
+    # missed issue.
+    assert bg.timing_path("2026-07-03", TODAY, "award_notice") is None
+    assert bg.timing_path("2026-07-03", TODAY, "award_notice",
+                          recent_back=12) == "recent"
+
+
+def test_recent_anchor_falls_back_to_floor_without_published_issues(monkeypatch):
+    monkeypatch.setattr(bg.supabase_client, "fetch_rows_where",
+                        lambda *a, **k: [])
+    assert bg.recent_anchor_days(TODAY) == bg.RECENT_BACK_DAYS
+
+
+def test_recent_anchor_reaches_back_to_last_published_issue(monkeypatch):
+    monkeypatch.setattr(bg.supabase_client, "fetch_rows_where",
+                        lambda *a, **k: [{"week_start": "2026-07-03"}])
+    assert bg.recent_anchor_days(TODAY) == 12
+
+
+def test_recent_anchor_never_narrows_below_the_floor(monkeypatch):
+    # An issue published two days ago must not SHRINK the window below 7.
+    monkeypatch.setattr(bg.supabase_client, "fetch_rows_where",
+                        lambda *a, **k: [{"week_start": "2026-07-13"}])
+    assert bg.recent_anchor_days(TODAY) == bg.RECENT_BACK_DAYS
 
 
 # --- select: PATH-SPECIFIC threshold gate + exclusion tally ------------------

@@ -49,6 +49,28 @@ Collision warning, same class as OACP: City of London, UK publishes a
 Police Authority Board at democracy.cityoflondon.gov.uk; "London Police"
 queries are domain-scoped, always.
 
+**Shell-endpoint work, two binding requirements (operator 2026-08-02,
+with the $600 envelope approval):**
+
+1. **Terms and robots first.** An endpoint a page calls is not
+   automatically an endpoint we are invited to call. The probe checks the
+   tenant's robots.txt against the API path and reads any terms eScribe
+   publishes for the portal; if the answer is ambiguous, it is REPORTED AS
+   AMBIGUOUS and nothing proceeds -- the operator would rather lose Ottawa
+   than get this wrong. Same discipline as everywhere else.
+2. **Loud failure built in from the start.** A reversed JS-shell endpoint
+   is inherently more brittle than server-rendered HTML: it can change
+   without notice and fail silently. The adapter's shell path ships with a
+   shape guard from day one -- a response that parses to zero meetings on a
+   tenant that previously had meetings REDS THE RUN, never quietly returns
+   empty. That failure mode has already cost a day and four nights this
+   week.
+
+**Durham and Waterloo move to the tenant path when the adapter exists**
+(operator 2026-08-02): both boards are HTML-scraped today and both have
+their own eScribe tenants (pub-dpsb, pub-wrps, bucket B) -- migrate
+proactively rather than waiting for a scrape to break.
+
 **Build order:** discovery pass -> harden what the buckets show -> seed
 boards -> extend the same adapter to council bodies. Roster inputs:
 OAPSB (boards), OACP websites PDF (services), the platform census from the
