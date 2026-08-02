@@ -18,6 +18,7 @@ import {
   shortDate,
 } from "@/lib/portal/watch-data";
 import Pending from "@/components/portal/Pending";
+import RequirePaid from "@/components/portal/RequirePaid";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -37,6 +38,8 @@ function todayEastern(): string {
 }
 
 export default async function PortalHome() {
+  // Paywall. The account page deliberately does NOT use this.
+  await RequirePaid();
   const supabase = createClient();
   const [briefs, watches, events, saved] = await Promise.all([
     listPublishedBriefs(supabase),

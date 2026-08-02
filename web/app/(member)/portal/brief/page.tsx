@@ -21,6 +21,7 @@ import { actionWindow } from "@/lib/brief/date-label";
 import { provenanceKind, provenanceLabel } from "@/lib/portal/provenance";
 import { listSaved, savedIds } from "@/lib/portal/watch-data";
 import { saveItem, unsaveItem } from "../actions";
+import RequirePaid from "@/components/portal/RequirePaid";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -119,6 +120,8 @@ export default async function BriefPage({
 }: {
   searchParams: { brief?: string };
 }) {
+  // Paywall. The account page deliberately does NOT use this.
+  await RequirePaid();
   const supabase = createClient();
   // Session diagnostic (2026-07-27): names whether this server render holds
   // the member JWT or fell back to anon, which RLS answers with clean zero

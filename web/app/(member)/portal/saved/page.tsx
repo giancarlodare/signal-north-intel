@@ -5,6 +5,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { listSaved, shortDate } from "@/lib/portal/watch-data";
 import { unsaveItem } from "../actions";
+import RequirePaid from "@/components/portal/RequirePaid";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -13,6 +14,8 @@ export const metadata = {
 };
 
 export default async function SavedPage() {
+  // Paywall. The account page deliberately does NOT use this.
+  await RequirePaid();
   const supabase = createClient();
   const saved = await listSaved(supabase);
 

@@ -21,7 +21,7 @@ export const metadata = {
 export default async function AccountPage({
   searchParams,
 }: {
-  searchParams: { checkout?: string };
+  searchParams: { access?: string; checkout?: string };
 }) {
   const supabase = createClient();
   const {
@@ -153,6 +153,28 @@ export default async function AccountPage({
             data-testid="billing-checkout"
           >
             <span className="t-label">Set up billing (test mode)</span>
+            {/* Why they landed here. A member redirected off a product route
+                is told the truth rather than shown a 404: they are a real
+                member who has not paid, and only a truthful message lets them
+                act on it. */}
+            {searchParams.access === "no-subscription" ? (
+              <span style={{ fontSize: 14, color: "var(--muted)" }}>
+                The brief and the rest of the portal open once a membership is
+                active. Choose a plan below.
+              </span>
+            ) : null}
+            {searchParams.access === "not-paid-up" ? (
+              <span style={{ fontSize: 14, color: "var(--muted)" }}>
+                Your membership is not currently active, so the rest of the
+                portal is closed. Your details are unchanged.
+              </span>
+            ) : null}
+            {searchParams.access === "unreadable" ? (
+              <span style={{ fontSize: 14, color: "var(--red)" }}>
+                We could not read your membership just now, so the portal is
+                closed until we can. This is on us, not you.
+              </span>
+            ) : null}
             {searchParams.checkout === "cancelled" ? (
               <span style={{ fontSize: 14, color: "var(--faint)" }}>
                 Checkout cancelled; nothing was charged.
