@@ -429,7 +429,9 @@ NEW_CLASSES = [
     ("SEC EDGAR", "www.sec.gov"),
     # /registry path; also regulatoryregistry.gov.on.ca. RSS + email alerts
     # exist, so this is a FEED, not a scrape (operator 2026-08-02).
-    ("Ontario Regulatory Registry", "www.ontariocanada.com"),
+    # Apex only: the www subdomain does not resolve (hardened run
+    # 30756024258, unreachable(dns x2)).
+    ("Ontario Regulatory Registry", "ontariocanada.com"),
     ("Environmental Registry (ERO)", "ero.ontario.ca"),  # separate system, assess
 ]
 
