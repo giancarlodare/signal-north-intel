@@ -48,7 +48,14 @@ _URL_RE = re.compile(r"https?://[^\s\"'<>\)\]]+", re.IGNORECASE)
 _KIND_HINTS = [
     ("board", re.compile(r"board|minutes|agenda|meeting", re.I)),
     ("newsroom", re.compile(r"news|release|media|newsroom|rss|atom", re.I)),
-    ("association", re.compile(r"association|federation|chiefs|caclea|oacp|capb", re.I)),
+    # Acronyms are DOMAIN-SCOPED, never bare (operator 2026-08-02): "OACP"
+    # is also the Ohio (oacp.org) and Oklahoma (okchiefs.org) chiefs'
+    # associations, and a bare acronym match would label US hosts as
+    # plausible Ontario associations. Same false-collision class as the
+    # "Collector" UA problem. The semantic terms carry the intent.
+    ("association", re.compile(
+        r"association|federation|chiefs|caclea|capb"
+        r"|oacp\.ca|oacp-b2b\.ca", re.I)),
 ]
 
 _SYSTEM = (

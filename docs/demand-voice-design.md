@@ -287,6 +287,44 @@ members and conference tradeshow exhibitors, OAPC industry members; OAFC
 industry members already found in the directory. Four sources = the vendor
 universe across police, fire, EMS and defence.
 
+**Vendor universe: three of four domains sourced** (operator 2026-08-02,
+evening): POLICE — oacp-b2b.ca, OACP's dedicated B2B supplier community
+(year-round purchasing-community access plus an annual B2B Trade Show;
+conference partners page on oacp.ca; 1,200+ members including corporate).
+FIRE — OAFC directory industry members. DEFENCE/SECURITY — CADSI members +
+CANSEC exhibitors. EMS — still open: check whether OAPC has an industry or
+corporate member category; the pattern holding across the other three says
+it should.
+
+**HARD RULE — acronym collisions:** "OACP" is three organisations: Ontario
+(oacp.ca), Ohio (oacp.org), Oklahoma (okchiefs.org). Any collector, query
+or keyword touching OACP must be domain-scoped to oacp.ca / oacp-b2b.ca,
+never acronym-matched — the same false-collision class as the "Collector"
+UA problem, and it would silently seed plausible-looking US data into the
+corpus. Swept 2026-08-02: keywords.txt and all collectors are clean; the
+one exposure was a bare "oacp" in discovery.py's kind-hint regex, now
+domain-scoped. CACP, OAFC and OAPC get the same domain-scoping treatment
+preemptively.
+
+**News tier one consolidates to Annex Business Media** (Blue Line,
+Canadian Firefighter/cdnfirefighter.com, Fire Fighting in Canada, OHS
+Canada, Securite Quebec) which also hosts the OAFC directory: ONE
+robots/terms assessment covers the top news tier and the fire roster —
+highest coverage-per-check on the news list, do it first. Their "New
+products" sections become their own document class: dated vendor product
+announcements, a supply-side signal pairing with this layer and feeding
+the vendor universe. Separate from Annex, assessed individually: The
+Canadian Fire Chief (cafc.ca, CAFC's own bilingual magazine — national
+fire-chief positions, not trade coverage), Canadian Paramedicine, Canadian
+Security, Canadian Defence Review, Vanguard, Esprit de Corps.
+
+**Hyperlocal tier consolidates to Village Media**: 25+ owned Ontario sites
+on one platform (roster at villagemedia.ca/sites/), one adapter and one
+robots/RSS check for the network. Disproportionately valuable because they
+report the council meetings nothing else covers — the agenda says what was
+decided, the local report says what was said and who objected. Metroland
+(Torstar) still to enumerate; check for a shared platform.
+
 **Provenance discipline, built into the model, not discovered later:** a
 membership or exhibitor list says a company is IN THE MARKET; award records
 say WHO WINS. Different facts, different confidence, different products.

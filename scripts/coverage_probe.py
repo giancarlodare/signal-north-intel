@@ -292,13 +292,35 @@ DEMAND_VOICE = [
     # awards are the decisive evidence in police bargaining; CanLII stays
     # out on terms and is not needed.
     ("OPAAC police arbitration awards", "policearbitration.gov.on.ca"),
+    # ANNEX CONSOLIDATION (operator 2026-08-02): Annex Business Media owns
+    # nearly the whole Canadian public-safety trade press (Blue Line,
+    # Canadian Firefighter at cdnfirefighter.com, Fire Fighting in Canada,
+    # OHS Canada, Securite Quebec; portfolio at
+    # annexbusinessmedia.com/portfolio-item/) AND hosts the OAFC directory.
+    # One robots/terms assessment on Annex covers the top news tier and the
+    # fire roster at once -- highest coverage-per-check on the news list;
+    # do it FIRST. Their "New products" sections are a distinct document
+    # class (dated vendor product announcements), not generic articles.
     ("Blue Line", "www.blueline.ca"),
-    ("Canadian Firefighter", "www.firefightingincanada.com"),
+    ("Canadian Firefighter", "www.cdnfirefighter.com"),
     ("Canadian Security", "www.canadiansecuritymag.com"),
     ("Canadian Defence Review", "www.canadiandefencereview.com"),
     ("Vanguard", "vanguardcanada.com"),
     # www is load-bearing: the apex is absent from the cert's SANs.
     ("Esprit de Corps", "www.espritdecorps.ca"),
+    ("Annex Business Media (portfolio index)", "www.annexbusinessmedia.com"),
+    # CAFC's own magazine, bilingual, 3x/year: national fire-chief
+    # POSITIONS, not trade coverage -- separate from Annex.
+    ("The Canadian Fire Chief (CAFC magazine)", "cafc.ca"),
+    # OACP's dedicated B2B supplier community, separate from oacp.ca:
+    # year-round vendor-to-police-buyer access + annual B2B Trade Show.
+    # Conference partners at oacp.ca/en/events-and-professional-development/
+    # 2026-annual-conference-partners.aspx. COMMERCIAL provenance (vendor
+    # universe), never product-incumbent. HARD RULE: OACP is three
+    # organisations -- Ontario oacp.ca, Ohio oacp.org, Oklahoma
+    # okchiefs.org; every query touching OACP is domain-scoped to oacp.ca /
+    # oacp-b2b.ca, never acronym-matched.
+    ("OACP B2B supplier community", "oacp-b2b.ca"),
 ]
 
 # Association layer + news catalogue + research centres (operator addendum
@@ -359,6 +381,18 @@ NEWS = [
     ("London Free Press", "lfpress.com"),
     ("Windsor Star", "windsorstar.com"),
     ("Waterloo Region Record", "www.therecord.com"),
+    # HYPERLOCAL CONSOLIDATION (operator 2026-08-02): 25+ Ontario sites
+    # owned and operated on ONE shared platform (roster at
+    # villagemedia.ca/sites/), so one adapter and one robots/RSS check
+    # reach the whole network (SooToday, GuelphToday, BarrieToday, BayToday,
+    # TimminsToday, OrilliaMatters, CollingwoodToday, BurlingtonToday,
+    # Sudbury.com, TorontoToday, ... plus partners TBNewswatch,
+    # KitchenerToday, OttawaMatters). Why it matters disproportionately:
+    # these sites report council meetings nothing else covers -- exactly
+    # where fire and EMS decisions surface. The agenda tells us what was
+    # decided; the local report tells us what was said and who objected.
+    # Still to enumerate: Metroland (Torstar community network) -- check
+    # whether it shares a platform the way Village Media does.
     ("Village Media (network)", "www.villagemedia.ca"),
     ("Village Media sample (SooToday)", "www.sootoday.com"),
     ("Police1", "www.police1.com"),
