@@ -224,3 +224,43 @@ council-agenda design doc as a requirement.)
 
 **Provincial:** Ontario Regulatory Registry — proposed regulations posted
 for comment before law; pure forward signal, low volume, continuous.
+Confirmed a FEED, not a scrape: ontariocanada.com/registry (also
+regulatoryregistry.gov.on.ca) publishes RSS plus email alerts. The
+Environmental Registry (ero.ontario.ca) is a separate system to assess.
+
+## Worklist resolutions folded in (operator 2026-08-02, evening)
+
+**Inspectorate of Policing is TOP-TIER demand-voice**, not merely an
+oversight row: iopontario.ca publishes inspection reports, Spotlight
+Reports, annual reports, and the Policing Insight Statement — a survey of
+every Ontario chief and board. Weight 5 in this layer's terms.
+
+**OPFFA** (ontariofirefighters.org, UnionActive platform) carries two
+demand-voice assets beyond releases: an annual legislative conference at
+Queen's Park (a demand-voice event in itself) and Section 21 /
+cancer-prevention material tying directly to the fire decontamination
+procurement driver.
+
+**Rescu -> CanROC.** rescu.cc (St. Michael's, 24 hospitals across Southern
+Ontario) has evolved into CanROC, a national resuscitation-sciences network
+with sustained Heart and Stroke funding; CanROC is the better entity to
+track for EMS research.
+
+**FNCPA** (First Nations Chiefs of Police Association) exists as an
+organisation — it holds a CACP board seat — and joins the chiefs layer.
+
+**First Nations policing route-in correction.** FN services procure through
+tripartite agreements under the federal First Nations Policing Policy
+(Public Safety Canada FNIPP, ~52/48 federal/provincial), not municipal
+budgets. Their own sites showing little is expected, not a boundary
+verdict; assess the FEDERAL funding and agreement layer as the route in.
+Scale: Anishinabek Police alone runs 109 sworn officers across 12
+detachments; NAPS is larger. Real buyers.
+
+**Transition-review status class.** A municipality studying OPP costing or
+transition is a tracked coverage status (probe TRANSITION_REVIEW), not a
+discovery-by-search. First member: Sarnia (council motion under debate,
+2026-08) — also our only robots-DISALLOW roster host, so the one service we
+cannot collect from may be about to stop being a buyer. The Sarnia story is
+itself a demand arc: council motion -> costing study -> OCPC application ->
+transition, with procurement consequences at both ends.

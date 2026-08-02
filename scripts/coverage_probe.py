@@ -33,6 +33,39 @@ from src import supabase_client as sc  # noqa: E402
 UA = "SignalNorthIntel/1.0"
 TIMEOUT = 12
 
+# CANONICAL ROSTER INDEXES (operator 2026-08-02): the rosters below are
+# hand-maintained snapshots; these published indexes are the authority, and
+# the next seeding pass parses THEM and cross-references the coverage table
+# instead of resolving hosts one by one. Structural facts they carry:
+#   - 157 police services boards exist, not ~44: 43 municipal services under
+#     PSA s.31 plus OPP service-agreement (s.10) detachment boards. The s.10
+#     class is a partial route around the OTP block: OPP-policed
+#     municipalities publish board discussions of what they need.
+#   - Northern EMS is delivered by DSSABs, not municipalities (Cochrane is a
+#     DSSAB), a distinct governance class on likely different platforms.
+#   - First Nations paramedic services exist beyond the police list:
+#     IFNA-Pikangikum, Naotkamegwanning, Oneida, Rama, Six Nations,
+#     Weeneebayko.
+#   - First Nations POLICE procurement runs on tripartite agreements under
+#     the federal First Nations Policing Policy (Public Safety Canada FNIPP,
+#     ~52% federal / 48% provincial): no municipal budget line, no council
+#     agenda. The route in is the FEDERAL funding/agreement layer, not the
+#     services' own thin websites.
+ROSTER_INDEXES = [
+    ("OACP Ontario police organizations",
+     "oacp.ca/en/about-us/ontario-police-organizations.aspx"),
+    ("OACP police websites PDF", "oacpcertificate.ca"),
+    ("OAPSB board/service assignments PDF", "oapsb.ca"),
+    ("Police Governance Ontario zones",
+     "policegovernanceontario.ca/about-pgo/zones-of-ontario/"),
+    ("OAPC paramedic service profiles 2020-2024", "oapc.ca/service-profile/"),
+    ("Wikipedia EMS-in-Ontario list (cross-check only)",
+     "en.wikipedia.org/wiki/List_of_EMS_services_in_Ontario"),
+    ("CACP links page (chiefs assns, all provinces)", "cacp.ca/links.html"),
+    ("CPA provincial links (labour assns, all provinces)",
+     "cpa-acp.ca/assosiation-links/provincial"),
+]
+
 PLATFORM_PAT = re.compile(
     r"(escribemeetings|escribe|civicweb|legistar|icompass|primegov|granicus"
     r"|bidsandtenders|biddingo|merx)", re.IGNORECASE)
@@ -69,22 +102,37 @@ POLICE = [
     ("Woodstock Police Service", "www.woodstockpolice.ca"),
     ("St. Thomas Police", "www.stps.on.ca"),
     ("Owen Sound Police", "www.owensoundpolice.com"),
-    ("Orangeville Police", None),          # OPP transition status unclear
     ("Brockville Police", "www.brockvillepolice.com"),
     ("Smiths Falls Police", "www.smithsfallspolice.ca"),
-    ("Gananoque Police", None),
-    ("Port Hope Police", "www.porthopepolice.ca"),
+    ("Gananoque Police", "gananoquepoliceservice.com"),
+    ("Port Hope Police", "www.porthopepolice.ca"),  # hybrid per OACP roster
     ("Cobourg Police Service", "www.cobourgpoliceservice.com"),
     ("Kawartha Lakes Police", "www.klps.ca"),
     ("South Simcoe Police", "www.southsimcoepolice.ca"),
-    ("West Grey Police", None),            # disbandment status to confirm
-    ("Hanover Police Service", None),
+    ("West Grey Police", "westgreypolice.ca"),  # new HQ completing early 2026
+    ("Hanover Police Service", None),      # active; domain in OACP websites PDF
     ("Saugeen Shores Police", "www.saugeenshorespoliceservice.ca"),
     ("LaSalle Police Service", "www.lasallepolice.ca"),
     ("Strathroy-Caradoc Police", "www.scpolice.ca"),
     ("Aylmer Police Service", "aylmerpolice.com"),
-    ("Deep River Police", None),
+    ("Deep River Police", None),           # active; domain in OACP websites PDF
 ]
+
+# Disbanded services stay RECORDED so a roster refresh never re-adds them
+# (operator 2026-08-02): not buyers, not gaps.
+DISBANDED = [
+    ("Orangeville Police", "OPP contract policing since 2020-10-01"),
+    ("Midland Police", "OPP since 2018; was never on this roster"),
+]
+
+# Municipalities currently reviewing OPP costing or a policing transition.
+# A tracked status class (operator 2026-08-02): a service studying
+# dissolution is a real demand signal, and a coverage row that may stop
+# being a buyer. Sarnia is also our only robots-DISALLOW host.
+TRANSITION_REVIEW = {
+    "Sarnia Police Service":
+        "council motion to study OPP transition under debate (2026-08)",
+}
 POLICE_FN = [
     ("Nishnawbe-Aski Police Service", "www.naps.ca"),
     ("Anishinabek Police Service", "www.apscops.org"),
@@ -134,7 +182,7 @@ EMS = [
     ("Niagara EMS", "www.niagararegion.ca"),
     ("Region of Waterloo Paramedics", "www.regionofwaterloo.ca"),
     ("Ottawa Paramedic Service", "ottawa.ca"),
-    ("Middlesex-London Paramedics", "www.mlpsauthority.ca"),
+    ("Middlesex-London Paramedics", "mlps.ca"),
     ("Essex-Windsor EMS", "www.countyofessex.ca"),
     ("Simcoe County Paramedics", "www.simcoe.ca"),
     ("Greater Sudbury Paramedics", "www.greatersudbury.ca"),
@@ -156,7 +204,7 @@ EMS = [
     ("Lennox & Addington Paramedics", "www.lennox-addington.on.ca"),
     ("Leeds Grenville Paramedics", "www.leedsgrenville.com"),
     ("Lanark County Paramedics", "www.lanarkcounty.ca"),
-    ("Renfrew County Paramedics", "www.rcparamedics.ca"),
+    ("Renfrew County Paramedics", "www.countyofrenfrew.on.ca"),  # no standalone domain
     ("Prescott-Russell Paramedics", "en.prescott-russell.on.ca"),
     ("Cornwall-SDG Paramedics", "www.cornwall.ca"),
     ("Muskoka Paramedics", "www.muskoka.on.ca"),
@@ -221,7 +269,7 @@ ADVOCACY = [
     ("Canadian Police Association", "www.cpa-acp.ca"),
     ("PAO (Police Assn of Ontario)", "pao.ca"),
     ("OPPA", "oppa.ca"),
-    ("OPFFA (fire labour)", "www.opffa.org"),
+    ("OPFFA (fire labour)", "ontariofirefighters.org"),  # UnionActive platform
     ("CAPG (police governance)", "capg.ca"),
     ("OAPSB (police services boards)", "www.oapsb.ca"),
     ("AMO", "www.amo.on.ca"),
@@ -244,7 +292,7 @@ RESEARCH = [
     ("DRDC", "www.canada.ca"),
     ("SSHRC awards database", "www.sshrc-crsh.gc.ca"),
     ("CIHR funding database", "cihr-irsc.gc.ca"),
-    ("Rescu (St. Michael's)", None),
+    ("Rescu (St. Michael's)", "rescu.cc"),  # evolved into CanROC (national)
     ("Sunnybrook Prehospital Medicine", "sunnybrook.ca"),
 ]
 NEWS = [
@@ -284,7 +332,7 @@ NEW_CLASSES = [
     ("CITT procurement decisions", "www.citt-tcce.gc.ca"),
     ("TB proactive disclosure (all-dept bulk)", "open.canada.ca"),
     ("Ontario VOR directory", "www.ontario.ca"),
-    ("Inspectorate of Policing", "www.inspectorateofpolicing.ca"),
+    ("Inspectorate of Policing", "iopontario.ca"),
     ("SIU", "www.siu.on.ca"),
     ("LECA", "www.leca.ca"),
     ("Fire Underwriters Survey", "www.fireunderwriters.ca"),
@@ -295,7 +343,10 @@ NEW_CLASSES = [
     ("NATO NSPA", "www.nspa.nato.int"),
     ("SEDAR+", "www.sedarplus.ca"),
     ("SEC EDGAR", "www.sec.gov"),
+    # /registry path; also regulatoryregistry.gov.on.ca. RSS + email alerts
+    # exist, so this is a FEED, not a scrape (operator 2026-08-02).
     ("Ontario Regulatory Registry", "www.ontariocanada.com"),
+    ("Environmental Registry (ERO)", "ero.ontario.ca"),  # separate system, assess
 ]
 
 DOMAINS = [("police", POLICE), ("police-fn", POLICE_FN), ("fire", FIRE),
@@ -347,7 +398,7 @@ def main() -> None:
     print(f"sources: {len(sources)}   documents: {len(docs)}   "
           f"distinct doc hosts: {len(host_counts)}")
 
-    def collected_for(name: str, host: str | None) -> str:
+    def collected_for(name: str, host: str | None) -> tuple[list, int]:
         hits = []
         toks = [t for t in re.split(r"[^a-z]+", name.lower()) if len(t) > 3]
         for s in sources:
@@ -358,8 +409,7 @@ def main() -> None:
                 hits.append(s.get("name"))
         n_docs = sum(v for h, v in host_counts.items()
                      if host and host.replace("www.", "") in h)
-        return (f"{'; '.join(hits[:2])} ({n_docs} docs)" if hits
-                else (f"host-only: {n_docs} docs" if n_docs else ""))
+        return hits, n_docs
 
     worklist = []
     platforms: Counter = Counter()
@@ -368,7 +418,9 @@ def main() -> None:
         print(f"DOMAIN: {domain} ({len(roster)} rows)")
         print("=" * 78)
         for name, host in roster:
-            collected = collected_for(name, host)
+            hits, n_docs = collected_for(name, host)
+            collected = (f"{'; '.join(hits[:2])} ({n_docs} docs)" if hits
+                         else (f"host-only: {n_docs} docs" if n_docs else ""))
             if host is None:
                 worklist.append((domain, name,
                                  "host/current status unknown -- what is this "
@@ -383,8 +435,13 @@ def main() -> None:
                     if plat in ("escribemeetings", "escribe", "civicweb",
                                 "legistar", "icompass", "primegov", "granicus"):
                         platforms[plat] += 1
-            status = "covered" if collected and "docs" in collected else \
-                     ("partial" if collected else "absent")
+            # "covered" requires documents actually collected: a source-table
+            # name match at zero docs is a plan, not coverage. The OTP row
+            # was reported covered by exactly that defect (operator caught
+            # it 2026-08-02); a registered source with nothing in the corpus
+            # is at best partial.
+            status = "covered" if hits and n_docs else \
+                     ("partial" if (hits or n_docs) else "absent")
             if p["robots"] == "DISALLOW":
                 status = "blocked"
             if p["robots"].startswith("unreachable"):
@@ -396,6 +453,12 @@ def main() -> None:
                   f"status={status}")
             if collected:
                 print(f"    collected: {collected}")
+            if name in TRANSITION_REVIEW:
+                print(f"    TRANSITION REVIEW: {TRANSITION_REVIEW[name]}")
+
+    print("\nDISBANDED (recorded so a roster refresh never re-adds them):")
+    for name, why in DISBANDED:
+        print(f"  {name:42s} {why}")
 
     print("\n" + "=" * 78)
     print("MEETING-PLATFORM TALLY (from homepage sniff; deeper pages may differ)")
