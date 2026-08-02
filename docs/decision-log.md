@@ -142,6 +142,7 @@ Date, what, why, and the run or test evidence.
 |---|---|---|
 | 2026-08-01 | Autonomy contract added to CLAUDE.md; this log created | docs only |
 | 2026-08-01 | Branch deletion confirmed permanently unavailable (see below) | proxy returns `ERR branch deletion is not allowed` |
+| 2026-08-02 | `scripts/sourcing_probe.py` + corpus-report option: read-only fire/EMS/defence expansion probe (corpus reads + robots.txt GETs only) | suite green; probe writes nothing |
 
 ---
 
