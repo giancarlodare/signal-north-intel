@@ -1,0 +1,109 @@
+/* Tier-inquiry dialog styles, OWNED BY THE COMPONENT (2026-08-02).
+   Moved out of site.css when the dialog gained a second surface: the member
+   account page (Pro early-access capture) does not load the marketing
+   stylesheet, and an unstyled scrim over the portal is worse than no dialog.
+   The panel carries its own button styling for the same reason; the trigger's
+   class comes from the caller so each surface uses its native button. */
+.inquiry-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-5);
+  background: rgba(11, 22, 41, 0.62);
+  backdrop-filter: blur(3px);
+}
+.inquiry-panel {
+  width: min(520px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: var(--sp-6) var(--sp-6) var(--sp-7);
+  box-shadow: 0 24px 60px rgba(11, 22, 41, 0.28);
+}
+.inquiry-panel__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+.inquiry-close {
+  border: 0;
+  background: none;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--faint);
+  padding: 0 4px;
+}
+.inquiry-close:hover { color: var(--ink); }
+.inquiry-blurb {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-ui);
+  line-height: 1.65;
+  color: var(--muted);
+}
+.inquiry-form { display: flex; flex-direction: column; gap: var(--sp-4); }
+.inquiry-field { display: flex; flex-direction: column; gap: 6px; }
+.inquiry-field > span {
+  font-size: var(--fs-label);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.inquiry-field input,
+.inquiry-field textarea {
+  font: inherit;
+  font-size: var(--fs-ui);
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 10px 12px;
+  width: 100%;
+}
+.inquiry-field input:focus,
+.inquiry-field textarea:focus {
+  outline: 2px solid var(--blue-soft);
+  outline-offset: 1px;
+}
+.inquiry-field textarea { resize: vertical; }
+.inquiry-error { margin: 0; font-size: var(--fs-small); color: var(--red); }
+.inquiry-done {
+  margin: 0;
+  font-size: var(--fs-ui);
+  line-height: 1.7;
+  color: var(--ink);
+}
+/* Honeypot. Off-screen rather than display:none, which some bots detect and
+   skip; a human never reaches it and assistive tech skips the aria-hidden
+   wrapper. */
+.inquiry-hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+/* The submit button inside the panel, styled here so the dialog does not
+   depend on the marketing .btn classes existing on the host page. */
+.inquiry-panel .btn {
+  display: inline-block;
+  border: 0;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 16px 34px;
+}
+.inquiry-panel .btn--primary { background: var(--red); color: #fff; }
+.inquiry-panel .btn--primary:hover { background: var(--red-hover); }
+.inquiry-panel .btn[disabled] { background: var(--line); cursor: default; }
