@@ -265,6 +265,41 @@
 /* Contact "what happens next" numbered row (was duplicated inline 3x). */
 .step-row { display: flex; gap: var(--sp-4); align-items: baseline; }
 
+/* ---------- Cascade reclaim (2026-08-02) ----------
+   Two upstream rules were stepping on the marketing components; both are
+   fixed HERE, scoped under .sn-site, so globals.css and the internal review
+   tool are left untouched.
+
+   1) SPECIFICITY: tokens.css `.sn-site a { color: var(--red) }` (0,1,1)
+      outranks the anchor buttons' and nav links' own colour rules
+      (.btn--primary, .nav-link, both 0,1,0). Result: every ANCHOR-based CTA
+      rendered red text on a red fill (invisible label) and every nav link
+      went red, while <button>-based CTAs were fine. Re-declaring the colours
+      under .sn-site (>=0,2,0) wins the cascade.
+
+   2) LEAK: globals.css (the operator tool, imported globally by the root
+      layout) resets EVERY button -- `button, .btn { flex:1; min-height:44px;
+      border-radius:10px }` -- and site.css never neutralised it. That is the
+      stretched, rounded pill in the header and the detached rounded tab
+      underline. `.sn-site button, .sn-site .btn` covers both <button> and
+      anchor .btn CTAs; radius 0 matches the "rectangular, no radius" spec. */
+.sn-site button,
+.sn-site .btn { flex: 0 1 auto; min-height: 0; border-radius: 0; }
+.sn-site .btn--primary,
+.sn-site .btn--primary:hover { color: #fff; }
+.sn-site .btn--ghost { color: var(--body); }
+.sn-site .btn--ghost:hover { color: #fff; }
+.sn-site .nav-link { color: var(--blue-mist); }
+.sn-site .nav-link:hover,
+.sn-site .nav-link[aria-current="page"] { color: #fff; }
+.sn-site .nav-login { color: var(--blue-dim); }
+.sn-site .nav-login:hover { color: #fff; }
+/* The ghost button's default is dark ink for LIGHT grounds (contact, pricing).
+   On the navy hero it needs a light face, so the home hero's secondary action
+   ("See what each tier includes") stays legible and its hover reads. */
+.sn-site .hero .btn--ghost { color: var(--blue-pale); border-color: var(--navy-line); }
+.sn-site .hero .btn--ghost:hover { background: var(--navy-mid); border-color: var(--navy-mid); color: #fff; }
+
 /* Visually hidden, still read aloud. The public signup forms sit inline in
    marketing layout where a visible label would break the line, but an input
    with no label is unusable on a screen reader. */

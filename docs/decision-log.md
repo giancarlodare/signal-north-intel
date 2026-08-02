@@ -250,3 +250,26 @@ the defect was FIRING ON WORK-COMPLETION and labelling by convention. Fix:
 digests fire on a fixed Eastern schedule, morning and evening, not when
 work happens to finish. Ad-hoc completion reports are not digests and are
 not labelled as a window.
+
+## Marketing site header/button cascade fix (2026-08-02)
+
+Operator comparing the live site against the Claude Design originals: the
+header CTA rendered as a stretched, rounded, textless red pill and every
+nav link was red, on every public page. Diagnosed two upstream cascade
+defects, both fixed scoped under `.sn-site` in `app/(site)/site.css` (no
+change to globals.css or the internal review tool):
+
+1. SPECIFICITY. tokens.css `.sn-site a { color: var(--red) }` (0,1,1)
+   outranked `.btn--primary` and `.nav-link` (both 0,1,0), so ANCHOR-based
+   CTAs were red-on-red (invisible label) and nav links went red, while
+   `<button>`-based CTAs were fine. Re-declared the colours under `.sn-site`.
+2. LEAK. globals.css (operator tool, imported globally by the root layout)
+   resets every button `{ flex:1; min-height:44px; border-radius:10px }`,
+   never neutralised for the site -> the stretched rounded pill and the
+   detached rounded tab underline. Reset `flex/min-height/border-radius`
+   under `.sn-site` (radius 0 per the "rectangular, no radius" button spec).
+
+Also gave the hero's ghost button a light face for the navy ground.
+Verified by static render harness (computed styles + screenshots, resting
+and hover) and the full site suite (99/99 green). One fix corrects the
+header, anchor CTAs, tabs, chips and nav across all five public surfaces.
