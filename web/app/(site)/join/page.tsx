@@ -64,7 +64,7 @@ export default function JoinPage() {
               <p
                 style={{
                   margin: 0,
-                  fontSize: 17,
+                  fontSize: "var(--fs-body)",
                   lineHeight: 1.8,
                   color: "var(--muted)",
                   maxWidth: 520,
@@ -82,8 +82,8 @@ export default function JoinPage() {
                   listStyle: "none",
                   display: "flex",
                   flexDirection: "column",
-                  gap: 22,
-                  paddingTop: 8,
+                  gap: 22, // off-scale, flagged
+                  paddingTop: "var(--sp-2)",
                 }}
               >
                 {STEPS.map((s) => (
@@ -92,7 +92,7 @@ export default function JoinPage() {
                     style={{
                       display: "grid",
                       gridTemplateColumns: "auto 1fr",
-                      gap: 16,
+                      gap: "var(--sp-4)",
                       alignItems: "start",
                     }}
                   >
@@ -107,14 +107,18 @@ export default function JoinPage() {
                       {s.n}
                     </span>
                     <span
-                      style={{ display: "flex", flexDirection: "column", gap: 4 }}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "var(--sp-1)",
+                      }}
                     >
                       <span style={{ fontSize: 16, fontWeight: 600 }}>
                         {s.t}
                       </span>
                       <span
                         style={{
-                          fontSize: 15,
+                          fontSize: "var(--fs-ui)",
                           lineHeight: 1.75,
                           color: "var(--muted)",
                         }}
@@ -144,7 +148,7 @@ export default function JoinPage() {
                 <span
                   style={{
                     fontFamily: "var(--font-serif)",
-                    fontSize: 30,
+                    fontSize: "var(--fs-heading)",
                     lineHeight: 1.2,
                   }}
                 >
@@ -160,19 +164,19 @@ export default function JoinPage() {
               <p
                 style={{
                   margin: 0,
-                  fontSize: 13,
+                  fontSize: "var(--fs-small)",
                   lineHeight: 1.7,
                   color: "var(--faint)",
                   borderTop: "1px solid var(--line-soft)",
-                  paddingTop: 16,
+                  paddingTop: "var(--sp-4)",
                 }}
               >
                 Already a member?{" "}
-                <a href="/login" style={{ fontSize: 13 }}>
+                <a href="/login" style={{ fontSize: "var(--fs-small)" }}>
                   Log in
                 </a>
                 . Wanted the free brief instead?{" "}
-                <a href="/pricing" style={{ fontSize: 13 }}>
+                <a href="/pricing" style={{ fontSize: "var(--fs-small)" }}>
                   It is on the pricing page
                 </a>
                 , and it needs no account at all.

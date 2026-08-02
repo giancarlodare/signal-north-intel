@@ -147,11 +147,11 @@ export default function PricingPage() {
           <div
             className="container"
             style={{
-              paddingTop: 72,
-              paddingBottom: 64,
+              paddingTop: 72, // off-scale, flagged
+              paddingBottom: "var(--sp-8)",
               display: "flex",
               flexDirection: "column",
-              gap: 22,
+              gap: 22, // off-scale, flagged
             }}
           >
             <span className="hero__eyebrow fade-rise">Pricing</span>
@@ -167,7 +167,11 @@ export default function PricingPage() {
         <section className="band band--paper" style={{ paddingTop: 72 }}>
           <div
             className="container"
-            style={{ display: "flex", flexDirection: "column", gap: 48 }}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--sp-7)",
+            }}
           >
             <div className="tier-table">
               <table data-testid="tier-table">

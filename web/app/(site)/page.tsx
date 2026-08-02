@@ -143,7 +143,7 @@ export default async function SiteHome() {
                 <div
                   style={{
                     display: "flex",
-                    gap: 12,
+                    gap: "var(--sp-3)",
                     flexWrap: "wrap",
                     alignItems: "center",
                   }}
@@ -162,12 +162,18 @@ export default async function SiteHome() {
               <aside className="live-panel fade-rise" aria-label="Closing soon">
                 <div className="live-panel__head">
                   <span className="live-panel__title">Closing soon</span>
-                  <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "var(--sp-2)",
+                    }}
+                  >
                     <span className="live-dot"></span>
                     <span
                       className="t-mono"
                       style={{
-                        fontSize: 11,
+                        fontSize: "var(--fs-label)",
                         letterSpacing: "0.12em",
                         color: "var(--blue-mist)",
                       }}
@@ -217,14 +223,19 @@ export default async function SiteHome() {
                   </div>
                 ))}
                 <div className="live-panel__foot">
-                  <span style={{ fontSize: 13, color: "var(--blue-dim)" }}>
+                  <span
+                    style={{
+                      fontSize: "var(--fs-small)",
+                      color: "var(--blue-dim)",
+                    }}
+                  >
                     {closing.rows.length} of {closing.total_open} open in the
                     next 90 days.
                   </span>
                   <a
                     href="/join"
                     style={{
-                      fontSize: 11,
+                      fontSize: "var(--fs-label)",
                       fontWeight: 600,
                       letterSpacing: "0.14em",
                       textTransform: "uppercase",
@@ -330,15 +341,7 @@ export default async function SiteHome() {
                       recentAwards ? (
                         recentAwards.map((a, i) => (
                           <div className="caps__row" key={i}>
-                            <div
-                              style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: 4,
-                                minWidth: 0,
-                                flex: "1 1 220px",
-                              }}
-                            >
+                            <div className="caps__row-main">
                               <span className="caps__row-title">
                                 {a.title.length > 70
                                   ? `${a.title.slice(0, 70)}…`
@@ -391,10 +394,7 @@ export default async function SiteHome() {
 
         {/* 03 COVERAGE (live register; omitted entirely when unavailable) */}
         {coverageTabs.length > 0 ? (
-          <section
-            className="band band--paper"
-            style={{ borderTop: "1px solid var(--line)" }}
-          >
+          <section className="band band--paper band--rule">
             <div className="container">
               <div className="section-head">
                 <span className="section-head__num">03</span>
@@ -443,7 +443,9 @@ export default async function SiteHome() {
                       >
                         {cell.label}
                       </span>
-                      <span style={{ fontSize: 15 }}>{cell.text}</span>
+                      <span style={{ fontSize: "var(--fs-ui)" }}>
+                        {cell.text}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -472,14 +474,7 @@ export default async function SiteHome() {
                     <span className="arc__dot"></span>
                   </div>
                   <article className="arc__step">
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 18,
-                        alignItems: "baseline",
-                        flexWrap: "wrap",
-                      }}
-                    >
+                    <div className="arc__meta">
                       <span className="arc__kind">{step.kind}</span>
                       <span className="arc__date">{step.date}</span>
                     </div>
@@ -492,14 +487,7 @@ export default async function SiteHome() {
                 <span className="arc__dot arc__dot--pred"></span>
               </div>
               <article className="arc__step arc__step--pred">
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 18,
-                    alignItems: "baseline",
-                    flexWrap: "wrap",
-                  }}
-                >
+                <div className="arc__meta">
                   {/* Both label and heading point at the PRESENT. The final
                       node is the reader's position in the file, not a
                       forecast, so it carries no date of its own. */}

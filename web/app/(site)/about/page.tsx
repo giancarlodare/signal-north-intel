@@ -135,7 +135,7 @@ export default async function AboutPage() {
               style={{
                 display: "grid",
                 gridTemplateColumns: "minmax(320px,1.1fr) minmax(280px,0.9fr)",
-                gap: 64,
+                gap: "var(--sp-8)",
                 alignItems: "start",
               }}
             >
@@ -143,7 +143,7 @@ export default async function AboutPage() {
                 style={{
                   margin: 0,
                   fontFamily: "var(--font-serif)",
-                  fontSize: 30,
+                  fontSize: "var(--fs-heading)",
                   lineHeight: 1.45,
                   letterSpacing: "-0.01em",
                   color: "var(--ink-soft)",
@@ -161,7 +161,13 @@ export default async function AboutPage() {
                   paddingTop: 6,
                 }}
               >
-                <p style={{ margin: 0, fontSize: 17, lineHeight: 1.85 }}>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "var(--fs-body)",
+                    lineHeight: 1.85,
+                  }}
+                >
                   Each one is published. None of them are assembled. Signal
                   North brings the entire public record together in one place
                   and holds it neutrally, so everyone who operates in this
@@ -203,7 +209,7 @@ export default async function AboutPage() {
                 padding: 40,
                 display: "grid",
                 gridTemplateColumns: "minmax(160px,200px) minmax(300px,1fr)",
-                gap: 48,
+                gap: "var(--sp-7)",
                 alignItems: "start",
               }}
             >
@@ -226,7 +232,7 @@ export default async function AboutPage() {
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  gap: 20,
+                  gap: 20, // off-scale, flagged
                   maxWidth: 700,
                 }}
               >
@@ -275,12 +281,8 @@ export default async function AboutPage() {
         </section>
 
         <section
-          className="band band--paper"
-          style={{
-            borderTop: "1px solid var(--line)",
-            paddingTop: 88,
-            paddingBottom: 88,
-          }}
+          className="band band--paper band--rule"
+          style={{ paddingTop: 88, paddingBottom: 88 }}
         >
           <div className="container">
             <div className="section-head">
@@ -303,11 +305,18 @@ export default async function AboutPage() {
 
         <section
           className="band band--navy"
-          style={{ paddingTop: 96, paddingBottom: 96 }}
+          style={{
+            paddingTop: "var(--sp-9)",
+            paddingBottom: "var(--sp-9)",
+          }}
         >
           <div
             className="container"
-            style={{ display: "flex", flexDirection: "column", gap: 24 }}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "var(--sp-5)",
+            }}
           >
             <h2
               style={{
@@ -324,7 +333,7 @@ export default async function AboutPage() {
             <p
               style={{
                 margin: 0,
-                fontSize: 17,
+                fontSize: "var(--fs-body)",
                 lineHeight: 1.8,
                 color: "var(--blue-pale)",
                 maxWidth: 680,

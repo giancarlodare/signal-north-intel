@@ -26,7 +26,11 @@ export default function ContactPage() {
           >
             <div
               className="fade-rise"
-              style={{ display: "flex", flexDirection: "column", gap: 24 }}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "var(--sp-5)",
+              }}
             >
               <span className="hero__eyebrow">Contact</span>
               <h1 className="hero__title" style={{ fontSize: 54 }}>
@@ -69,10 +73,10 @@ export default function ContactPage() {
               data-form="request-access"
               data-testid="request-access-form"
               style={{
-                padding: "36px 38px",
+                padding: "36px 38px", // off-scale, flagged
                 display: "flex",
                 flexDirection: "column",
-                gap: 24,
+                gap: "var(--sp-5)",
               }}
             >
               <h2 className="t-heading">Request access</h2>
@@ -164,9 +168,15 @@ export default function ContactPage() {
             </form>
 
             <aside style={{ display: "flex", flexDirection: "column", gap: 36 }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "var(--sp-4)",
+                }}
+              >
                 <span className="t-label">What happens next</span>
-                <div style={{ display: "flex", gap: 16, alignItems: "baseline" }}>
+                <div className="step-row">
                   <span className="t-mono" style={{ color: "var(--red)" }}>
                     01
                   </span>
@@ -174,7 +184,7 @@ export default function ContactPage() {
                     We confirm the organisations and categories you care about.
                   </span>
                 </div>
-                <div style={{ display: "flex", gap: 16, alignItems: "baseline" }}>
+                <div className="step-row">
                   <span className="t-mono" style={{ color: "var(--red)" }}>
                     02
                   </span>
@@ -182,7 +192,7 @@ export default function ContactPage() {
                     Thirty minutes with an analyst, run against your real market.
                   </span>
                 </div>
-                <div style={{ display: "flex", gap: 16, alignItems: "baseline" }}>
+                <div className="step-row">
                   <span className="t-mono" style={{ color: "var(--red)" }}>
                     03
                   </span>
@@ -196,9 +206,9 @@ export default function ContactPage() {
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  gap: 8,
+                  gap: "var(--sp-2)",
                   borderTop: "1px solid var(--line)",
-                  paddingTop: 24,
+                  paddingTop: "var(--sp-5)",
                   fontStyle: "normal",
                 }}
               >
