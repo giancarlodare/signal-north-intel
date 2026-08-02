@@ -290,8 +290,12 @@ ADVOCACY = [
 RESEARCH = [
     ("CIPSRT (Regina)", "www.cipsrt-icrtsp.ca"),
     ("DRDC", "www.canada.ca"),
-    ("SSHRC awards database", "www.sshrc-crsh.gc.ca"),
-    ("CIHR funding database", "cihr-irsc.gc.ca"),
+    # Genuine canada.ca migration, not a block; the old gc.ca host now 302s.
+    # Other gc.ca rows should be checked for the same consolidation.
+    ("SSHRC awards database", "sshrc-crsh.canada.ca"),
+    # The Funding Decisions Database, the forward signal we scoped -- not
+    # the corporate site (whose apex serves a broken TLS chain anyway).
+    ("CIHR funding database", "webapps.cihr-irsc.gc.ca"),
     ("Rescu (St. Michael's)", "rescu.cc"),  # evolved into CanROC (national)
     ("Sunnybrook Prehospital Medicine", "sunnybrook.ca"),
 ]
