@@ -22,6 +22,7 @@ sequential. No content pages, no article text, nothing stored.
 import os
 import re
 import sys
+import time
 import urllib.robotparser
 from collections import Counter
 
@@ -438,38 +439,88 @@ DOMAINS = [("police", POLICE), ("police-fn", POLICE_FN), ("fire", FIRE),
            ("new-classes", NEW_CLASSES)]
 
 
+# STANDING RULE (operator 2026-08-02, from the reachability diagnostic): a
+# single ConnectionError is not evidence of anything. GitHub runners draw
+# from a large cloud pool and gc.ca/on.ca edges block some ranges at TCP,
+# so per-run reachability is a lottery. Any probe concluding absence must
+# retry and name the failing layer, and a probe whose CONTROL fails must
+# refuse to report rather than publish verdicts it cannot stand behind.
+
+# Reachable-by-construction controls; CanadaBuys is collected nightly.
+CONTROL_HOSTS = ["canadabuys.canada.ca", "www.canada.ca"]
+
+
+def _failure_layer(e: Exception) -> str:
+    """Name the layer a fetch failure happened at, so 'unreachable' always
+    says what actually failed instead of collapsing into ConnectionError."""
+    s = f"{type(e).__name__}: {e}"
+    if "NameResolution" in s or "getaddrinfo" in s or "Name or service" in s:
+        return "dns"
+    if isinstance(e, requests.exceptions.SSLError) or "SSL" in s:
+        return "tls"
+    if isinstance(e, requests.exceptions.ConnectTimeout) or "timed out" in s:
+        return "tcp-timeout"
+    if "reset" in s.lower():
+        return "reset"
+    return type(e).__name__
+
+
+def _get_with_retry(url: str) -> tuple:
+    """(response, None) or (None, layer). One retry with a short pause: a
+    verdict of unreachable requires two consecutive failures."""
+    last = None
+    for attempt in (1, 2):
+        try:
+            return requests.get(url, headers={"User-Agent": UA},
+                                timeout=TIMEOUT), None
+        except Exception as e:  # noqa: BLE001
+            last = e
+            if attempt == 1:
+                time.sleep(2)
+    return None, _failure_layer(last)
+
+
 def probe_host(host: str) -> dict:
     """robots verdict + platform sniff from one homepage fetch."""
     out = {"robots": "?", "platform": "", "rss": False}
-    try:
-        r = requests.get(f"https://{host}/robots.txt",
-                         headers={"User-Agent": UA}, timeout=TIMEOUT)
-        if r.status_code == 404:
-            out["robots"] = "none(ok)"
-        elif r.status_code == 200:
-            rp = urllib.robotparser.RobotFileParser()
-            rp.parse(r.text.splitlines())
-            out["robots"] = "ALLOW" if rp.can_fetch(UA, f"https://{host}/") \
-                else "DISALLOW"
-        else:
-            out["robots"] = f"http{r.status_code}"
-    except Exception as e:  # noqa: BLE001
-        out["robots"] = f"unreachable({e.__class__.__name__})"
+    r, layer = _get_with_retry(f"https://{host}/robots.txt")
+    if r is None:
+        out["robots"] = f"unreachable({layer} x2)"
         return out
-    try:
-        h = requests.get(f"https://{host}/", headers={"User-Agent": UA},
-                         timeout=TIMEOUT)
-        found = sorted({m.group(1).lower()
-                        for m in PLATFORM_PAT.finditer(h.text)})
-        out["platform"] = ",".join(found)
-        out["rss"] = ("rss" in h.text.lower() or "/feed" in h.text.lower())
-    except Exception as e:  # noqa: BLE001
-        out["platform"] = f"(homepage {e.__class__.__name__})"
+    if r.status_code == 404:
+        out["robots"] = "none(ok)"
+    elif r.status_code == 200:
+        rp = urllib.robotparser.RobotFileParser()
+        rp.parse(r.text.splitlines())
+        out["robots"] = "ALLOW" if rp.can_fetch(UA, f"https://{host}/") \
+            else "DISALLOW"
+    else:
+        out["robots"] = f"http{r.status_code}"
+    h, layer = _get_with_retry(f"https://{host}/")
+    if h is None:
+        out["platform"] = f"(homepage unreachable({layer} x2))"
+        return out
+    found = sorted({m.group(1).lower()
+                    for m in PLATFORM_PAT.finditer(h.text)})
+    out["platform"] = ",".join(found)
+    out["rss"] = ("rss" in h.text.lower() or "/feed" in h.text.lower())
     return out
 
 
 def main() -> None:
     print("COVERAGE PROBE -- measured, not estimated (read-only)")
+
+    # Control gate: if the runner cannot reach hosts that are reachable by
+    # construction, every network verdict below would be noise. Refuse to
+    # report rather than publish a table a transient egress failure wrote.
+    for chost in CONTROL_HOSTS:
+        cp = probe_host(chost)
+        if cp["robots"].startswith("unreachable"):
+            print(f"CONTROL FAILED: {chost} {cp['robots']} -- this runner's "
+                  f"egress is impaired; refusing to report reachability "
+                  f"verdicts. Re-dispatch on a fresh runner.")
+            sys.exit(1)
+    print(f"controls reachable: {', '.join(CONTROL_HOSTS)}")
 
     sources = sc.fetch_rows("sources", "id,name,url")
     docs = sc.fetch_all_rows_where("documents", "id,url,source_id", {})
