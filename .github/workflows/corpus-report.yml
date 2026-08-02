@@ -27,6 +27,7 @@ on:
           # Read-only like the rest, plus robots.txt GETs (and only
           # robots.txt) for the candidate sources it assesses.
           - sourcing_probe
+          - disjointness_probe
       args:
         description: "Extra arguments for the script (optional)"
         type: string

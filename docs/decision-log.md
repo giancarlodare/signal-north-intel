@@ -143,6 +143,9 @@ Date, what, why, and the run or test evidence.
 | 2026-08-01 | Autonomy contract added to CLAUDE.md; this log created | docs only |
 | 2026-08-01 | Branch deletion confirmed permanently unavailable (see below) | proxy returns `ERR branch deletion is not allowed` |
 | 2026-08-02 | `scripts/sourcing_probe.py` + corpus-report option: read-only fire/EMS/defence expansion probe (corpus reads + robots.txt GETs only) | suite green; probe writes nothing |
+| 2026-08-02 | Keep-filter widened (general 100->187, defence 37->62) per operator urgency ruling: drop-at-collection = permanent loss. Contracting-mechanics terms held out (would false-tag defence) | suite green; categorization vocab still gated |
+| 2026-08-02 | `scripts/disjointness_probe.py` + corpus-report option (york/peel/london/durham, decides the ~$118) | read-only |
+| 2026-08-02 | Phase 2 pooling estimator PARKED by operator verdict 2026-08-02: internal instrument, publishes only if a cell honestly clears; no operator review gates it | proxy line, off operator queue |
 
 ---
 
