@@ -2,7 +2,7 @@
 // locks a member out of checkout or gives away the product.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isRelationshipPath, requiresSubscription } from "./portal-routes";
+import { isRelationshipPath, requiresSubscription } from "./portal-routes.ts";
 
 test("the account page NEVER requires a subscription: it is where you buy one", () => {
   assert.equal(requiresSubscription("/portal/account"), false);

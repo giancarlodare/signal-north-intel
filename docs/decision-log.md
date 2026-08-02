@@ -167,3 +167,44 @@ request id rather than a GitHub one.
 Branch cleanup is a human task done in the GitHub UI, or avoided entirely by
 enabling *Settings -> General -> Automatically delete head branches* so merged
 PRs clean themselves up. No further retries.
+
+---
+
+## 2026-08-02 — The web test suite had never run in CI
+
+**Finding.** `.github/workflows/tests.yml` ran `python -m pytest` and nothing
+else. Every green check on a portal, billing, or marketing PR was the Python
+suite alone. The TypeScript tests were green only because a human ran them
+locally and reported so, which is precisely the condition the operator ruled
+an outage: a monitor reporting success it has not verified.
+
+**Second bug, hidden by the first.** Four test files imported `"./thing"`
+rather than `"./thing.ts"`. Under Node's ESM loader an extensionless relative
+specifier does not resolve, so those files failed to LOAD and reported zero
+failures. Silent. The four were `portal-routes.test.ts`,
+`subscription-state.test.ts`, `inquiry.test.ts` and the new
+`signup.test.ts` — that is, the paywall's own tests and the pricing page's
+capture rules had never executed once. Local count went from 63 passing to 99
+on fixing the imports; 34 tests had been invisible.
+
+**Decided.**
+1. `tests.yml` gains a `web` job: `npm ci`, `npm test`, `npm run typecheck`,
+   on pinned Node 22 (the loader behaviour is version-dependent).
+2. The `test` script's glob is quoted so Node's own recursive `**` applies
+   rather than the shell's, which silently flattens to one directory level.
+3. `lib/loader.test.ts` fails the suite if any relative import in the suite
+   drops its extension, and asserts a floor on files discovered. Verified by
+   reintroducing the regression and watching it fail.
+
+**Why it matters beyond the fix.** Both halves are the same defect: work that
+reports success without verifying it. A test that cannot load is a swallowed
+error wearing a green tick.
+
+---
+
+# Safe-class change log (continued)
+
+| Date | Change | Evidence |
+|---|---|---|
+| 2026-08-01 | Read-only `corpus-report.yml` workflow + `host_residue.py` (#131) | run 30699792679 green; no `ANTHROPIC_API_KEY` in job env |
+| 2026-08-02 | CI runs the web suite; `.ts` extensions restored on 4 test imports; `lib/loader.test.ts` guard added | 99 web tests pass (was 63 running), 470 python pass, `tsc --noEmit` clean |

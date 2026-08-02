@@ -75,8 +75,8 @@ test("unauthenticated always routes to login except on login", () => {
 });
 
 test("marketing site: public only when the flag is on", () => {
-  // Flag ON: the four site paths open without auth.
-  for (const p of ["/", "/about", "/pricing", "/contact"]) {
+  // Flag ON: the site paths open without auth.
+  for (const p of ["/", "/about", "/pricing", "/contact", "/join"]) {
     assert.equal(
       gate({ enabled: true, authenticated: false, role: "member", path: p }),
       "allow",
@@ -84,7 +84,7 @@ test("marketing site: public only when the flag is on", () => {
     );
   }
   // Flag OFF: exactly the pre-incorporation behavior (dark, to-login).
-  for (const p of ["/", "/about", "/pricing", "/contact"]) {
+  for (const p of ["/", "/about", "/pricing", "/contact", "/join"]) {
     assert.equal(
       gate({ enabled: false, authenticated: false, role: "member", path: p }),
       "to-login",
@@ -141,4 +141,20 @@ test("no OTHER api path is exempted by accident", () => {
       p,
     );
   }
+});
+
+test("/join is public: you cannot need an account to get an account", () => {
+  // The whole point of the signup flow (operator 2026-08-02). If this path
+  // ever required a session, "Join Weekly" would send a logged-out visitor to
+  // /login, which is the state the flow exists to remove.
+  assert.equal(
+    gate({ enabled: true, authenticated: false, role: "member", path: "/join" }),
+    "allow"
+  );
+  // Still reachable once signed in: a member who lands there is not blocked,
+  // just already past it.
+  assert.equal(
+    gate({ enabled: true, authenticated: true, role: "member", path: "/join" }),
+    "allow"
+  );
 });

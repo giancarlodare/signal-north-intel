@@ -14,3 +14,30 @@ jobs:
           python-version: "3.12"
       - run: pip install -r requirements.txt pytest
       - run: python -m pytest -q
+
+  # THE WEB SUITE WAS NEVER RUN IN CI UNTIL 2026-08-02. Every "green" on a
+  # portal or billing PR was Python only, and the TypeScript tests were green
+  # solely because a human had run them locally and said so. That is the
+  # failure class the operator named: a monitor reporting success it has not
+  # verified is the same defect as a swallowed error.
+  #
+  # It also hid a second bug. Four test files imported "./thing" instead of
+  # "./thing.ts", which does not resolve under the ESM loader, so they failed
+  # to LOAD and reported nothing -- including the paywall's own tests. Node
+  # version is pinned because that loader behaviour is version-dependent, and
+  # lib/loader.test.ts now fails the suite if an extensionless import returns.
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run typecheck

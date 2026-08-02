@@ -75,7 +75,18 @@ export function isMemberPath(path: string): boolean {
 // while dark they behave exactly as before (unauthenticated -> /login), so
 // deploying the marketing pages changes nothing until the operator flips
 // PORTAL_ENABLED. Exact matches: the site has no nested public routes.
-export const SITE_PATHS = ["/", "/about", "/pricing", "/contact"] as const;
+//
+// /join is PUBLIC and must stay so: it is the page where someone who has no
+// account asks for one. Gating it behind a session would mean you need an
+// account to get an account, which is the exact state the operator's
+// 2026-08-02 ruling removes.
+export const SITE_PATHS = [
+  "/",
+  "/about",
+  "/pricing",
+  "/contact",
+  "/join",
+] as const;
 
 export function isSitePath(path: string): boolean {
   return (SITE_PATHS as readonly string[]).includes(path);

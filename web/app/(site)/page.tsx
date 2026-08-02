@@ -13,6 +13,7 @@
 // engines are real (real-data-or-nothing, operator 2026-07-27).
 import { redirect } from "next/navigation";
 import { portalEnabled } from "@/lib/auth/roles";
+import FreeBriefForm from "@/components/site/FreeBriefForm";
 import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
 import {
@@ -130,10 +131,31 @@ export default async function SiteHome() {
                 Every agency, every contract, every supplier, assembled from the
                 public record and held in one place.
               </p>
-              <div>
-                <a className="btn btn--primary" href="/contact">
-                  Request access
-                </a>
+              {/* TWO PUBLIC ACTIONS, KEPT DISTINCT (operator 2026-08-02).
+                  They are different products and must not collapse into one
+                  form: Weekly is a paid signup that creates an account and
+                  ends at checkout; Free is an address on the send list with
+                  no account and no login at all. */}
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 18 }}
+                data-testid="home-cta"
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 12,
+                    flexWrap: "wrap",
+                    alignItems: "center",
+                  }}
+                >
+                  <a className="btn btn--primary" href="/join">
+                    Join Weekly
+                  </a>
+                  <a className="btn btn--ghost" href="/pricing">
+                    See what each tier includes
+                  </a>
+                </div>
+                <FreeBriefForm source="home-hero" />
               </div>
             </div>
             {closing ? (
@@ -200,7 +222,7 @@ export default async function SiteHome() {
                     next 90 days.
                   </span>
                   <a
-                    href="/contact"
+                    href="/join"
                     style={{
                       fontSize: 11,
                       fontWeight: 600,
@@ -209,7 +231,7 @@ export default async function SiteHome() {
                       color: "#fff",
                     }}
                   >
-                    Request access →
+                    Join Weekly →
                   </a>
                 </div>
               </aside>
@@ -523,8 +545,8 @@ export default async function SiteHome() {
                 regional contract and never reach a tender of its own. When that
                 happens the record says so, and so do we.
               </p>
-              <a className="btn btn--primary" href="/contact">
-                Request access
+              <a className="btn btn--primary" href="/join">
+                Join Weekly
               </a>
             </div>
           </div>

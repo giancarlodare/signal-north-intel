@@ -2,20 +2,19 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { roleFromUser } from "@/lib/auth/roles";
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { siteOrigin } from "@/lib/site/origin";
 
 // Dual-mode auth (operator decision 2026-07-27): magic link is the designed
 // default for members; password stays fully working underneath because
 // vendor/gov mail filters can eat the link and the operator signs in daily.
 
-// Where the emailed link lands (app/auth/confirm/route.ts).
+// Where the emailed link lands (app/auth/confirm/route.ts). Origin pinned by
+// NEXT_PUBLIC_SITE_URL in production, header-derived on previews
+// (lib/site/origin.ts): the localhost-fallback bug would have broken
+// production magic-link login at launch, not just signup.
 function confirmUrl(): string {
-  const h = headers();
-  const origin =
-    h.get("origin") ??
-    `https://${h.get("x-forwarded-host") ?? h.get("host") ?? ""}`;
-  return `${origin}/auth/confirm`;
+  return `${siteOrigin()}/auth/confirm`;
 }
 
 export async function sendMagicLink(formData: FormData) {
