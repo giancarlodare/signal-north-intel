@@ -85,7 +85,7 @@ export default function FreeBriefForm({
         tabIndex={-1}
         autoComplete="off"
         aria-hidden="true"
-        style={{ position: "absolute", left: -9999, width: 1, height: 1 }}
+        className="hp-offscreen"
       />
       <label className="sr-only" htmlFor={`free-email-${source}`}>
         Work email
@@ -104,7 +104,11 @@ export default function FreeBriefForm({
         <span
           data-testid="free-signup-error"
           role="alert"
-          style={{ fontSize: 13, color: "var(--red)", width: "100%" }}
+          style={{
+            fontSize: "var(--fs-small)",
+            color: "var(--red)",
+            width: "100%",
+          }}
         >
           {state.message}
         </span>

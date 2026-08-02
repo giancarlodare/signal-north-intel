@@ -72,7 +72,7 @@ export default function JoinWeeklyForm() {
         tabIndex={-1}
         autoComplete="off"
         aria-hidden="true"
-        style={{ position: "absolute", left: -9999, width: 1, height: 1 }}
+        className="hp-offscreen"
       />
       <label className="sr-only" htmlFor="join-email">
         Work email
@@ -90,7 +90,7 @@ export default function JoinWeeklyForm() {
         <span
           data-testid="join-error"
           role="alert"
-          style={{ fontSize: 13, color: "var(--red)" }}
+          style={{ fontSize: "var(--fs-small)", color: "var(--red)" }}
         >
           {state.message}
         </span>
