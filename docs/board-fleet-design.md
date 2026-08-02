@@ -34,6 +34,15 @@ careful-in-the-slow-sense. Six binding constraints:
    cap is checked against the projection so intake cannot build an
    uncleareable backlog silently.
 
+**First wave includes London** (operator 2026-08-02): LPSB has an eScribe
+tenant at pub-london.escribemeetings.com (confirmed via a filestream.ashx
+URL) plus a dedicated WordPress site publishing full agenda-and-report
+packages -- so ALL FIVE named services (Hamilton, Niagara, Ottawa, London,
+Windsor) close before launch, and London leaves the named-gap list.
+Collision warning, same class as OACP: City of London, UK publishes a
+Police Authority Board at democracy.cityoflondon.gov.uk; "London Police"
+queries are domain-scoped, always.
+
 **Build order:** discovery pass -> harden what the buckets show -> seed
 boards -> extend the same adapter to council bodies. Roster inputs:
 OAPSB (boards), OACP websites PDF (services), the platform census from the
