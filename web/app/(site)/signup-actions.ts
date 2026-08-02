@@ -21,8 +21,8 @@
 // so an unverified address means someone pays for a brief that never arrives.
 // The account is created by the link click, not by the form post, and Stripe
 // is never reached before that.
-import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { siteOrigin } from "@/lib/site/origin";
 import {
   validateFreeSignup,
   validateWeeklySignup,
@@ -36,13 +36,10 @@ export interface SignupResult {
 
 // Where the emailed link lands (app/auth/confirm/route.ts), carrying the
 // destination so a confirmed signup arrives at checkout rather than the
-// portal index.
+// portal index. Origin comes from siteOrigin(): pinned by env in production,
+// header-derived on previews (see lib/site/origin.ts for why).
 function confirmUrl(): string {
-  const h = headers();
-  const origin =
-    h.get("origin") ??
-    `https://${h.get("x-forwarded-host") ?? h.get("host") ?? ""}`;
-  return `${origin}/auth/confirm?next=${encodeURIComponent(SIGNUP_DESTINATION)}`;
+  return `${siteOrigin()}/auth/confirm?next=${encodeURIComponent(SIGNUP_DESTINATION)}`;
 }
 
 const FREE_THANKS =
