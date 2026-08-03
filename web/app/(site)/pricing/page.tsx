@@ -185,9 +185,10 @@ export default function PricingPage() {
                       {/* FREE IS EMAIL CAPTURE, NOT AN ACCOUNT (operator
                           2026-08-02). The form posts straight to the send
                           list: no auth.users row, no login, no entitlement.
-                          Kept deliberately distinct from Join Weekly next
-                          door, which is a real signup. */}
-                      <FreeBriefForm source="pricing-free" compact />
+                          reveal: the column shows only a button until clicked,
+                          so the tier row stays height-aligned (operator
+                          2026-08-03: "everything horizontal aligned"). */}
+                      <FreeBriefForm source="pricing-free" compact reveal />
                     </th>
                     <th>
                       <span className="tier-name">Signal North Weekly</span>
@@ -254,16 +255,19 @@ export default function PricingPage() {
               earlier access to it.
             </p>
 
-            <div className="faq" style={{ maxWidth: 860 }}>
-              <h2 className="t-title" style={{ fontSize: 36, paddingBottom: 18 }}>
-                Questions
+            {/* Two-column FAQ (design: serif heading left, accordion right). */}
+            <div className="faq-block">
+              <h2 className="t-title" style={{ fontSize: 36 }}>
+                Questions we are asked
               </h2>
-              {FAQ.map((item) => (
-                <details key={item.q}>
-                  <summary>{item.q}</summary>
-                  <p className="faq__a">{item.a}</p>
-                </details>
-              ))}
+              <div className="faq">
+                {FAQ.map((item) => (
+                  <details key={item.q}>
+                    <summary>{item.q}</summary>
+                    <p className="faq__a">{item.a}</p>
+                  </details>
+                ))}
+              </div>
             </div>
           </div>
         </section>

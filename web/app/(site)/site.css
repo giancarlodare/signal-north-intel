@@ -329,6 +329,19 @@
 .sn-site .point h3 { white-space: nowrap; overflow: visible; text-overflow: clip; font-size: 20px; }
 .sn-site .point-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 
+/* Hero left column carries a big display headline; give it more of the row so
+   the statement reads on three lines (not four) at the wider content width. */
+.sn-site .hero__inner { grid-template-columns: minmax(340px, 1.42fr) minmax(320px, 1fr); }
+
+/* Two-column FAQ: serif heading in a left rail, accordion on the right. */
+.sn-site .faq-block { display: grid; grid-template-columns: minmax(220px, 0.42fr) minmax(0, 1fr); gap: var(--sp-8); align-items: start; }
+@media (max-width: 768px) {
+  .sn-site .faq-block { grid-template-columns: 1fr; gap: var(--sp-4); }
+}
+
+/* Pricing tier CTAs are full-width in their column so the four align as a row. */
+.sn-site .tier-table thead th .btn { width: 100%; box-sizing: border-box; text-align: center; }
+
 /* Home 02 capabilities: the live build renders a SINGLE real capability
    (real-data-or-nothing removed 02-06), which left the two-column selector with
    an empty left rail. While it is the placeholder single-item state, collapse to

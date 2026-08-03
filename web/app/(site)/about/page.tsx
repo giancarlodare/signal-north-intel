@@ -54,13 +54,9 @@ function statCells(s: MarketingStats) {
       note: "Agendas, minutes, budgets, staff reports, notices and registers, collected the day they publish.",
     },
   ];
-  if (s.live_contracts_with_end_dates > 0) {
-    cells.splice(3, 0, {
-      value: formatCountFloor(s.live_contracts_with_end_dates),
-      label: "Contracts held, with end dates",
-      note: "Each one carrying its supplier, its disclosed value, and the date it comes back to market.",
-    });
-  }
+  // "Contracts held, with end dates" was removed (operator 2026-08-03): while
+  // that figure is a single digit it reads as a weakness, not a proof point.
+  // Restore the cell here once the end-date backfill lifts the number.
   return cells;
 }
 
@@ -149,9 +145,9 @@ export default async function AboutPage() {
                   color: "var(--ink-soft)",
                 }}
               >
-                Every major purchase in Canadian public safety leaves a trail
-                long before it becomes a tender, in a lifecycle report, a budget
-                reserve, a council motion, a board decision.
+                Every major purchase in Canadian public safety and defence
+                leaves a trail long before it becomes a tender, in a lifecycle
+                report, a budget reserve, a council motion, a board decision.
               </p>
               <div
                 style={{

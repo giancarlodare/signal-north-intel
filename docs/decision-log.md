@@ -318,3 +318,25 @@ Still open for the operator (flagged, not changed): 6-vs-7 About stats count;
 the "The market record" heading appearing twice in section 02; pricing button
 emphasis (outline/outline/dark/red) vs the current content-model buttons.
 Suite 99/99 green; typecheck clean.
+
+## Marketing redesign pass, operator notes 2026-08-03
+
+Rendered locally through the real components + real fonts + fixture data.
+Home: hero collapsed to one "Join the network" CTA -> /pricing; headline widened
+to three lines and carries "and defence" at 52px; content width bumped
+1280->1360; section 01 bottom space tightened; the arc (now 03) genericised off
+body-worn cameras to "a core system"; its paragraph shortened + widened; the
+Coverage section removed from the homepage (its register belongs in the FAQ, and
+the FAQ already carries the coverage question). Header CTA -> "Join the network"
+-> /pricing. About: dropped the "1 contract held" stat (single digit reads as a
+weakness). Pricing: the inline email box is gone -- FreeBriefForm gained a
+`reveal` mode so the Free column shows one button until clicked, keeping the tier
+row height-aligned; all four tier CTAs are full-width and align on one baseline;
+FAQ rebuilt as two columns (serif heading left, accordion right) per the design.
+"and defence" added to the page title and the mission line.
+
+STILL OPEN (operator steer needed): what "the mission section isn't centred"
+should look like; what specifically to improve on login + /join; whether the
+Durham sewer item was a live relevance-filter leak (separate backend fix) or my
+sample data; the exact live stat figures (Supabase-sourced, unverifiable here).
+Suite 99/99 green.

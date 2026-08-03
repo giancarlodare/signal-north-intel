@@ -10,6 +10,7 @@
 //
 // So there is no password field, no "continue" step, and no tier selection
 // here. One input, one button, one outcome.
+import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import {
   captureFreeSignup,
@@ -34,17 +35,22 @@ export default function FreeBriefForm({
   source,
   label = "Get the free brief",
   compact = false,
+  reveal = false,
 }: {
   // Which CTA this is, recorded as the evidence half of CASL consent and as
   // the operator's read on which surface actually works.
   source: string;
   label?: string;
   compact?: boolean;
+  // reveal: show only a button until clicked, then expand the input. Keeps the
+  // pricing tier column the same height as the others so the row stays aligned.
+  reveal?: boolean;
 }) {
   const [state, formAction] = useFormState<SignupResult | null, FormData>(
     captureFreeSignup,
     null,
   );
+  const [open, setOpen] = useState(!reveal);
 
   // Terminal state: the address is on the list. No further form is shown,
   // because pressing it again does nothing new.
@@ -61,6 +67,22 @@ export default function FreeBriefForm({
       >
         {state.message}
       </p>
+    );
+  }
+
+  // Collapsed: a single button that matches the other tier CTAs; the input is
+  // revealed only on click, so the pricing row stays height-aligned.
+  if (!open) {
+    return (
+      <button
+        type="button"
+        className="btn btn--ghost"
+        onClick={() => setOpen(true)}
+        style={{ width: "100%" }}
+        data-testid="free-brief-reveal"
+      >
+        {label}
+      </button>
     );
   }
 

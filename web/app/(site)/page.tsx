@@ -13,20 +13,14 @@
 // engines are real (real-data-or-nothing, operator 2026-07-27).
 import { redirect } from "next/navigation";
 import { portalEnabled } from "@/lib/auth/roles";
-import FreeBriefForm from "@/components/site/FreeBriefForm";
 import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
-import {
-  getClosingSoon,
-  getMarketingCoverage,
-  getRecentAwards,
-} from "@/lib/marketing/data";
-import { COVERAGE_STATUS } from "@/lib/marketing/coverage-status";
+import { getClosingSoon, getRecentAwards } from "@/lib/marketing/data";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
   title:
-    "Signal North — The intelligence network for Canadian public safety procurement",
+    "Signal North — The intelligence network for Canadian public safety and defence procurement",
 };
 
 // The urgency bar: fuller as the deadline nears, over the 90-day window.
@@ -86,8 +80,8 @@ const PRECEDENTS = [
 ] as const;
 
 const ARC_STEPS = [
-  { kind: "On the record", date: "Nov 2025", title: "A news story", body: "Regional press reports the camera fleet is out of warranty, raised at a board meeting." },
-  { kind: "On the record", date: "Feb 2026", title: "A budget line", body: "$7.1M carried in the capital budget for camera and evidence renewal." },
+  { kind: "On the record", date: "Nov 2025", title: "A news story", body: "Regional press reports a core system is reaching end of life, raised at a board meeting." },
+  { kind: "On the record", date: "Feb 2026", title: "A budget line", body: "A multi-year sum is carried in the capital budget for the replacement." },
   { kind: "On the record", date: "May 2026", title: "A board decision", body: "The board receives the staff report and directs procurement options." },
   { kind: "On the record", date: "Jul 2026", title: "Vendors invited in", body: "An information session is posted to the regional purchasing portal." },
 ];
@@ -96,18 +90,10 @@ export default async function SiteHome() {
   // Dark: exactly the old app/page.tsx behavior for signed-in users.
   if (!portalEnabled()) redirect("/corpus");
 
-  const [closing, coverage, recentAwards] = await Promise.all([
+  const [closing, recentAwards] = await Promise.all([
     getClosingSoon(),
-    getMarketingCoverage(),
     getRecentAwards(),
   ]);
-  const coverageTabs = coverage
-    ? [
-        { id: "services", tab: "Police services", names: coverage.services },
-        { id: "oversight", tab: "Boards and councils", names: coverage.oversight },
-        { id: "government", tab: "Ministries and departments", names: coverage.government },
-      ].filter((t) => t.names.length > 0)
-    : [];
 
   return (
     <>
@@ -123,39 +109,20 @@ export default async function SiteHome() {
               <span className="hero__eyebrow">
                 Canadian public safety &amp; defence procurement
               </span>
-              <h1 className="hero__title">
+              <h1 className="hero__title" style={{ fontSize: 52 }}>
                 The intelligence network for everyone who buys and sells in
-                Canadian public safety.
+                Canadian public safety and defence.
               </h1>
               <p className="hero__sub" style={{ margin: 0 }}>
                 Every agency, every contract, every supplier, assembled from the
                 public record and held in one place.
               </p>
-              {/* TWO PUBLIC ACTIONS, KEPT DISTINCT (operator 2026-08-02).
-                  They are different products and must not collapse into one
-                  form: Weekly is a paid signup that creates an account and
-                  ends at checkout; Free is an address on the send list with
-                  no account and no login at all. */}
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: 18 }}
-                data-testid="home-cta"
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "var(--sp-3)",
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                  }}
-                >
-                  <a className="btn btn--primary" href="/join">
-                    Join Weekly
-                  </a>
-                  <a className="btn btn--ghost" href="/pricing">
-                    See what each tier includes
-                  </a>
-                </div>
-                <FreeBriefForm source="home-hero" />
+              {/* One primary action. The tiers (Free through Enterprise) live
+                  on /pricing; the hero should not carry the whole ladder. */}
+              <div data-testid="home-cta" style={{ paddingTop: "var(--sp-2)" }}>
+                <a className="btn btn--primary" href="/pricing">
+                  Join the network
+                </a>
               </div>
             </div>
             {closing ? (
@@ -251,7 +218,10 @@ export default async function SiteHome() {
         </section>
 
         {/* 01 TWO SIDES */}
-        <section className="band band--paper">
+        <section
+          className="band band--paper"
+          style={{ paddingBottom: "var(--sp-7)" }}
+        >
           <div className="container">
             <div className="section-head" data-tabs="sides">
               <span className="section-head__num">01</span>
@@ -392,73 +362,15 @@ export default async function SiteHome() {
           </div>
         </section>
 
-        {/* 03 COVERAGE (live register; omitted entirely when unavailable) */}
-        {coverageTabs.length > 0 ? (
-          <section className="band band--paper band--rule">
-            <div className="container">
-              <div className="section-head">
-                <span className="section-head__num">03</span>
-                <h2 className="t-title">Coverage you can check, name by name.</h2>
-                <span className="section-head__note">
-                  Every organisation on the record, and the ones that are not
-                  yet.
-                </span>
-              </div>
-              <div className="coverage">
-                <div className="coverage__tabs" data-tabs="coverage">
-                  {coverageTabs.map((c, i) => (
-                    <button
-                      key={c.id}
-                      className={`tab${i === 0 ? " is-active" : ""}`}
-                      data-panel={c.id}
-                    >
-                      {c.tab}
-                    </button>
-                  ))}
-                </div>
-                {coverageTabs.map((c, i) => (
-                  <div
-                    key={c.id}
-                    className="coverage__list"
-                    data-panel-group="coverage"
-                    data-panel={c.id}
-                    hidden={i !== 0}
-                  >
-                    {c.names.map((n) => (
-                      <span className="coverage__name" key={n}>
-                        {n}
-                      </span>
-                    ))}
-                  </div>
-                ))}
-                <div className="coverage__status">
-                  {COVERAGE_STATUS.map((cell) => (
-                    <div className="coverage__cell" key={cell.label}>
-                      <span
-                        className="t-label"
-                        style={{
-                          color:
-                            cell.tone === "firm" ? "var(--navy)" : "var(--faint)",
-                        }}
-                      >
-                        {cell.label}
-                      </span>
-                      <span style={{ fontSize: "var(--fs-ui)" }}>
-                        {cell.text}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </section>
-        ) : null}
+        {/* 03 COVERAGE removed from the homepage (operator 2026-08-03): the
+            register (and its "not yet covered" column) belongs in the FAQ, not
+            as a front-page focus. The FAQ's coverage question carries it. */}
 
-        {/* 04 PREDICTION */}
+        {/* 03 THE RECORD IN MOTION */}
         <section className="band band--cream">
           <div className="container">
             <div className="section-head">
-              <span className="section-head__num">04</span>
+              <span className="section-head__num">03</span>
               <h2 className="t-title">
                 The public record of a purchase, before the purchase.
               </h2>
@@ -496,10 +408,10 @@ export default async function SiteHome() {
                 <h3>Where this sits today</h3>
                 <p className="arc__body">
                   Four steps in, with vendors invited and no solicitation yet
-                  posted. Other services have stood exactly here.{" "}
+                  posted. Other services have walked exactly this path.{" "}
                   <a href={PRECEDENTS[0].precursorUrl} className="src-link">
-                    Greater Sudbury put body-worn cameras to its board in
-                    September 2024
+                    Greater Sudbury brought its case to the board in September
+                    2024
                   </a>{" "}
                   and{" "}
                   <a href={PRECEDENTS[0].outcomeUrl} className="src-link">
@@ -523,18 +435,14 @@ export default async function SiteHome() {
                 paddingTop: 44,
               }}
             >
-              <p style={{ margin: 0, fontSize: 16, maxWidth: 560 }}>
-                A sample file, read top to bottom. Every step is a public
-                document with a link to it. Public buying follows this sequence,
-                and we show you where a file has got to and who else has walked
-                the same one, so you arrive before the solicitation rather than
-                after it. What would stop it: a file can stall on a budget that
-                does not survive the next cycle, or be absorbed into a shared
-                regional contract and never reach a tender of its own. When that
-                happens the record says so, and so do we.
+              <p style={{ margin: 0, fontSize: 16, maxWidth: 760 }}>
+                A sample file, read top to bottom, every step a public document
+                you can open. Public buying follows this sequence, so you can see
+                where a file has reached and who else has walked it, and arrive
+                before the solicitation rather than after it.
               </p>
-              <a className="btn btn--primary" href="/join">
-                Join Weekly
+              <a className="btn btn--primary" href="/pricing">
+                Join the network
               </a>
             </div>
           </div>
