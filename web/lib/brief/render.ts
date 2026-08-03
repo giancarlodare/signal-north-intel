@@ -114,7 +114,7 @@ function spacer(h: number): string {
 // A full-width band row of the 600px wrapper. White bands carry the side rule.
 function band(body: string, bg: string, pad: string, ruled = true): string {
   const sides = ruled ? `border-left:1px solid ${BORDER};border-right:1px solid ${BORDER};` : "";
-  return `<tr><td bgcolor="${bg}" style="background-color:${bg};padding:${pad};${sides}">`
+  return `<tr><td class="sn-pad" bgcolor="${bg}" style="background-color:${bg};padding:${pad};${sides}">`
     + `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="512" style="width:100%;">`
     + `${body}</table></td></tr>`;
 }
@@ -387,6 +387,13 @@ function renderShell(view: BriefView, bands: string): string {
     + `<meta name="viewport" content="width=device-width, initial-scale=1.0">`
     + `<meta name="color-scheme" content="light dark">`
     + `<meta name="supported-color-schemes" content="light dark">`
+    // Phone-fluid: the 600px column and its band padding shrink on phones so the
+    // brief never overflows a narrow screen (the brief is mostly read on phones).
+    // Outlook ignores this and keeps the fixed 600px, which is correct for it.
+    + `<style>@media screen and (max-width:600px){`
+    + `.sn-brief-wrap{width:100%!important;}`
+    + `.sn-pad{padding-left:24px!important;padding-right:24px!important;}`
+    + `}</style>`
     + `<!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch>`
     + `</o:OfficeDocumentSettings></xml></noscript><![endif]-->`
     + `<title>${esc(view.masthead)}</title></head>`
@@ -397,6 +404,6 @@ function renderShell(view: BriefView, bands: string): string {
     + `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" `
     + `style="background-color:${PAGE};"><tr><td align="center" style="padding:32px 12px;">`
     + `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" `
-    + `style="width:600px;max-width:600px;">${bands}</table>`
+    + `class="sn-brief-wrap" style="width:600px;max-width:600px;">${bands}</table>`
     + `</td></tr></table></body></html>`;
 }

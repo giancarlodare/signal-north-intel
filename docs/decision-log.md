@@ -496,3 +496,36 @@ a 390px phone (no fluid media query), unlike the transactional set.
 DIRECTION (operator): the email is the hardest of the three brief surfaces
 (portal, email, public sample), so design it first and derive the other two;
 build the Free partial to the same system.
+
+## Brief email: phone-fluid now; Free partial folded into G (operator 2026-08-03)
+
+1. PHONE-FLUID (shipped, this pass): render.ts had a fixed 600px wrapper that
+   overflowed narrow screens (390px viewport -> 624px scrollWidth = the 600
+   column + 24 outer padding). Added a head <style> media query: at
+   max-width:600px the wrapper goes width:100% and band side padding drops to
+   24px. Phone scrollWidth now 390, no overflow; desktop and Outlook keep the
+   fixed 600px. Everything downstream (portal [week] view, public sample C)
+   inherits it.
+
+2. FREE PARTIAL IS PART OF G, not a separate track. G is the free path END TO
+   END: capture, confirm, welcome, AND the partial brief that lands each Monday.
+   A confirmed free list with nothing tier-appropriate to send is half a
+   product. Order unchanged: A, then G (partial inside), then B, D, C.
+
+3. NEW SHIP-GATE (4th, alongside Weekly's builds, saved-items round trip, and
+   the resolved arc-row name): the pricing table's "Weekly email -> Partial"
+   cell for Free is a claim about something that does not exist yet -- same
+   class as the false Weekly rows the verification pass caught. The table
+   CANNOT publish with that cell until the partial renderer is live.
+
+4. PARTIAL DESIGN (operator): lock by RELEVANCE, not by count. Order items by
+   the relevance score and lock the HIGHEST-relevance ones, so a Free reader
+   sees the SHAPE of the market and what they cannot see is the thing they most
+   want -- the strongest upgrade prompt. Arbitrary/by-count locking wastes it.
+   Locked treatment shows buyer, title and one line, then the unlock link:
+   enough to know it matters, not enough to act on.
+
+5. ARCHITECTURE (do not break): the /brief/[week] route serves the SAME HTML as
+   the email, so C (public sample) is nearly free once the renderer is right.
+   The partial must be a PARAMETER on the one renderer (render.ts), never a
+   second renderer.
