@@ -146,21 +146,10 @@ export default async function AboutPage() {
                   Each one is published. None of them are assembled. Signal North
                   brings the entire public record together in one place and holds
                   it neutrally, so everyone who operates in this market works from
-                  the same complete picture.
-                </p>
-                <p
-                  style={{
-                    margin: 0,
-                    fontFamily: "var(--font-serif)",
-                    fontSize: 25,
-                    lineHeight: 1.5,
-                    color: "var(--ink-soft)",
-                    borderLeft: "2px solid var(--red)",
-                    paddingLeft: 22,
-                  }}
-                >
-                  We cover one market deeply rather than every market thinly.
-                  That is the entire strategy.
+                  the same complete picture.{" "}
+                  <strong>
+                    We cover one market deeply rather than every market thinly.
+                  </strong>
                 </p>
                 {/* Canadian-owned callout: one of the two deliberate shadows. */}
                 <div

@@ -57,28 +57,9 @@ const CAPS: { id: string; name: string; label: string; rows: CapRow[] }[] = [
 // the whole register section is omitted when the data is unavailable, so the
 // transparency feature can never show a stale list.
 
-// REAL comparables, pulled from the corpus by scripts/arc_diagnostics.py
-// (run 30414996586, category body-worn-cameras). Every URL is a publisher
-// record. NO interval figure is asserted: the census can measure a clean
-// precursor-to-outcome span for only ONE buyer in this category, and a single
-// span is an anecdote, not a pattern. See docs/methodology.md 7.1.
-const PRECEDENTS = [
-  {
-    buyer: "Greater Sudbury Police Service",
-    precursorUrl:
-      "https://www.gsps.ca/media/jjhagu3j/gspsb-agenda-public_sept-18-2024.pdf",
-    outcomeUrl:
-      "https://www.gsps.ca/media/5jbhqksf/gspsb-agenda-public_jan-22-2025.pdf",
-  },
-  {
-    buyer: "Toronto Police Service",
-    precursorUrl:
-      "https://tpsb.ca/wp-content/uploads/2026/04/Board-Budget-Meeting-Agenda_November27.pdf",
-    outcomeUrl:
-      "https://tpsb.ca/wp-content/uploads/2026/04/SPECIAL_PUBLIC_MEETING_AGENDA_JAN_09.pdf",
-  },
-] as const;
-
+// The homepage arc is an illustrative SAMPLE (operator 2026-08-03): no real
+// service names, no board-minute links. It shows the shape a file takes, not a
+// specific buyer. Real, sourced arcs live in the member product, not here.
 const ARC_STEPS = [
   { kind: "On the record", date: "Nov 2025", title: "A news story", body: "Regional press reports a core system is reaching end of life, raised at a board meeting." },
   { kind: "On the record", date: "Feb 2026", title: "A budget line", body: "A multi-year sum is carried in the capital budget for the replacement." },
@@ -149,7 +130,7 @@ export default async function SiteHome() {
                     </span>
                   </span>
                 </div>
-                {closing.rows.map((row, i) => (
+                {closing.rows.slice(0, 4).map((row, i) => (
                   <div
                     key={i}
                     className={`live-row${i === 0 ? " live-row--hot is-open" : ""}`}
@@ -205,8 +186,8 @@ export default async function SiteHome() {
                       color: "var(--blue-dim)",
                     }}
                   >
-                    {closing.rows.length} of {closing.total_open} open in the
-                    next 90 days.
+                    {Math.min(closing.rows.length, 4)} of {closing.total_open}{" "}
+                    open in the next 90 days.
                   </span>
                   <a
                     href="/join"
@@ -415,20 +396,11 @@ export default async function SiteHome() {
                 <h3>Where this sits today</h3>
                 <p className="arc__body">
                   Four steps in, with vendors invited and no solicitation yet
-                  posted. Other services have walked exactly this path.{" "}
-                  <a href={PRECEDENTS[0].precursorUrl} className="src-link">
-                    Greater Sudbury brought its case to the board in September
-                    2024
-                  </a>{" "}
-                  and{" "}
-                  <a href={PRECEDENTS[0].outcomeUrl} className="src-link">
-                    carried the decision that January
-                  </a>
-                  .{" "}
-                  <a href={PRECEDENTS[1].outcomeUrl} className="src-link">
-                    Toronto&apos;s board took the same step in January 2023
-                  </a>
-                  . Every one of those is a document you can open.
+                  posted. Other services have walked exactly this path. Police
+                  service A brought its case to the board in September 2024 and
+                  carried the decision that January. Police service B&apos;s board
+                  took the same step in January 2023. Every step of a file like
+                  this is a public document you can open.
                 </p>
               </article>
             </div>

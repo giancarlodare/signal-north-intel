@@ -73,7 +73,6 @@ export default function InquiryDialog({
       <button
         type="button"
         className={triggerClassName ?? `btn btn--${variant}`}
-        style={{ padding: "10px 18px", letterSpacing: "0.1em" }}
         onClick={() => setOpen(true)}
         data-inquiry-open={tier}
       >

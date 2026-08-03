@@ -198,11 +198,7 @@ export default function PricingPage() {
                           signup flow (confirm, then checkout), never to
                           /contact: a pricing page where nothing can be bought
                           reads as a waitlist rather than a company. */}
-                      <a
-                        className="btn btn--primary"
-                        style={{ padding: "10px 18px", letterSpacing: "0.1em" }}
-                        href="/join"
-                      >
+                      <a className="btn btn--primary" href="/join">
                         Join Weekly
                       </a>
                     </th>
@@ -262,7 +258,7 @@ export default function PricingPage() {
               </h2>
               <div className="faq">
                 {FAQ.map((item) => (
-                  <details key={item.q}>
+                  <details key={item.q} name="faq-pricing">
                     <summary>{item.q}</summary>
                     <p className="faq__a">{item.a}</p>
                   </details>
