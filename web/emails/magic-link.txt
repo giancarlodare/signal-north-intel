@@ -1,0 +1,12 @@
+Your sign-in link
+
+Here is your sign-in link. It works once and expires in one hour.
+
+Sign in to Signal North:
+{{ .ConfirmationURL }}
+
+If you did not request it, you can ignore this message; your account is unchanged and no one can sign in without access to this inbox.
+
+--
+Signal North
+Procurement intelligence for Canadian public safety and defence
