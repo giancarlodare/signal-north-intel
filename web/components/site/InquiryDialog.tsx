@@ -51,7 +51,10 @@ export default function InquiryDialog({
   triggerClassName,
 }: {
   tier: "pro" | "enterprise";
-  variant?: "ghost" | "primary";
+  // "dark" (navy) is the secondary treatment for the closed tiers: heavier
+  // than Free's outline, but not the red "buy" of Weekly, because Pro and
+  // Enterprise open a capture form, they do not transact (operator 2026-08-03).
+  variant?: "ghost" | "primary" | "dark";
   // The trigger renders with the HOST surface's button class (marketing .btn
   // by default; the account page passes its own), because the host stylesheet
   // is the only one guaranteed to be loaded outside the panel.

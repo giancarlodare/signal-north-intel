@@ -22,6 +22,10 @@
 .btn--nav { padding: 11px 18px; letter-spacing: 0.08em; font-size: 12px; }
 .btn--ghost { background: transparent; border: 1px solid var(--line); color: var(--body); }
 .btn--ghost:hover { border-color: var(--navy); background: var(--navy); color: #fff; }
+/* Secondary treatment for the closed tiers (Pro, Enterprise): navy, heavier
+   than Free's outline but not the red buy of Weekly. */
+.btn--dark { background: var(--navy); color: #fff; }
+.btn--dark:hover { background: var(--navy-mid); color: #fff; }
 .btn[disabled] { background: var(--line); cursor: default; }
 
 /* ---------- Bands & sections ---------- */
@@ -287,6 +291,8 @@
 .sn-site .btn--primary:hover { color: #fff; }
 .sn-site .btn--ghost { color: var(--body); }
 .sn-site .btn--ghost:hover { color: #fff; }
+.sn-site .btn--dark,
+.sn-site .btn--dark:hover { color: #fff; }
 .sn-site .nav-link { color: var(--blue-mist); }
 .sn-site .nav-link:hover,
 .sn-site .nav-link[aria-current="page"] { color: #fff; }
@@ -372,6 +378,11 @@
 .sn-site .tier-table thead th .btn--ghost:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
+}
+.sn-site .tier-table thead th .btn--dark:hover {
+  background: var(--navy-mid);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(13, 27, 46, 0.26);
 }
 /* Group headers read as a faint banded row with dark bold text and a red
    accent bar: enough to catch the eye at each break in the ladder, without the
