@@ -374,3 +374,38 @@ Removing the homepage coverage register is right for now: its claims were false
 it is one of the strongest sections in the original, and the honest version is a
 selling point. Bring it back once the coverage-page copy is approved and rebuilt
 from the measured table. Tracked, not dropped.
+
+## Envelope seed rate: fresh envelopes need one at creation (operator 2026-08-03)
+
+DECISION (operator): `august-2026-standing` was created with a NULL seed rate on
+the reasoning that each batch measures its own per-doc rate before dispatch.
+That holds once an envelope has spend history, but the FIRST batch against a
+fresh envelope has nothing to measure from, so the guard priced it as
+UNMEASURABLE and refused every dispatch (correctly, no spend). This is what
+blocked the Peel finish, not the fold itself. Fixed by seeding
+`august-2026-standing` at $0.020200/doc. STANDING RULE: a new envelope is
+created WITH a seed rate; never ship one with a null rate expecting the first
+batch to self-price. The seed only prices batches until real spend exists; the
+moment a batch has its own measured rate, that rate governs.
+
+SEED-RATE CAVEAT: $0.020200/doc is the PEEL PORTAL rate (measured $20.19 / 1000
+docs, 0 errors, run 30753674483). Board-minute PDFs run longer -- projected
+~$0.03/doc for the board backlog. The seed can therefore materially under-price
+a board batch at dispatch. Guard behaviour: use each batch's own measured rate
+once one exists, and raise to the operator if the seed under-prices a board
+batch at dispatch rather than letting it run under a stale seed.
+
+PEEL FINISH (operator go 2026-08-03): re-dispatch the ~1,824-doc remainder
+against `august-2026-standing` (now seeded), NOT a top-up of the per-batch
+`peel-portal-2026-08`. Topping up a per-batch envelope by ~$8 to finish one host
+is exactly the round-trip the standing envelope exists to remove; the standing
+$600 envelope has room and the guard stays binding.
+
+## Drain-cadence trigger: parked, stop retrying (operator 2026-08-03)
+
+The retired extract-backfill drain trigger keeps firing because delete_trigger
+returns "requires approval" and that MCP prompt does not surface on the
+operator's end -- it cannot be cleared from either side. Operator ruling: PARK
+it and stop trying. The ticks are harmless (guard-blocked, zero spend); absorb
+them silently, drop the item from the digest, do not raise it again unless
+something changes. Two days of attention on cosmetic cleanup is enough.

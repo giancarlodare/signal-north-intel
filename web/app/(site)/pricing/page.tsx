@@ -212,7 +212,7 @@ export default function PricingPage() {
                       <span className="tier-name">Signal North Enterprise</span>
                       <span className="tier-price">from $45,000 / yr</span>
                       <span className="tier-meta">Custom terms</span>
-                      <InquiryDialog tier="enterprise" />
+                      <InquiryDialog tier="enterprise" variant="primary" />
                     </th>
                   </tr>
                 </thead>
