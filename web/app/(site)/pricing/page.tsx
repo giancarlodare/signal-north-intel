@@ -37,16 +37,16 @@ type TierCells = [CellValue, CellValue, CellValue, CellValue];
 //     extraction exists behind it (task #56).
 const GROUPS: { title: string; rows: { name: string; cells: TierCells }[] }[] = [
   {
-    title: "The brief",
+    // The brief (the composed publication) and the record (the item list
+    // behind it) are ONE value step: both are the full Weekly bundle, checked
+    // identically across every column, so two headers described one price
+    // break (operator 2026-08-03). Merged; the meaningful break is read ->
+    // Monitoring below.
+    title: "The brief and the record",
     rows: [
       { name: "Weekly email", cells: ["partial", true, true, true] },
       { name: "The composed arc", cells: [false, true, true, true] },
       { name: "Issue archive", cells: [false, true, true, true] },
-    ],
-  },
-  {
-    title: "The record",
-    rows: [
       { name: "Full item list", cells: ["partial", true, true, true] },
       // "a source link on every item" is honest as written: 0 documents in the
       // corpus have no link. What it must never become is "a link to the

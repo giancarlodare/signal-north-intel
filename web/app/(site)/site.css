@@ -373,16 +373,16 @@
   transform: translateY(-2px);
   box-shadow: var(--shadow-lg);
 }
-/* Group headers (THE BRIEF / THE RECORD / MONITORING / TEAM) read as filled
-   navy section bands with a red accent bar, so the eye catches each break in
-   the ladder (operator 2026-08-03: "my eyes dont go to it"). */
+/* Group headers read as a faint banded row with dark bold text and a red
+   accent bar: enough to catch the eye at each break in the ladder, without the
+   full-navy block reading as too heavy (operator 2026-08-03). */
 .sn-site .tier-table .tier-group th {
-  background: var(--navy);
-  color: #fff;
+  background: rgba(13, 27, 46, 0.05);
+  color: var(--navy);
   font-weight: 700;
-  border-bottom: 0;
-  box-shadow: inset 4px 0 0 var(--red);
-  padding: 14px 0 14px var(--sp-5);
+  border-bottom: 1px solid var(--line);
+  box-shadow: inset 3px 0 0 var(--red);
+  padding: 13px 0 13px var(--sp-5);
 }
 
 /* Pricing table legibility (operator 2026-08-03): each tier reads as a bounded
