@@ -41,18 +41,23 @@ export default function JoinWeeklyForm() {
       <div
         data-testid="join-sent"
         style={{
-          border: "1px solid var(--line)",
-          background: "var(--cream)",
+          border: "1px solid var(--navy-line)",
+          background: "var(--navy-panel)",
           padding: "26px 28px",
           display: "flex",
           flexDirection: "column",
           gap: 8,
+          textAlign: "center",
         }}
       >
-        <span style={{ fontFamily: "var(--font-serif)", fontSize: 21 }}>
+        <span
+          style={{ fontFamily: "var(--font-serif)", fontSize: 21, color: "#fff" }}
+        >
           Check your email.
         </span>
-        <span style={{ fontSize: 14, lineHeight: 1.7, color: "var(--muted)" }}>
+        <span
+          style={{ fontSize: 14, lineHeight: 1.7, color: "var(--blue-soft)" }}
+        >
           {state.message}
         </span>
       </div>

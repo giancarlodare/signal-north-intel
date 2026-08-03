@@ -1,0 +1,12 @@
+Confirm your email to join Signal North
+
+You asked to join Signal North Weekly with this address. Confirm it and we will take you straight to your account page, where you can choose your term and complete checkout.
+
+Confirm my email:
+{{ .ConfirmationURL }}
+
+The link expires in one hour. The brief is delivered by email, which is why we confirm the address before anything else. If you did not request this, no account has been created and you can ignore this message.
+
+--
+Signal North
+Procurement intelligence for Canadian public safety and defence

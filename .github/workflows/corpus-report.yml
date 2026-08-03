@@ -57,6 +57,14 @@ on:
           # Fleet validation harness: read-only dry-run of the adapter HTML
           # parsers against live bucket-A tenants -> the validation table.
           - fleet_validate
+          # eScribe shell API discovery (operator ruling 2026-08-02): dumps
+          # the shell's JS-bundle endpoint candidates. Reads bundles only,
+          # never calls a data endpoint.
+          - shell_api_discovery
+          # eScribe api-mode validation: calls ONLY the read WebMethods
+          # (GetCalendarMeetings/PastMeetings) to validate + reveal the JSON
+          # shape. Never the subscription/OTP write-methods. Operator-ruled.
+          - api_validate
       args:
         description: "Extra arguments for the script (optional)"
         type: string

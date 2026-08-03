@@ -1,0 +1,12 @@
+Confirm your free brief
+
+You asked to receive the free Signal North weekly brief at this address. Confirm it and the next brief arrives in your inbox.
+
+Confirm my subscription:
+{{confirm_url}}
+
+No account, no card. Every brief carries an unsubscribe link and you can stop any time. If you did not request this, ignore this message and nothing will be sent.
+
+--
+Signal North
+Procurement intelligence for Canadian public safety and defence

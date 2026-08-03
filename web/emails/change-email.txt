@@ -1,0 +1,12 @@
+Confirm your new email address
+
+You asked to move your Signal North account to this address.
+
+Confirm the change:
+{{ .ConfirmationURL }}
+
+The brief and every sign-in link will go here from now on. If you did not request this, ignore this message and nothing changes.
+
+--
+Signal North
+Procurement intelligence for Canadian public safety and defence

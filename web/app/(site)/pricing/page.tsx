@@ -32,21 +32,29 @@ type TierCells = [CellValue, CellValue, CellValue, CellValue];
 //
 // CUT, and not to be reinstated by inheritance:
 //   Service-by-service read  -- no schema, no component, no design. v2.
-//   Expiring-contract tracking -- 0 of 548 awards carry an end date, so it is
-//     a capability claim we cannot honour. Returns only when the end-date
-//     extraction exists behind it (task #56).
+//
+// REINSTATED, scoped (operator 2026-08-03): "Expiring contracts (federal)".
+// The earlier cut assumed a collection problem (0 of 548 MUNICIPAL awards carry
+// an end date). Federal is different: open.canada.ca proactive disclosure
+// already gives us delivery_date, ingested today into award_text -- a
+// STRUCTURING job on data we hold, not a collection problem. Federal-only until
+// the municipal measurement (link-rate + term-extractability over the 548)
+// comes back; if that rate is decent the row widens to "federal, plus municipal
+// where the contract term is published". The extraction that backs the row is a
+// tracked task, not built yet; the row describes Pro/Enterprise as they ship,
+// same as every other closed-column row.
 const GROUPS: { title: string; rows: { name: string; cells: TierCells }[] }[] = [
   {
-    title: "The brief",
+    // The brief (the composed publication) and the record (the item list
+    // behind it) are ONE value step: both are the full Weekly bundle, checked
+    // identically across every column, so two headers described one price
+    // break (operator 2026-08-03). Merged; the meaningful break is read ->
+    // Monitoring below.
+    title: "The brief and the record",
     rows: [
       { name: "Weekly email", cells: ["partial", true, true, true] },
       { name: "The composed arc", cells: [false, true, true, true] },
       { name: "Issue archive", cells: [false, true, true, true] },
-    ],
-  },
-  {
-    title: "The record",
-    rows: [
       { name: "Full item list", cells: ["partial", true, true, true] },
       // "a source link on every item" is honest as written: 0 documents in the
       // corpus have no link. What it must never become is "a link to the
@@ -67,7 +75,15 @@ const GROUPS: { title: string; rows: { name: string; cells: TierCells }[] }[] = 
       { name: "Watchlists", cells: [false, false, true, true] },
       { name: "Alerts", cells: [false, false, true, true] },
       { name: "Buyer profiles", cells: [false, false, true, true] },
-      { name: "Arc lookup on demand", cells: [false, false, true, true] },
+      // "any buyer and category" is the distinction against Weekly: Weekly is
+      // one arc a week that we chose; Pro is the arc for whatever the member
+      // sells into. It is the mechanical arc (dated nodes, deep links, precedent
+      // set, no composed prose), so it does not touch the human-release rule.
+      { name: "Arc lookup on any buyer and category", cells: [false, false, true, true] },
+      // Federal-scoped: buildable from delivery_date we already hold (see the
+      // reinstatement note above). Widens to municipal only if the measurement
+      // supports it.
+      { name: "Expiring contracts (federal)", cells: [false, false, true, true] },
     ],
   },
   {
@@ -179,17 +195,22 @@ export default function PricingPage() {
                   <tr>
                     <th></th>
                     <th>
+                      {/* Empty flag slot keeps the tier name and button baseline
+                          aligned with the Pro/Enterprise "In development" label. */}
+                      <span className="tier-flag" aria-hidden="true"></span>
                       <span className="tier-name">Signal North Free</span>
-                      <span className="tier-price">$0</span>
+                      <span className="tier-price">Free</span>
                       <span className="tier-meta">No card required</span>
                       {/* FREE IS EMAIL CAPTURE, NOT AN ACCOUNT (operator
                           2026-08-02). The form posts straight to the send
                           list: no auth.users row, no login, no entitlement.
-                          Kept deliberately distinct from Join Weekly next
-                          door, which is a real signup. */}
-                      <FreeBriefForm source="pricing-free" compact />
+                          reveal: the column shows only a button until clicked,
+                          so the tier row stays height-aligned (operator
+                          2026-08-03: "everything horizontal aligned"). */}
+                      <FreeBriefForm source="pricing-free" compact reveal />
                     </th>
                     <th>
+                      <span className="tier-flag" aria-hidden="true"></span>
                       <span className="tier-name">Signal North Weekly</span>
                       <span className="tier-price">$3,900 / yr</span>
                       <span className="tier-meta">or $390 / mo</span>
@@ -197,25 +218,23 @@ export default function PricingPage() {
                           signup flow (confirm, then checkout), never to
                           /contact: a pricing page where nothing can be bought
                           reads as a waitlist rather than a company. */}
-                      <a
-                        className="btn btn--primary"
-                        style={{ padding: "10px 18px", letterSpacing: "0.1em" }}
-                        href="/join"
-                      >
+                      <a className="btn btn--primary" href="/join">
                         Join Weekly
                       </a>
                     </th>
                     <th className="tier-col-hot">
+                      <span className="tier-flag">In development</span>
                       <span className="tier-name">Signal North Pro</span>
                       <span className="tier-price">$19,000 / yr</span>
                       <span className="tier-meta">or $1,900 / mo</span>
-                      <InquiryDialog tier="pro" variant="primary" />
+                      <InquiryDialog tier="pro" variant="dark" />
                     </th>
                     <th>
+                      <span className="tier-flag">In development</span>
                       <span className="tier-name">Signal North Enterprise</span>
                       <span className="tier-price">from $45,000 / yr</span>
                       <span className="tier-meta">Custom terms</span>
-                      <InquiryDialog tier="enterprise" />
+                      <InquiryDialog tier="enterprise" variant="dark" />
                     </th>
                   </tr>
                 </thead>
@@ -254,16 +273,19 @@ export default function PricingPage() {
               earlier access to it.
             </p>
 
-            <div className="faq" style={{ maxWidth: 860 }}>
-              <h2 className="t-title" style={{ fontSize: 36, paddingBottom: 18 }}>
-                Questions
+            {/* Two-column FAQ (design: serif heading left, accordion right). */}
+            <div className="faq-block">
+              <h2 className="t-title" style={{ fontSize: 36 }}>
+                Questions we are asked
               </h2>
-              {FAQ.map((item) => (
-                <details key={item.q}>
-                  <summary>{item.q}</summary>
-                  <p className="faq__a">{item.a}</p>
-                </details>
-              ))}
+              <div className="faq">
+                {FAQ.map((item) => (
+                  <details key={item.q} name="faq-pricing">
+                    <summary>{item.q}</summary>
+                    <p className="faq__a">{item.a}</p>
+                  </details>
+                ))}
+              </div>
             </div>
           </div>
         </section>

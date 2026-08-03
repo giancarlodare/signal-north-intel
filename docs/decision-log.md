@@ -217,3 +217,227 @@ error wearing a green tick.
 | 2026-08-02 | Fortnight directive: full scope by Aug 16, nothing cut. Safe class WIDENS to collect-only collectors (no schema, no member surface, no LLM spend = build-and-report; unsure = gated); ONE standing August extraction envelope replaces per-batch approvals (guard enforces batch-by-batch); gated items queue into two daily windows; batch-validation harness extends to every new source. Lens side-by-side spec: floors {3,4} x windows {+30,+35} = four sets + discard decomposition + grant +60/+90 horizon; relevance migration pasted by operator | docs/fortnight-plan-2026-08-03.md; operator message of record |
 | 2026-08-02 | ENVELOPE APPROVED: $600 standing for August, guard debits the total, surfaces to queue, unspent stays unspent. Window rulings: imminent +30 -> +35 (scorer peak alignment), grants +45 -> +90 (application-assembly horizon); recent window anchors to last published issue (floor 7 days, no cap, loud when stretched) so cadence slips never skip a day of record. Shell-endpoint work: terms/robots checked first, ambiguity reported not proceeded on; loud-failure shape guard built in from day one. Durham + Waterloo boards migrate to tenant path when adapter exists | operator approvals of record; brief_generator changes this PR, 474 tests green |
 | 2026-08-02 | Digest protocol effective now: two digests/day (shipped / decisions / blocked), DECISION vs FYI labelling, BLOCKING pulls forward, answer-from-the-repo-first. Standing $600 envelope pasted and verified by operator (three rows) | CLAUDE.md digest protocol section |
+| 2026-08-02 eve | Autonomous queue worked: eScribe/CivicWeb adapter (both shapes, api inert-by-default, loud-failure guard, 8 tests) + shell-endpoint probe (all 15 tenants AMBIGUOUS -> api path stopped pending eScribe terms ruling) + standing-programs census (120 programs, PSC-dominated) + roster ingest (dead-domain corrections found) + fleet-validation harness (Hamilton 10mtg/51doc, Kitchener, Oakville clean; 4/6). PRs #152 merged | evening digest of record |
+
+## eScribe automated-access ruling (operator 2026-08-02)
+
+DECISION: proceed with automated collection of eScribe tenant meeting
+records, including the JS-shell runtime API. Operator read the terms:
+- The privacy policy governs personal information only.
+- The terms of use cover cookies and governing law.
+- NEITHER addresses automated access.
+- robots.txt permits on the tenant hosts.
+- These are statutory public records a board is required to publish.
+Silence is not prohibition; proceeding is warranted.
+
+TWO STANDING CONDITIONS (binding):
+1. The loud-failure guard on the shell/api path is non-negotiable. An
+   undocumented endpoint can change without notice, and silent-zero is the
+   failure mode that has already cost a day and four nights. (Built:
+   escribe_adapter.LoudZeroMeetings, day one.)
+2. If eScribe ever publishes terms that DO address automated access, or a
+   tenant's robots.txt changes, we STOP and report it as a boundary rather
+   than grandfathering ourselves in. The coverage/shell probes re-check
+   robots each run; a terms change is a watch item.
+
+Reasoning recorded here so the call is on the record, not in chat.
+
+## Digest cadence fix (operator 2026-08-02)
+
+The "evening" digest fired at 14:25 EDT. Eastern time was computed
+correctly (verified: UTC 18:25 -> 14:25 EDT, and tz-db America/Toronto);
+the defect was FIRING ON WORK-COMPLETION and labelling by convention. Fix:
+digests fire on a fixed Eastern schedule, morning and evening, not when
+work happens to finish. Ad-hoc completion reports are not digests and are
+not labelled as a window.
+
+## Marketing site header/button cascade fix (2026-08-02)
+
+Operator comparing the live site against the Claude Design originals: the
+header CTA rendered as a stretched, rounded, textless red pill and every
+nav link was red, on every public page. Diagnosed two upstream cascade
+defects, both fixed scoped under `.sn-site` in `app/(site)/site.css` (no
+change to globals.css or the internal review tool):
+
+1. SPECIFICITY. tokens.css `.sn-site a { color: var(--red) }` (0,1,1)
+   outranked `.btn--primary` and `.nav-link` (both 0,1,0), so ANCHOR-based
+   CTAs were red-on-red (invisible label) and nav links went red, while
+   `<button>`-based CTAs were fine. Re-declared the colours under `.sn-site`.
+2. LEAK. globals.css (operator tool, imported globally by the root layout)
+   resets every button `{ flex:1; min-height:44px; border-radius:10px }`,
+   never neutralised for the site -> the stretched rounded pill and the
+   detached rounded tab underline. Reset `flex/min-height/border-radius`
+   under `.sn-site` (radius 0 per the "rectangular, no radius" button spec).
+
+Also gave the hero's ghost button a light face for the navy ground.
+Verified by static render harness (computed styles + screenshots, resting
+and hover) and the full site suite (99/99 green). One fix corrects the
+header, anchor CTAs, tabs, chips and nav across all five public surfaces.
+
+## Marketing site design corrections, round 2 (2026-08-02)
+
+Verified against the design-handoff HTML (ground truth for structure) + the
+operator's design screenshots (authoritative for visual language), rendered
+locally through the real Next components with real fonts. Three confirmed
+defects fixed in `app/(site)/site.css`, all scoped under `.sn-site`:
+
+1. TAB PANELS SHOWED AT ONCE. The `hidden` attribute on an inactive tab panel
+   was defeated by the panel's own `display` (e.g. `.point-grid{display:grid}`)
+   outranking the UA `[hidden]{display:none}`. "One market, two sides" rendered
+   all 8 points and the tab click did nothing. Fix: `.sn-site [hidden]{display:
+   none!important}`. Verified: supplier shows 4, tab swaps to the agency 4.
+2. TIER PRICE INK. Handoff CSS left `.tier-price` as body ink; brief +
+   screenshots show crimson. Fix: `.sn-site .tier-price{color:var(--red)}`.
+3. ABOUT STATS WRAPPED. Handoff shipped six facts one row; the live build
+   renders seven, and minmax(170px) wrapped the seventh. Fix: minmax(140px) so
+   all fit one row. Verified: 7 in one row; hover reveal (red value + centred
+   note) intact.
+
+Checked and found ALREADY CORRECT (no change): About section-head motif,
+section-04 (no label), FAQ heading/layout, mission two-column — all match the
+handoff. Flagged to operator as content/judgment calls, not changed: 6-vs-7
+stats count; the single-capability section 02 (real-data-or-nothing leaves an
+empty selector rail); the Canadian-owned callout (in screenshots, absent from
+handoff+build); section-01 long-heading ellipsis. Suite 99/99 green.
+
+## Marketing site design corrections, round 3 (2026-08-02)
+
+Rendered each surface locally through the real components with the real fonts
+(EB Garamond / IBM Plex, fetched and injected since the sandbox proxy blocks
+Google Fonts). Applied three more, verified by screenshot:
+
+1. Home 01 point headings wrapped instead of clipping ("Every contract in your
+   category" no longer "...categ..."). site.css: `.point h3` white-space normal.
+2. Home 02 single-capability state collapsed the empty selector rail to a
+   full-width market-record panel. site.css: `.caps[data-placeholder]`.
+3. About mission: added the "Canadian-owned and operated" callout card (dark,
+   shadowed) from the operator's design screenshots. about/page.tsx. COPY
+   TRANSCRIBED from the screenshot -- operator to verify wording.
+
+Still open for the operator (flagged, not changed): 6-vs-7 About stats count;
+the "The market record" heading appearing twice in section 02; pricing button
+emphasis (outline/outline/dark/red) vs the current content-model buttons.
+Suite 99/99 green; typecheck clean.
+
+## Marketing redesign pass, operator notes 2026-08-03
+
+Rendered locally through the real components + real fonts + fixture data.
+Home: hero collapsed to one "Join the network" CTA -> /pricing; headline widened
+to three lines and carries "and defence" at 52px; content width bumped
+1280->1360; section 01 bottom space tightened; the arc (now 03) genericised off
+body-worn cameras to "a core system"; its paragraph shortened + widened; the
+Coverage section removed from the homepage (its register belongs in the FAQ, and
+the FAQ already carries the coverage question). Header CTA -> "Join the network"
+-> /pricing. About: dropped the "1 contract held" stat (single digit reads as a
+weakness). Pricing: the inline email box is gone -- FreeBriefForm gained a
+`reveal` mode so the Free column shows one button until clicked, keeping the tier
+row height-aligned; all four tier CTAs are full-width and align on one baseline;
+FAQ rebuilt as two columns (serif heading left, accordion right) per the design.
+"and defence" added to the page title and the mission line.
+
+STILL OPEN (operator steer needed): what "the mission section isn't centred"
+should look like; what specifically to improve on login + /join; whether the
+Durham sewer item was a live relevance-filter leak (separate backend fix) or my
+sample data; the exact live stat figures (Supabase-sourced, unverifiable here).
+Suite 99/99 green.
+
+## Drain cadence retired + Peel finish folded into standing envelope (operator 2026-08-03)
+
+DECISION (operator): retire the extract-backfill drain-cadence trigger. Its
+target was the Toronto award backlog; Toronto is excluded on the disjointness
+evidence (three police matches in 9,070 docs; TPS signals 100% from tpsb.ca),
+and the unscoped drain is paused indefinitely. Do NOT re-point the trigger at
+Peel: the standing $600 August envelope (august-2026-standing) replaced the
+reason a permission-asking cron existed. Drains are dispatched as part of the
+fortnight plan and the guard debits the total.
+
+GUARDRAIL BEHAVIOUR OF RECORD: tonight's tick refused to dispatch when the
+workflow's now-required `envelope` input was absent. Refusing to infer an
+envelope, flagging the Toronto/Peel scope mismatch, and spending nothing is
+exactly the behaviour the required input exists to produce ("an undeclared
+spend is what the guard exists to stop"). Operator affirmed the stop.
+
+PEEL FINISH: peel-portal-2026-08 was $54 declared / $20.19 spent / $33.81 left,
+~1,824 docs remaining at ~$34.66 -> the last partial batch would be skipped by
+~$1. Per operator, the remainder is folded into august-2026-standing rather
+than topping up the per-batch envelope (no reason not to combine: independent
+inputs, guard stays binding, standing envelope is built to debit the total).
+Dispatched extract-backfill on main {limit:2000, include_hosts:
+peelregion.bidsandtenders.ca, envelope:august-2026-standing} to finish the host
+(queued 204). Trigger deletion itself is pending operator approval of the
+list/delete MCP call.
+
+## Coverage section: removed now, rebuild later (operator 2026-08-03)
+
+Removing the homepage coverage register is right for now: its claims were false
+(44 police services, "COMPLETE: Ontario policing" against a measured 18). But
+it is one of the strongest sections in the original, and the honest version is a
+selling point. Bring it back once the coverage-page copy is approved and rebuilt
+from the measured table. Tracked, not dropped.
+
+## Envelope seed rate: fresh envelopes need one at creation (operator 2026-08-03)
+
+DECISION (operator): `august-2026-standing` was created with a NULL seed rate on
+the reasoning that each batch measures its own per-doc rate before dispatch.
+That holds once an envelope has spend history, but the FIRST batch against a
+fresh envelope has nothing to measure from, so the guard priced it as
+UNMEASURABLE and refused every dispatch (correctly, no spend). This is what
+blocked the Peel finish, not the fold itself. Fixed by seeding
+`august-2026-standing` at $0.020200/doc. STANDING RULE: a new envelope is
+created WITH a seed rate; never ship one with a null rate expecting the first
+batch to self-price. The seed only prices batches until real spend exists; the
+moment a batch has its own measured rate, that rate governs.
+
+SEED-RATE CAVEAT: $0.020200/doc is the PEEL PORTAL rate (measured $20.19 / 1000
+docs, 0 errors, run 30753674483). Board-minute PDFs run longer -- projected
+~$0.03/doc for the board backlog. The seed can therefore materially under-price
+a board batch at dispatch. Guard behaviour: use each batch's own measured rate
+once one exists, and raise to the operator if the seed under-prices a board
+batch at dispatch rather than letting it run under a stale seed.
+
+PEEL FINISH (operator go 2026-08-03): re-dispatch the ~1,824-doc remainder
+against `august-2026-standing` (now seeded), NOT a top-up of the per-batch
+`peel-portal-2026-08`. Topping up a per-batch envelope by ~$8 to finish one host
+is exactly the round-trip the standing envelope exists to remove; the standing
+$600 envelope has room and the guard stays binding.
+
+## Drain-cadence trigger: parked, stop retrying (operator 2026-08-03)
+
+The retired extract-backfill drain trigger keeps firing because delete_trigger
+returns "requires approval" and that MCP prompt does not surface on the
+operator's end -- it cannot be cleared from either side. Operator ruling: PARK
+it and stop trying. The ticks are harmless (guard-blocked, zero spend); absorb
+them silently, drop the item from the digest, do not raise it again unless
+something changes. Two days of attention on cosmetic cleanup is enough.
+
+## Expiring-contract row reinstated, scoped federal (operator 2026-08-03)
+
+REVERSAL (operator): the earlier ruling cut expiring-contract tracking from the
+table entirely, based on 0 of 548 MUNICIPAL awards carrying an end date. That
+conflated federal with municipal. Federal end dates ARE already collected:
+src/contracts_federal.py ingests open.canada.ca proactive disclosure
+delivery_date (the contract end/delivery date) into award_text today. So
+federal expiring-contracts is a STRUCTURING job on data we already hold, not a
+collection problem, and it is a real Pro differentiator.
+
+DECISION: row back in the table as "Expiring contracts (federal)", Pro and
+Enterprise (Monitoring group). Honest, buildable, closed-column (describes the
+tier as it ships). Widens to "federal, plus municipal where the contract term
+is published" only if the municipal measurement supports it; otherwise stays
+federal-only and says so.
+
+QUEUED, behind the fortnight work (not built this turn):
+1. Municipal contract-term MEASUREMENT (read-only, negligible cost): over the
+   548 municipal awards, how many link to a tender document stating a contract
+   term, and of those how often the term is extractable as a number of years.
+   Settles whether the row ever widens to municipal. Operator go given;
+   priority is BEHIND the fortnight, not ahead.
+2. Federal end-date STRUCTURING/extraction (delivery_date in award_text -> a
+   queryable end_date field) that actually backs the row. On the list, not this
+   fortnight; scope not cut yet (operator: unless genuinely small).
+
+ARC ROW: renamed "Arc lookup on any buyer and category" (operator wording). The
+distinction against Weekly is ANY, not on-demand: Weekly is one arc a week we
+choose; Pro is the arc for whatever the member sells into. Mechanical arc
+(dated nodes, deep links, precedent set, no prose), clear of the human-release
+rule.

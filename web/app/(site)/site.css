@@ -22,6 +22,10 @@
 .btn--nav { padding: 11px 18px; letter-spacing: 0.08em; font-size: 12px; }
 .btn--ghost { background: transparent; border: 1px solid var(--line); color: var(--body); }
 .btn--ghost:hover { border-color: var(--navy); background: var(--navy); color: #fff; }
+/* Secondary treatment for the closed tiers (Pro, Enterprise): navy, heavier
+   than Free's outline but not the red buy of Weekly. */
+.btn--dark { background: var(--navy); color: #fff; }
+.btn--dark:hover { background: var(--navy-mid); color: #fff; }
 .btn[disabled] { background: var(--line); cursor: default; }
 
 /* ---------- Bands & sections ---------- */
@@ -225,10 +229,8 @@
   background: none;
   border-bottom: 1px solid var(--line);
 }
-.tier-table .tier-group--break th {
-  border-top: 2px solid var(--navy);
-  padding-top: 40px;
-}
+/* The "break" group header (Monitoring) reads like every other group header:
+   no rule across the table (operator 2026-08-03, "just continues as normal"). */
 /* "Partial" and seat counts read as words. A half-glyph is a puzzle. */
 .tier-table .tier-partial {
   text-align: center;
@@ -264,6 +266,216 @@
 .arc__meta { display: flex; gap: 18px; align-items: baseline; flex-wrap: wrap; }
 /* Contact "what happens next" numbered row (was duplicated inline 3x). */
 .step-row { display: flex; gap: var(--sp-4); align-items: baseline; }
+
+/* ---------- Cascade reclaim (2026-08-02) ----------
+   Two upstream rules were stepping on the marketing components; both are
+   fixed HERE, scoped under .sn-site, so globals.css and the internal review
+   tool are left untouched.
+
+   1) SPECIFICITY: tokens.css `.sn-site a { color: var(--red) }` (0,1,1)
+      outranks the anchor buttons' and nav links' own colour rules
+      (.btn--primary, .nav-link, both 0,1,0). Result: every ANCHOR-based CTA
+      rendered red text on a red fill (invisible label) and every nav link
+      went red, while <button>-based CTAs were fine. Re-declaring the colours
+      under .sn-site (>=0,2,0) wins the cascade.
+
+   2) LEAK: globals.css (the operator tool, imported globally by the root
+      layout) resets EVERY button -- `button, .btn { flex:1; min-height:44px;
+      border-radius:10px }` -- and site.css never neutralised it. That is the
+      stretched, rounded pill in the header and the detached rounded tab
+      underline. `.sn-site button, .sn-site .btn` covers both <button> and
+      anchor .btn CTAs; radius 0 matches the "rectangular, no radius" spec. */
+.sn-site button,
+.sn-site .btn { flex: 0 1 auto; min-height: 0; border-radius: 0; }
+.sn-site .btn--primary,
+.sn-site .btn--primary:hover { color: #fff; }
+.sn-site .btn--ghost { color: var(--body); }
+.sn-site .btn--ghost:hover { color: #fff; }
+.sn-site .btn--dark,
+.sn-site .btn--dark:hover { color: #fff; }
+.sn-site .nav-link { color: var(--blue-mist); }
+.sn-site .nav-link:hover,
+.sn-site .nav-link[aria-current="page"] { color: #fff; }
+.sn-site .nav-login { color: var(--blue-dim); }
+.sn-site .nav-login:hover { color: #fff; }
+/* The ghost button's default is dark ink for LIGHT grounds (contact, pricing).
+   On the navy hero it needs a light face, so the home hero's secondary action
+   ("See what each tier includes") stays legible and its hover reads. */
+.sn-site .hero .btn--ghost { color: var(--blue-pale); border-color: var(--navy-line); }
+.sn-site .hero .btn--ghost:hover { background: var(--navy-mid); border-color: var(--navy-mid); color: #fff; }
+
+/* ---------- Design corrections (2026-08-02) ----------
+   Deltas verified against the design-handoff HTML + the operator's design
+   screenshots (authoritative for visual language). Scoped under .sn-site. */
+
+/* BUG: the `hidden` attribute on a tab panel was defeated because the panel's
+   own class sets `display` (e.g. .point-grid{display:grid}), which outranks the
+   UA `[hidden]{display:none}` on equal specificity + source order. Effect: the
+   "For public safety services" panel rendered alongside "For suppliers" (all 8
+   points at once) and the tab click did nothing. Restore hidden universally. */
+.sn-site [hidden] { display: none !important; }
+
+/* The pricing tier price reads in the accent per the design ("price in red");
+   the handoff CSS left it as body ink. Screenshots + brief both show crimson. */
+.sn-site .tier-price { color: var(--red); }
+/* Free-brief capture input: underline only, no box (operator 2026-08-03). The
+   bordered field read like a form dropped into an editorial page; this sits as
+   a hairline directly above the button, full width, muted placeholder. */
+.sn-site .free-brief-input {
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  padding: 11px 2px;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  color: var(--ink);
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+.sn-site .free-brief-input::placeholder { color: var(--muted); }
+.sn-site .free-brief-input:focus { border-bottom-color: var(--red); }
+/* In-development marker: a small red caps micro-label above the tier name in
+   the Pro and Enterprise columns (operator 2026-08-03). Fixed height so the
+   empty slots in Free/Weekly keep every tier name and button baseline aligned. */
+.sn-site .tier-flag {
+  display: block;
+  height: 13px;
+  line-height: 13px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-bottom: 8px;
+}
+
+/* The About stat band is ONE row. The handoff shipped six facts; the live build
+   renders seven (it added "sources collected"), and minmax(170px) only fits six
+   per row at desktop, wrapping the seventh. Tighten the track so all fit one
+   row. (Whether to carry six or seven facts is a content call, flagged.) */
+.sn-site .stats__grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+
+/* Home 01 point headings sit on ONE line each (a single word spilling to a
+   second line looked worse than the ellipsis did). The handoff's 23px clips the
+   longest heading; measured against the real font, 20px fits every heading in
+   the column with no wrap and no ellipsis, and the grid drops to fewer (wider)
+   columns before any heading could overflow. */
+.sn-site .point h3 { white-space: nowrap; overflow: visible; text-overflow: clip; font-size: 20px; }
+.sn-site .point-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+
+/* Hero left column carries a big display headline; give it more of the row so
+   the statement reads on three lines (not four) at the wider content width. */
+.sn-site .hero__inner { grid-template-columns: minmax(340px, 1.42fr) minmax(320px, 1fr); }
+
+/* Two-column FAQ: serif heading in a left rail, accordion on the right. */
+.sn-site .faq-block { display: grid; grid-template-columns: minmax(220px, 0.42fr) minmax(0, 1fr); gap: var(--sp-8); align-items: start; }
+@media (max-width: 768px) {
+  .sn-site .faq-block { grid-template-columns: 1fr; gap: var(--sp-4); }
+}
+
+/* Pricing tier CTAs: identical size, one line, aligned across the four columns.
+   Inline paddings were removed from the JSX so this single rule governs them. */
+.sn-site .tier-table thead th .btn {
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  white-space: nowrap;
+  padding: 13px 8px;
+  min-height: 0;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  /* Explicit line-height so an anchor CTA (Join Weekly) and the <button>
+     CTAs resolve to the same content height instead of the anchor inheriting
+     the taller body line-height (operator 2026-08-03: still not identical). */
+  line-height: 1.15;
+  /* Every tier button carries a 1px border so the box metrics are identical
+     whether the border is visible (Free) or transparent (the three red).
+     Without this the bordered Free button rendered 2px taller than the
+     borderless primaries (operator 2026-08-03). */
+  border: 1px solid transparent;
+  transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease),
+    transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+}
+/* Free is the only white column; its border is the visible outline. */
+.sn-site .tier-table thead th .btn--ghost { border-color: var(--line); }
+/* The three paid tiers are red and share one richer hover: a darker red, a
+   small lift, and a soft shadow so the interactivity reads clearly. */
+.sn-site .tier-table thead th .btn--primary:hover {
+  background: var(--red-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(196, 18, 48, 0.28);
+}
+.sn-site .tier-table thead th .btn--ghost:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+.sn-site .tier-table thead th .btn--dark:hover {
+  background: var(--navy-mid);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(13, 27, 46, 0.26);
+}
+/* Group headers read as a faint banded row with dark bold text and a red
+   accent bar: enough to catch the eye at each break in the ladder, without the
+   full-navy block reading as too heavy (operator 2026-08-03). */
+.sn-site .tier-table .tier-group th {
+  background: rgba(13, 27, 46, 0.05);
+  color: var(--navy);
+  font-weight: 700;
+  border-bottom: 1px solid var(--line);
+  box-shadow: inset 3px 0 0 var(--red);
+  padding: 13px 0 13px var(--sp-5);
+}
+
+/* Pricing table legibility (operator 2026-08-03): each tier reads as a bounded
+   column, the feature rail has room and darker ink, and the checkmarks are not
+   skinny. Vertical rules run the full height so the four tiers are boxes. */
+.sn-site .tier-table td:not(:first-child),
+.sn-site .tier-table thead th:not(:first-child) { border-left: 1px solid var(--line); }
+.sn-site .tier-table td:first-child,
+.sn-site .tier-table thead th:first-child { padding-left: var(--sp-5); }
+.sn-site .tier-table thead th:not(:first-child) { width: 18%; }
+.sn-site .tier-feature { color: var(--ink-soft); font-size: 15px; }
+.sn-site .tier-partial { color: var(--body); }
+.sn-site .tier-check { font-size: 16px; -webkit-text-stroke: 0.6px var(--red); }
+.sn-site .tier-dash { color: var(--faint); }
+
+/* Market-record row: a fixed two-track grid so the title fills the column and
+   truncates with an ellipsis at the value's edge, never pushing the value off
+   the row or the page. */
+.sn-site .caps__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--sp-5); align-items: baseline; }
+.sn-site .caps__row-title--fill { display: block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* About page: the sub-header sits in a LEFT RAIL (number, caps label, short red
+   rule); the content is a centred column, not full width. The rail + content
+   block is centred so every section's rail lines up. */
+.sn-site .about-section {
+  display: grid;
+  grid-template-columns: 1fr minmax(0, 700px) 1fr;
+  column-gap: var(--sp-6);
+  align-items: start;
+}
+/* Rail sits in the LEFT track, flush to the container edge -> aligned with the
+   Signal North logo in the header. Content sits in the centred middle track. */
+.sn-site .about-rail { grid-column: 1; justify-self: start; display: flex; flex-direction: column; gap: var(--sp-3); }
+.sn-site .about-content { grid-column: 2; display: flex; flex-direction: column; gap: var(--sp-6); min-width: 0; }
+.sn-site .about-rail__num { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.16em; color: var(--red); }
+.sn-site .about-rail__label { font-size: var(--fs-label); font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+.sn-site .about-rail--dark .about-rail__label { color: var(--blue-soft); }
+.sn-site .about-rail__rule { width: 40px; height: 2px; background: var(--red); }
+@media (max-width: 1100px) {
+  .sn-site .about-section { grid-template-columns: 1fr; column-gap: 0; row-gap: var(--sp-4); }
+  .sn-site .about-rail, .sn-site .about-content { grid-column: 1; }
+}
+
+/* Home 02 capabilities: the live build renders a SINGLE real capability
+   (real-data-or-nothing removed 02-06), which left the two-column selector with
+   an empty left rail. While it is the placeholder single-item state, collapse to
+   one column and drop the rail so the market-record panel reads as intentional
+   full width. Remove this rule the day a second capability becomes real. */
+.sn-site .caps[data-placeholder="true"] { grid-template-columns: 1fr; }
+.sn-site .caps[data-placeholder="true"] .caps__list { display: none; }
 
 /* Visually hidden, still read aloud. The public signup forms sit inline in
    marketing layout where a visible label would break the line, but an input

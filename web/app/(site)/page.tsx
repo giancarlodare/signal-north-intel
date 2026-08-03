@@ -13,20 +13,14 @@
 // engines are real (real-data-or-nothing, operator 2026-07-27).
 import { redirect } from "next/navigation";
 import { portalEnabled } from "@/lib/auth/roles";
-import FreeBriefForm from "@/components/site/FreeBriefForm";
 import SiteHeader from "@/components/site/SiteHeader";
 import SiteFooter from "@/components/site/SiteFooter";
-import {
-  getClosingSoon,
-  getMarketingCoverage,
-  getRecentAwards,
-} from "@/lib/marketing/data";
-import { COVERAGE_STATUS } from "@/lib/marketing/coverage-status";
+import { getClosingSoon, getRecentAwards } from "@/lib/marketing/data";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
   title:
-    "Signal North — The intelligence network for Canadian public safety procurement",
+    "Signal North — The intelligence network for Canadian public safety and defence procurement",
 };
 
 // The urgency bar: fuller as the deadline nears, over the 90-day window.
@@ -63,31 +57,12 @@ const CAPS: { id: string; name: string; label: string; rows: CapRow[] }[] = [
 // the whole register section is omitted when the data is unavailable, so the
 // transparency feature can never show a stale list.
 
-// REAL comparables, pulled from the corpus by scripts/arc_diagnostics.py
-// (run 30414996586, category body-worn-cameras). Every URL is a publisher
-// record. NO interval figure is asserted: the census can measure a clean
-// precursor-to-outcome span for only ONE buyer in this category, and a single
-// span is an anecdote, not a pattern. See docs/methodology.md 7.1.
-const PRECEDENTS = [
-  {
-    buyer: "Greater Sudbury Police Service",
-    precursorUrl:
-      "https://www.gsps.ca/media/jjhagu3j/gspsb-agenda-public_sept-18-2024.pdf",
-    outcomeUrl:
-      "https://www.gsps.ca/media/5jbhqksf/gspsb-agenda-public_jan-22-2025.pdf",
-  },
-  {
-    buyer: "Toronto Police Service",
-    precursorUrl:
-      "https://tpsb.ca/wp-content/uploads/2026/04/Board-Budget-Meeting-Agenda_November27.pdf",
-    outcomeUrl:
-      "https://tpsb.ca/wp-content/uploads/2026/04/SPECIAL_PUBLIC_MEETING_AGENDA_JAN_09.pdf",
-  },
-] as const;
-
+// The homepage arc is an illustrative SAMPLE (operator 2026-08-03): no real
+// service names, no board-minute links. It shows the shape a file takes, not a
+// specific buyer. Real, sourced arcs live in the member product, not here.
 const ARC_STEPS = [
-  { kind: "On the record", date: "Nov 2025", title: "A news story", body: "Regional press reports the camera fleet is out of warranty, raised at a board meeting." },
-  { kind: "On the record", date: "Feb 2026", title: "A budget line", body: "$7.1M carried in the capital budget for camera and evidence renewal." },
+  { kind: "On the record", date: "Nov 2025", title: "A news story", body: "Regional press reports a core system is reaching end of life, raised at a board meeting." },
+  { kind: "On the record", date: "Feb 2026", title: "A budget line", body: "A multi-year sum is carried in the capital budget for the replacement." },
   { kind: "On the record", date: "May 2026", title: "A board decision", body: "The board receives the staff report and directs procurement options." },
   { kind: "On the record", date: "Jul 2026", title: "Vendors invited in", body: "An information session is posted to the regional purchasing portal." },
 ];
@@ -96,18 +71,10 @@ export default async function SiteHome() {
   // Dark: exactly the old app/page.tsx behavior for signed-in users.
   if (!portalEnabled()) redirect("/corpus");
 
-  const [closing, coverage, recentAwards] = await Promise.all([
+  const [closing, recentAwards] = await Promise.all([
     getClosingSoon(),
-    getMarketingCoverage(),
     getRecentAwards(),
   ]);
-  const coverageTabs = coverage
-    ? [
-        { id: "services", tab: "Police services", names: coverage.services },
-        { id: "oversight", tab: "Boards and councils", names: coverage.oversight },
-        { id: "government", tab: "Ministries and departments", names: coverage.government },
-      ].filter((t) => t.names.length > 0)
-    : [];
 
   return (
     <>
@@ -123,39 +90,20 @@ export default async function SiteHome() {
               <span className="hero__eyebrow">
                 Canadian public safety &amp; defence procurement
               </span>
-              <h1 className="hero__title">
+              <h1 className="hero__title" style={{ fontSize: 52 }}>
                 The intelligence network for everyone who buys and sells in
-                Canadian public safety.
+                Canadian public safety and defence.
               </h1>
               <p className="hero__sub" style={{ margin: 0 }}>
                 Every agency, every contract, every supplier, assembled from the
                 public record and held in one place.
               </p>
-              {/* TWO PUBLIC ACTIONS, KEPT DISTINCT (operator 2026-08-02).
-                  They are different products and must not collapse into one
-                  form: Weekly is a paid signup that creates an account and
-                  ends at checkout; Free is an address on the send list with
-                  no account and no login at all. */}
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: 18 }}
-                data-testid="home-cta"
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "var(--sp-3)",
-                    flexWrap: "wrap",
-                    alignItems: "center",
-                  }}
-                >
-                  <a className="btn btn--primary" href="/join">
-                    Join Weekly
-                  </a>
-                  <a className="btn btn--ghost" href="/pricing">
-                    See what each tier includes
-                  </a>
-                </div>
-                <FreeBriefForm source="home-hero" />
+              {/* One primary action. The tiers (Free through Enterprise) live
+                  on /pricing; the hero should not carry the whole ladder. */}
+              <div data-testid="home-cta" style={{ paddingTop: "var(--sp-2)" }}>
+                <a className="btn btn--primary" href="/pricing">
+                  Join the network
+                </a>
               </div>
             </div>
             {closing ? (
@@ -182,10 +130,10 @@ export default async function SiteHome() {
                     </span>
                   </span>
                 </div>
-                {closing.rows.map((row, i) => (
+                {closing.rows.slice(0, 4).map((row, i) => (
                   <div
                     key={i}
-                    className={`live-row${i === 0 ? " live-row--hot" : ""}`}
+                    className={`live-row${i === 0 ? " live-row--hot is-open" : ""}`}
                     data-testid={`live-row-${i}`}
                   >
                     <div className="live-row__grid">
@@ -220,6 +168,15 @@ export default async function SiteHome() {
                         </span>
                       </div>
                     </div>
+                    <span className="live-row__note">
+                      Closes{" "}
+                      {new Date(`${row.close_on}T00:00:00`).toLocaleDateString(
+                        "en-CA",
+                        { year: "numeric", month: "long", day: "numeric" },
+                      )}
+                      {row.buyer ? `, ${row.buyer}` : ""}. The dated notice and
+                      its documents are carried in this week&apos;s brief.
+                    </span>
                   </div>
                 ))}
                 <div className="live-panel__foot">
@@ -229,8 +186,8 @@ export default async function SiteHome() {
                       color: "var(--blue-dim)",
                     }}
                   >
-                    {closing.rows.length} of {closing.total_open} open in the
-                    next 90 days.
+                    {Math.min(closing.rows.length, 4)} of {closing.total_open}{" "}
+                    open in the next 90 days.
                   </span>
                   <a
                     href="/join"
@@ -251,7 +208,10 @@ export default async function SiteHome() {
         </section>
 
         {/* 01 TWO SIDES */}
-        <section className="band band--paper">
+        <section
+          className="band band--paper"
+          style={{ paddingBottom: "var(--sp-7)" }}
+        >
           <div className="container">
             <div className="section-head" data-tabs="sides">
               <span className="section-head__num">01</span>
@@ -342,10 +302,8 @@ export default async function SiteHome() {
                         recentAwards.map((a, i) => (
                           <div className="caps__row" key={i}>
                             <div className="caps__row-main">
-                              <span className="caps__row-title">
-                                {a.title.length > 70
-                                  ? `${a.title.slice(0, 70)}…`
-                                  : a.title}
+                              <span className="caps__row-title caps__row-title--fill">
+                                {a.title}
                               </span>
                               <span className="caps__row-meta">
                                 {a.vendor ?? "Vendor not disclosed"}
@@ -392,73 +350,15 @@ export default async function SiteHome() {
           </div>
         </section>
 
-        {/* 03 COVERAGE (live register; omitted entirely when unavailable) */}
-        {coverageTabs.length > 0 ? (
-          <section className="band band--paper band--rule">
-            <div className="container">
-              <div className="section-head">
-                <span className="section-head__num">03</span>
-                <h2 className="t-title">Coverage you can check, name by name.</h2>
-                <span className="section-head__note">
-                  Every organisation on the record, and the ones that are not
-                  yet.
-                </span>
-              </div>
-              <div className="coverage">
-                <div className="coverage__tabs" data-tabs="coverage">
-                  {coverageTabs.map((c, i) => (
-                    <button
-                      key={c.id}
-                      className={`tab${i === 0 ? " is-active" : ""}`}
-                      data-panel={c.id}
-                    >
-                      {c.tab}
-                    </button>
-                  ))}
-                </div>
-                {coverageTabs.map((c, i) => (
-                  <div
-                    key={c.id}
-                    className="coverage__list"
-                    data-panel-group="coverage"
-                    data-panel={c.id}
-                    hidden={i !== 0}
-                  >
-                    {c.names.map((n) => (
-                      <span className="coverage__name" key={n}>
-                        {n}
-                      </span>
-                    ))}
-                  </div>
-                ))}
-                <div className="coverage__status">
-                  {COVERAGE_STATUS.map((cell) => (
-                    <div className="coverage__cell" key={cell.label}>
-                      <span
-                        className="t-label"
-                        style={{
-                          color:
-                            cell.tone === "firm" ? "var(--navy)" : "var(--faint)",
-                        }}
-                      >
-                        {cell.label}
-                      </span>
-                      <span style={{ fontSize: "var(--fs-ui)" }}>
-                        {cell.text}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </section>
-        ) : null}
+        {/* 03 COVERAGE removed from the homepage (operator 2026-08-03): the
+            register (and its "not yet covered" column) belongs in the FAQ, not
+            as a front-page focus. The FAQ's coverage question carries it. */}
 
-        {/* 04 PREDICTION */}
+        {/* 03 THE RECORD IN MOTION */}
         <section className="band band--cream">
           <div className="container">
             <div className="section-head">
-              <span className="section-head__num">04</span>
+              <span className="section-head__num">03</span>
               <h2 className="t-title">
                 The public record of a purchase, before the purchase.
               </h2>
@@ -496,20 +396,11 @@ export default async function SiteHome() {
                 <h3>Where this sits today</h3>
                 <p className="arc__body">
                   Four steps in, with vendors invited and no solicitation yet
-                  posted. Other services have stood exactly here.{" "}
-                  <a href={PRECEDENTS[0].precursorUrl} className="src-link">
-                    Greater Sudbury put body-worn cameras to its board in
-                    September 2024
-                  </a>{" "}
-                  and{" "}
-                  <a href={PRECEDENTS[0].outcomeUrl} className="src-link">
-                    carried the decision that January
-                  </a>
-                  .{" "}
-                  <a href={PRECEDENTS[1].outcomeUrl} className="src-link">
-                    Toronto&apos;s board took the same step in January 2023
-                  </a>
-                  . Every one of those is a document you can open.
+                  posted. Other services have walked exactly this path. Police
+                  service A brought its case to the board in September 2024 and
+                  carried the decision that January. Police service B&apos;s board
+                  took the same step in January 2023. Every step of a file like
+                  this is a public document you can open.
                 </p>
               </article>
             </div>
@@ -523,18 +414,14 @@ export default async function SiteHome() {
                 paddingTop: 44,
               }}
             >
-              <p style={{ margin: 0, fontSize: 16, maxWidth: 560 }}>
-                A sample file, read top to bottom. Every step is a public
-                document with a link to it. Public buying follows this sequence,
-                and we show you where a file has got to and who else has walked
-                the same one, so you arrive before the solicitation rather than
-                after it. What would stop it: a file can stall on a budget that
-                does not survive the next cycle, or be absorbed into a shared
-                regional contract and never reach a tender of its own. When that
-                happens the record says so, and so do we.
+              <p style={{ margin: 0, fontSize: 16, maxWidth: 760 }}>
+                A sample file, read top to bottom, every step a public document
+                you can open. Public buying follows this sequence, so you can see
+                where a file has reached and who else has walked it, and arrive
+                before the solicitation rather than after it.
               </p>
-              <a className="btn btn--primary" href="/join">
-                Join Weekly
+              <a className="btn btn--primary" href="/pricing">
+                Join the network
               </a>
             </div>
           </div>

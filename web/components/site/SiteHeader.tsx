@@ -35,18 +35,11 @@ export default function SiteHeader({
           >
             About
           </a>
-          <a
-            className="nav-link"
-            aria-current={current === "pricing" ? "page" : undefined}
-            href="/pricing"
-          >
-            Pricing
-          </a>
           <a className="nav-link nav-login" href="/login">
             Log in
           </a>
-          <a className="btn btn--primary btn--nav" href="/join">
-            Join Weekly
+          <a className="btn btn--primary btn--nav" href="/pricing">
+            Join the network
           </a>
         </div>
       </header>

@@ -10,6 +10,7 @@
 //
 // So there is no password field, no "continue" step, and no tier selection
 // here. One input, one button, one outcome.
+import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import {
   captureFreeSignup,
@@ -21,9 +22,12 @@ function SubmitButton({ label }: { label: string }) {
   return (
     <button
       type="submit"
-      className="btn btn--primary"
+      // Ghost, not primary: Free is the outline column, and Weekly is the only
+      // red button on the page (operator 2026-08-03). The revealed submit
+      // matches the collapsed reveal button so Free stays outline throughout.
+      className="btn btn--ghost"
       disabled={pending}
-      style={{ padding: "12px 22px", letterSpacing: "0.1em" }}
+      style={{ width: "100%" }}
     >
       {pending ? "Adding..." : label}
     </button>
@@ -34,17 +38,22 @@ export default function FreeBriefForm({
   source,
   label = "Get the free brief",
   compact = false,
+  reveal = false,
 }: {
   // Which CTA this is, recorded as the evidence half of CASL consent and as
   // the operator's read on which surface actually works.
   source: string;
   label?: string;
   compact?: boolean;
+  // reveal: show only a button until clicked, then expand the input. Keeps the
+  // pricing tier column the same height as the others so the row stays aligned.
+  reveal?: boolean;
 }) {
   const [state, formAction] = useFormState<SignupResult | null, FormData>(
     captureFreeSignup,
     null,
   );
+  const [open, setOpen] = useState(!reveal);
 
   // Terminal state: the address is on the list. No further form is shown,
   // because pressing it again does nothing new.
@@ -61,6 +70,22 @@ export default function FreeBriefForm({
       >
         {state.message}
       </p>
+    );
+  }
+
+  // Collapsed: a single button that matches the other tier CTAs; the input is
+  // revealed only on click, so the pricing row stays height-aligned.
+  if (!open) {
+    return (
+      <button
+        type="button"
+        className="btn btn--ghost"
+        onClick={() => setOpen(true)}
+        style={{ width: "100%" }}
+        data-testid="free-brief-reveal"
+      >
+        {label}
+      </button>
     );
   }
 
@@ -92,6 +117,7 @@ export default function FreeBriefForm({
       </label>
       <input
         id={`free-email-${source}`}
+        className="free-brief-input"
         type="email"
         name="email"
         placeholder="name@organisation.ca"
