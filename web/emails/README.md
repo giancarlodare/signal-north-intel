@@ -27,24 +27,41 @@ Under change A there is **no Supabase "Confirm signup" email** — Weekly accoun
 are provisioned by the webhook (`email_confirm: true`), so that template never
 fires. The Supabase-bound templates are only 04 / 05 / 06.
 
-## Open flags (operator decisions before send)
+## The CASL address is a BLOCKER, not a placeholder (operator 2026-08-03)
 
-- **`{{business_address}}`** (01, 02): CASL requires a real registered mailing
-  address in *commercial* messages. We have none until incorporation, so it is
-  a flagged placeholder, not invented. **02-free-welcome legally needs it**
-  (and so will the weekly brief); **01** is the commercial-list opt-in so it
-  carries it too; **03–06 are transactional and do not need it** (address
-  removed there). The entity name "Signal North Research Ltd." from the export
-  was also removed as unverified — confirm the real registered name.
-- **03 reference / amounts** were a hardcoded fake (`Reference 8842-QC`,
-  `$3,900.00 paid 3 August 2026`). Now variables (`{{reference}}`, `{{amount}}`,
-  `{{paid_date}}`, `{{renews_date}}`, `{{tier_line}}`) filled from real Stripe
-  data at send — or drop the block entirely, since Stripe emails its own
-  receipt. Operator's call.
+CASL requires a physical mailing address on every **commercial** electronic
+message. There is **no registered entity and no business address until
+incorporation** (~September). The holdco will be **Provenance Intelligence**;
+nothing is registered before then, and "Toronto, Ontario" does not satisfy the
+requirement. So `{{business_address}}` is a hard gate on commercial sends, and
+the entity name is a flagged variable that must NEVER be invented.
+
+What this blocks, and how the free path is built around it:
+- **02-free-welcome** is commercial → cannot send until there is a real
+  registered address (post-incorporation). **Held.**
+- **01-confirm-subscription**: commercial-vs-transactional is a **counsel
+  question**. If transactional (a response to a request), it can ship now.
+- Therefore the free path is built so **capture and confirm ship
+  independently of the welcome**, not as one chain: if counsel says 01 is
+  transactional, the front half (capture → confirm) goes live in August and
+  only 02 waits for the address. See G.
+- **Also bitten: the weekly intelligence brief itself** (#57) is commercial and
+  cannot send commercially until the address exists. Same gate.
+
+## Other flags
+
+- **03 payment block: dropped** (operator 2026-08-03). Stripe emails its own
+  receipt under change A; two receipts for one payment is confusing and a
+  reference number we must get right is risk with no upside. The welcome
+  welcomes; Stripe handles the accounting. `{{first_brief_date}}` (the upcoming
+  Monday from the purchase date) is filled at send.
 - **02 CTA** (`{{welcome_cta_url}}` / `{{welcome_cta_label}}`): the export
   pointed at `/brief/latest` (the public sample brief, which does not exist
   until C). Until then it points at `/pricing` with label "See what Weekly
   includes"; re-point to the sample brief when C ships.
+
+Brand consistency: **"public safety"** never hyphenated (matches the site);
+the brief is the **"intelligence brief"**.
 
 ## Custom SMTP (Supabase → Resend), unchanged
 

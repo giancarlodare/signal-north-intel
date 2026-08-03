@@ -1,5 +1,5 @@
 SIGNAL NORTH
-Canadian public-safety procurement intelligence
+Canadian public safety procurement intelligence
 ------------------------------------------------------------
 
 SIGN-IN LINK
@@ -17,7 +17,7 @@ request it, no action is required and your account has not been opened.
 
 ------------------------------------------------------------
 SIGNAL NORTH
-Canadian public-safety procurement intelligence
+Canadian public safety procurement intelligence
 
 This is a service message about your Signal North account. It is not a
 marketing message and carries no unsubscribe link.

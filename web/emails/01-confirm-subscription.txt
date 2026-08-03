@@ -1,12 +1,12 @@
 SIGNAL NORTH
-Canadian public-safety procurement intelligence
+Canadian public safety procurement intelligence
 ------------------------------------------------------------
 
 CONFIRMATION REQUIRED
 
 CONFIRM THIS ADDRESS
 
-You asked to receive the Signal North weekly brief. Before we begin
+You asked to receive the Signal North intelligence brief. Before we begin
 sending it, confirm that this address is yours.
 
 We ask because the brief circulates among police and fire chiefs,
@@ -24,7 +24,7 @@ removed from our queue.
 
 ------------------------------------------------------------
 SIGNAL NORTH
-Canadian public-safety procurement intelligence
+Canadian public safety procurement intelligence
 
 You are receiving this message because this address was entered at
 signalnorthintel.com.

@@ -441,3 +441,27 @@ distinction against Weekly is ANY, not on-demand: Weekly is one arc a week we
 choose; Pro is the arc for whatever the member sells into. Mechanical arc
 (dated nodes, deep links, precedent set, no prose), clear of the human-release
 rule.
+
+## CASL address blocker + free-path decoupling (operator 2026-08-03)
+
+CASL requires a physical mailing address on commercial electronic messages.
+Signal North is NOT incorporated; the holdco will be "Provenance Intelligence"
+but nothing is registered until ~September, and "Toronto, Ontario" does not
+satisfy the requirement. Never invent an entity name or address.
+
+CONSEQUENCE, scoped as a real blocker:
+- The free WELCOME (02) and the weekly intelligence brief (#57) are commercial
+  and cannot send until a real registered address exists (post-incorporation).
+- Whether the free CONFIRM (01) is commercial or transactional is a counsel
+  question. If transactional, capture + confirm can ship in August.
+- BUILD DIRECTIVE: the free path is built so capture and confirm go live
+  INDEPENDENTLY of the welcome, not as one chain. If counsel clears 01 as
+  transactional, ship the front half in August and hold only 02 for the
+  address. (Design lands in G.)
+
+EMAIL SET (Claude Design export, integrated): text wordmark lockup (no image;
+Outlook blocks remote images), 600px, six emails + plain-text twins. Under
+change A there is NO Supabase confirm-signup template; 04/05/06 are Supabase
+(magiclink/recovery/email_change), 01/02/03 are our own sends. 03's payment
+block dropped (Stripe sends its own receipt). Brand: "public safety" unhyphenated;
+the brief is the "intelligence brief".
