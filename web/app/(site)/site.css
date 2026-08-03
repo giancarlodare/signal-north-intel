@@ -342,6 +342,43 @@
 /* Pricing tier CTAs are full-width in their column so the four align as a row. */
 .sn-site .tier-table thead th .btn { width: 100%; box-sizing: border-box; text-align: center; }
 
+/* Pricing table legibility (operator 2026-08-03): each tier reads as a bounded
+   column, the feature rail has room and darker ink, and the checkmarks are not
+   skinny. Vertical rules run the full height so the four tiers are boxes. */
+.sn-site .tier-table td:not(:first-child),
+.sn-site .tier-table thead th:not(:first-child) { border-left: 1px solid var(--line); }
+.sn-site .tier-table td:first-child,
+.sn-site .tier-table thead th:first-child { padding-left: var(--sp-5); }
+.sn-site .tier-table thead th:not(:first-child) { width: 18%; }
+.sn-site .tier-feature { color: var(--ink-soft); font-size: 15px; }
+.sn-site .tier-partial { color: var(--body); }
+.sn-site .tier-check { font-size: 16px; -webkit-text-stroke: 0.6px var(--red); }
+.sn-site .tier-dash { color: var(--faint); }
+
+/* Market-record row title fills the column and truncates at its real edge
+   (not a fixed character count that cut off mid-box). */
+.sn-site .caps__row-title--fill { display: block; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* About page: the sub-header sits in a LEFT RAIL (number, caps label, short red
+   rule); the content is a centred column, not full width. The rail + content
+   block is centred so every section's rail lines up. */
+.sn-site .about-section {
+  display: grid;
+  grid-template-columns: minmax(150px, 190px) minmax(0, 640px);
+  gap: var(--sp-8);
+  justify-content: center;
+  align-items: start;
+}
+.sn-site .about-rail { display: flex; flex-direction: column; gap: var(--sp-3); }
+.sn-site .about-rail__num { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.16em; color: var(--red); }
+.sn-site .about-rail__label { font-size: var(--fs-label); font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+.sn-site .about-rail--dark .about-rail__label { color: var(--blue-soft); }
+.sn-site .about-rail__rule { width: 40px; height: 2px; background: var(--red); }
+.sn-site .about-content { display: flex; flex-direction: column; gap: var(--sp-6); min-width: 0; }
+@media (max-width: 900px) {
+  .sn-site .about-section { grid-template-columns: 1fr; gap: var(--sp-4); justify-content: stretch; }
+}
+
 /* Home 02 capabilities: the live build renders a SINGLE real capability
    (real-data-or-nothing removed 02-06), which left the two-column selector with
    an empty left rail. While it is the placeholder single-item state, collapse to

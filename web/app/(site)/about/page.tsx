@@ -121,53 +121,32 @@ export default async function AboutPage() {
           style={{ paddingTop: 88, paddingBottom: 88 }}
         >
           <div className="container">
-            <div className="section-head">
-              <span className="section-head__num">01</span>
-              <h2 className="t-title" style={{ fontSize: 40 }}>
-                The mission
-              </h2>
-            </div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "minmax(320px,1.1fr) minmax(280px,0.9fr)",
-                gap: "var(--sp-8)",
-                alignItems: "start",
-              }}
-            >
-              <p
-                style={{
-                  margin: 0,
-                  fontFamily: "var(--font-serif)",
-                  fontSize: "var(--fs-heading)",
-                  lineHeight: 1.45,
-                  letterSpacing: "-0.01em",
-                  color: "var(--ink-soft)",
-                }}
-              >
-                Every major purchase in Canadian public safety and defence
-                leaves a trail long before it becomes a tender, in a lifecycle
-                report, a budget reserve, a council motion, a board decision.
-              </p>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 18,
-                  paddingTop: 6,
-                }}
-              >
+            <div className="about-section">
+              <div className="about-rail">
+                <span className="about-rail__num">01</span>
+                <span className="about-rail__label">The mission</span>
+                <span className="about-rail__rule"></span>
+              </div>
+              <div className="about-content">
                 <p
                   style={{
                     margin: 0,
-                    fontSize: "var(--fs-body)",
-                    lineHeight: 1.85,
+                    fontFamily: "var(--font-serif)",
+                    fontSize: "var(--fs-heading)",
+                    lineHeight: 1.45,
+                    letterSpacing: "-0.01em",
+                    color: "var(--ink-soft)",
                   }}
                 >
-                  Each one is published. None of them are assembled. Signal
-                  North brings the entire public record together in one place
-                  and holds it neutrally, so everyone who operates in this
-                  market works from the same complete picture.
+                  Every major purchase in Canadian public safety and defence
+                  leaves a trail long before it becomes a tender, in a lifecycle
+                  report, a budget reserve, a council motion, a board decision.
+                </p>
+                <p style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.85 }}>
+                  Each one is published. None of them are assembled. Signal North
+                  brings the entire public record together in one place and holds
+                  it neutrally, so everyone who operates in this market works from
+                  the same complete picture.
                 </p>
                 <p
                   style={{
@@ -183,53 +162,49 @@ export default async function AboutPage() {
                   We cover one market deeply rather than every market thinly.
                   That is the entire strategy.
                 </p>
+                {/* Canadian-owned callout: one of the two deliberate shadows. */}
+                <div
+                  style={{
+                    background: "var(--navy)",
+                    borderRadius: "var(--radius)",
+                    boxShadow: "var(--shadow-lg)",
+                    padding: 36,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 14,
+                  }}
+                >
+                  <span
+                    className="t-label"
+                    style={{ color: "var(--red-on-dark)", letterSpacing: "0.2em" }}
+                  >
+                    Canadian-owned and operated
+                  </span>
+                  <h3
+                    style={{
+                      fontFamily: "var(--font-serif)",
+                      fontSize: 26,
+                      lineHeight: 1.3,
+                      color: "#fff",
+                    }}
+                  >
+                    Signal North is a wholly Canadian-owned company, founded and
+                    headquartered in Ontario.
+                  </h3>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: "var(--fs-ui)",
+                      lineHeight: 1.8,
+                      color: "var(--blue-mist)",
+                    }}
+                  >
+                    Critical intelligence for Canada&apos;s public-safety and
+                    defence sector should be built and held here: independent,
+                    domestic, and accountable to the market it serves.
+                  </p>
+                </div>
               </div>
-            </div>
-            {/* Canadian-owned callout: one of the two deliberate shadows in the
-                design. Copy transcribed from the operator's design screenshots;
-                verify wording. */}
-            <div
-              style={{
-                marginTop: "var(--sp-8)",
-                maxWidth: 760,
-                background: "var(--navy)",
-                borderRadius: "var(--radius)",
-                boxShadow: "var(--shadow-lg)",
-                padding: 40,
-                display: "flex",
-                flexDirection: "column",
-                gap: 14,
-              }}
-            >
-              <span
-                className="t-label"
-                style={{ color: "var(--red-on-dark)", letterSpacing: "0.2em" }}
-              >
-                Canadian-owned and operated
-              </span>
-              <h3
-                style={{
-                  fontFamily: "var(--font-serif)",
-                  fontSize: 28,
-                  lineHeight: 1.3,
-                  color: "#fff",
-                }}
-              >
-                Signal North is a wholly Canadian-owned company, founded and
-                headquartered in Ontario.
-              </h3>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: "var(--fs-ui)",
-                  lineHeight: 1.8,
-                  color: "var(--blue-mist)",
-                }}
-              >
-                Critical intelligence for Canada&apos;s public-safety and defence
-                sector should be built and held here: independent, domestic, and
-                accountable to the market it serves.
-              </p>
             </div>
           </div>
         </section>
@@ -239,12 +214,12 @@ export default async function AboutPage() {
           style={{ paddingTop: 88, paddingBottom: 88 }}
         >
           <div className="container">
-            <div className="section-head">
-              <span className="section-head__num">02</span>
-              <h2 className="t-title" style={{ fontSize: 40 }}>
-                The Team
-              </h2>
-            </div>
+            <div className="about-section">
+              <div className="about-rail">
+                <span className="about-rail__num">02</span>
+                <span className="about-rail__label">The Team</span>
+                <span className="about-rail__rule"></span>
+              </div>
             <div
               className="card card--hover"
               style={{
@@ -300,24 +275,27 @@ export default async function AboutPage() {
                 <p style={{ margin: 0, fontSize: 16, lineHeight: 1.8 }}>
                   Giancarlo Da-Ré spent his career inside the Ontario
                   government&apos;s most consequential public safety files. As
-                  Executive Director of Policy to the Premier, he worked across
-                  a portfolio spanning public safety, emergency management,
-                  justice, critical infrastructure, transportation, housing, and
-                  procurement. Before that, as Director of Policy and
-                  Stakeholder Relations to the Solicitor General, the ministry
-                  responsible for policing, firefighting, private security, and
-                  corrections in Canada&apos;s largest province, he worked on
-                  law enforcement policy, public safety technology, and
-                  next-generation 9-1-1 infrastructure.
+                  Executive Director of Policy to the Premier, he carried a
+                  portfolio spanning public safety, emergency management, justice,
+                  critical infrastructure, transportation, housing, and
+                  procurement.
                 </p>
                 <p style={{ margin: 0, fontSize: 16, lineHeight: 1.8 }}>
-                  He built Signal North after leaving government, drawing on
-                  that vantage point: writing the business cases, sitting
-                  through the board cycles, and helping design the competitions
-                  this platform now follows. He never took part in scoring,
-                  reading, or choosing a winner, and Signal North never will.
+                  Before that, he served as Director of Policy and Stakeholder
+                  Relations to the Solicitor General, the ministry responsible for
+                  policing, firefighting, private security, and corrections in
+                  Canada&apos;s largest province, where he shaped law enforcement
+                  policy, public safety technology, public safety broadband and
+                  radio networks, simultaneous notification, and next-generation
+                  9-1-1 infrastructure.
+                </p>
+                <p style={{ margin: 0, fontSize: 16, lineHeight: 1.8 }}>
+                  Signal North is built from that vantage point, at the epicentre
+                  of government decision-making: a working knowledge of how public
+                  money moves from intention to purchase.
                 </p>
               </div>
+            </div>
             </div>
           </div>
         </section>
@@ -327,20 +305,21 @@ export default async function AboutPage() {
           style={{ paddingTop: 88, paddingBottom: 88 }}
         >
           <div className="container">
-            <div className="section-head">
-              <span className="section-head__num">03</span>
-              <h2 className="t-title" style={{ fontSize: 40 }}>
-                What we stand on
-              </h2>
-            </div>
-            <div className="principles">
-              {PRINCIPLES.map((p) => (
-                <article className="principle" key={p.num}>
-                  <span className="principle__num">{p.num}</span>
-                  <h3>{p.title}</h3>
-                  <p>{p.body}</p>
-                </article>
-              ))}
+            <div className="about-section">
+              <div className="about-rail">
+                <span className="about-rail__num">03</span>
+                <span className="about-rail__label">What we stand on</span>
+                <span className="about-rail__rule"></span>
+              </div>
+              <div className="principles">
+                {PRINCIPLES.map((p) => (
+                  <article className="principle" key={p.num}>
+                    <span className="principle__num">{p.num}</span>
+                    <h3>{p.title}</h3>
+                    <p>{p.body}</p>
+                  </article>
+                ))}
+              </div>
             </div>
           </div>
         </section>
@@ -352,14 +331,14 @@ export default async function AboutPage() {
             paddingBottom: "var(--sp-9)",
           }}
         >
-          <div
-            className="container"
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "var(--sp-5)",
-            }}
-          >
+          <div className="container">
+            <div className="about-section">
+              <div className="about-rail about-rail--dark">
+                <span className="about-rail__num">04</span>
+                <span className="about-rail__label">The Principle</span>
+                <span className="about-rail__rule"></span>
+              </div>
+              <div className="about-content">
             <h2
               style={{
                 fontFamily: "var(--font-serif)",
@@ -402,6 +381,8 @@ export default async function AboutPage() {
               </a>
               .
             </p>
+              </div>
+            </div>
           </div>
         </section>
       </main>

@@ -180,7 +180,7 @@ export default function PricingPage() {
                     <th></th>
                     <th>
                       <span className="tier-name">Signal North Free</span>
-                      <span className="tier-price">$0</span>
+                      <span className="tier-price">Free</span>
                       <span className="tier-meta">No card required</span>
                       {/* FREE IS EMAIL CAPTURE, NOT AN ACCOUNT (operator
                           2026-08-02). The form posts straight to the send

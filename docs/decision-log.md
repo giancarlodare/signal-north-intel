@@ -340,3 +340,37 @@ should look like; what specifically to improve on login + /join; whether the
 Durham sewer item was a live relevance-filter leak (separate backend fix) or my
 sample data; the exact live stat figures (Supabase-sourced, unverifiable here).
 Suite 99/99 green.
+
+## Drain cadence retired + Peel finish folded into standing envelope (operator 2026-08-03)
+
+DECISION (operator): retire the extract-backfill drain-cadence trigger. Its
+target was the Toronto award backlog; Toronto is excluded on the disjointness
+evidence (three police matches in 9,070 docs; TPS signals 100% from tpsb.ca),
+and the unscoped drain is paused indefinitely. Do NOT re-point the trigger at
+Peel: the standing $600 August envelope (august-2026-standing) replaced the
+reason a permission-asking cron existed. Drains are dispatched as part of the
+fortnight plan and the guard debits the total.
+
+GUARDRAIL BEHAVIOUR OF RECORD: tonight's tick refused to dispatch when the
+workflow's now-required `envelope` input was absent. Refusing to infer an
+envelope, flagging the Toronto/Peel scope mismatch, and spending nothing is
+exactly the behaviour the required input exists to produce ("an undeclared
+spend is what the guard exists to stop"). Operator affirmed the stop.
+
+PEEL FINISH: peel-portal-2026-08 was $54 declared / $20.19 spent / $33.81 left,
+~1,824 docs remaining at ~$34.66 -> the last partial batch would be skipped by
+~$1. Per operator, the remainder is folded into august-2026-standing rather
+than topping up the per-batch envelope (no reason not to combine: independent
+inputs, guard stays binding, standing envelope is built to debit the total).
+Dispatched extract-backfill on main {limit:2000, include_hosts:
+peelregion.bidsandtenders.ca, envelope:august-2026-standing} to finish the host
+(queued 204). Trigger deletion itself is pending operator approval of the
+list/delete MCP call.
+
+## Coverage section: removed now, rebuild later (operator 2026-08-03)
+
+Removing the homepage coverage register is right for now: its claims were false
+(44 police services, "COMPLETE: Ontario policing" against a measured 18). But
+it is one of the strongest sections in the original, and the honest version is a
+selling point. Bring it back once the coverage-page copy is approved and rebuilt
+from the measured table. Tracked, not dropped.

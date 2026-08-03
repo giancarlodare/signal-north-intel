@@ -152,7 +152,7 @@ export default async function SiteHome() {
                 {closing.rows.map((row, i) => (
                   <div
                     key={i}
-                    className={`live-row${i === 0 ? " live-row--hot" : ""}`}
+                    className={`live-row${i === 0 ? " live-row--hot is-open" : ""}`}
                     data-testid={`live-row-${i}`}
                   >
                     <div className="live-row__grid">
@@ -187,6 +187,15 @@ export default async function SiteHome() {
                         </span>
                       </div>
                     </div>
+                    <span className="live-row__note">
+                      Closes{" "}
+                      {new Date(`${row.close_on}T00:00:00`).toLocaleDateString(
+                        "en-CA",
+                        { year: "numeric", month: "long", day: "numeric" },
+                      )}
+                      {row.buyer ? `, ${row.buyer}` : ""}. The dated notice and
+                      its documents are carried in this week&apos;s brief.
+                    </span>
                   </div>
                 ))}
                 <div className="live-panel__foot">
@@ -312,10 +321,8 @@ export default async function SiteHome() {
                         recentAwards.map((a, i) => (
                           <div className="caps__row" key={i}>
                             <div className="caps__row-main">
-                              <span className="caps__row-title">
-                                {a.title.length > 70
-                                  ? `${a.title.slice(0, 70)}…`
-                                  : a.title}
+                              <span className="caps__row-title caps__row-title--fill">
+                                {a.title}
                               </span>
                               <span className="caps__row-meta">
                                 {a.vendor ?? "Vendor not disclosed"}
