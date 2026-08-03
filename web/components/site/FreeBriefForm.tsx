@@ -22,9 +22,12 @@ function SubmitButton({ label }: { label: string }) {
   return (
     <button
       type="submit"
-      className="btn btn--primary"
+      // Ghost, not primary: Free is the outline column, and Weekly is the only
+      // red button on the page (operator 2026-08-03). The revealed submit
+      // matches the collapsed reveal button so Free stays outline throughout.
+      className="btn btn--ghost"
       disabled={pending}
-      style={{ padding: "12px 22px", letterSpacing: "0.1em" }}
+      style={{ width: "100%" }}
     >
       {pending ? "Adding..." : label}
     </button>
@@ -114,6 +117,7 @@ export default function FreeBriefForm({
       </label>
       <input
         id={`free-email-${source}`}
+        className="free-brief-input"
         type="email"
         name="email"
         placeholder="name@organisation.ca"

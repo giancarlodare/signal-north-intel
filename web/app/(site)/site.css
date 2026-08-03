@@ -318,6 +318,24 @@
 /* The pricing tier price reads in the accent per the design ("price in red");
    the handoff CSS left it as body ink. Screenshots + brief both show crimson. */
 .sn-site .tier-price { color: var(--red); }
+/* Free-brief capture input: underline only, no box (operator 2026-08-03). The
+   bordered field read like a form dropped into an editorial page; this sits as
+   a hairline directly above the button, full width, muted placeholder. */
+.sn-site .free-brief-input {
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  padding: 11px 2px;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  color: var(--ink);
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+.sn-site .free-brief-input::placeholder { color: var(--muted); }
+.sn-site .free-brief-input:focus { border-bottom-color: var(--red); }
 /* In-development marker: a small red caps micro-label above the tier name in
    the Pro and Enterprise columns (operator 2026-08-03). Fixed height so the
    empty slots in Free/Weekly keep every tier name and button baseline aligned. */
