@@ -210,7 +210,10 @@ export default function PricingPage() {
                       <FreeBriefForm source="pricing-free" compact reveal />
                     </th>
                     <th>
-                      <span className="tier-flag" aria-hidden="true"></span>
+                      {/* Entry-point marker (operator 2026-08-03): honest, not
+                          "Most Popular" (we have no customers to be popular
+                          with). Badge treatment in the same aligned flag slot. */}
+                      <span className="tier-badge">Start here</span>
                       <span className="tier-name">Signal North Weekly</span>
                       <span className="tier-price">$3,900 / yr</span>
                       <span className="tier-meta">or $390 / mo</span>
@@ -266,6 +269,14 @@ export default function PricingPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Weekly-to-Pro bridge (operator 2026-08-03): the one line that
+                explains the price gap. Short form only, no latency promise
+                before alerts exist. */}
+            <p className="tier-bridge" data-testid="tier-bridge">
+              Weekly is a publication you read. Pro watches your buyers and
+              categories for you.
+            </p>
 
             <p className="tier-neutrality" data-testid="neutrality-line">
               The record is the same for everyone. A higher tier buys more ways

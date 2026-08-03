@@ -339,16 +339,42 @@
 /* In-development marker: a small red caps micro-label above the tier name in
    the Pro and Enterprise columns (operator 2026-08-03). Fixed height so the
    empty slots in Free/Weekly keep every tier name and button baseline aligned. */
+/* Marker slot above the tier name. Both the "In development" label and the
+   "Start here" badge occupy the SAME 18px slot so every tier name (and the
+   button below) stays aligned; Free's slot is an empty .tier-flag. */
 .sn-site .tier-flag {
   display: block;
-  height: 13px;
-  line-height: 13px;
+  height: 18px;
+  line-height: 18px;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--red);
   margin-bottom: 8px;
+}
+.sn-site .tier-badge {
+  display: block;
+  width: fit-content;
+  box-sizing: border-box;
+  height: 18px;
+  line-height: 18px;
+  margin-bottom: 8px;
+  padding: 0 9px;
+  background: var(--red);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+/* Weekly-to-Pro bridge line: connective tissue under the table, not a row. */
+.sn-site .tier-bridge {
+  margin: 0;
+  text-align: center;
+  font-size: var(--fs-ui);
+  line-height: 1.6;
+  color: var(--ink-soft);
 }
 
 /* The About stat band is ONE row. The handoff shipped six facts; the live build
