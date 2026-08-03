@@ -179,6 +179,9 @@ export default function PricingPage() {
                   <tr>
                     <th></th>
                     <th>
+                      {/* Empty flag slot keeps the tier name and button baseline
+                          aligned with the Pro/Enterprise "In development" label. */}
+                      <span className="tier-flag" aria-hidden="true"></span>
                       <span className="tier-name">Signal North Free</span>
                       <span className="tier-price">Free</span>
                       <span className="tier-meta">No card required</span>
@@ -191,6 +194,7 @@ export default function PricingPage() {
                       <FreeBriefForm source="pricing-free" compact reveal />
                     </th>
                     <th>
+                      <span className="tier-flag" aria-hidden="true"></span>
                       <span className="tier-name">Signal North Weekly</span>
                       <span className="tier-price">$3,900 / yr</span>
                       <span className="tier-meta">or $390 / mo</span>
@@ -203,12 +207,14 @@ export default function PricingPage() {
                       </a>
                     </th>
                     <th className="tier-col-hot">
+                      <span className="tier-flag">In development</span>
                       <span className="tier-name">Signal North Pro</span>
                       <span className="tier-price">$19,000 / yr</span>
                       <span className="tier-meta">or $1,900 / mo</span>
                       <InquiryDialog tier="pro" variant="dark" />
                     </th>
                     <th>
+                      <span className="tier-flag">In development</span>
                       <span className="tier-name">Signal North Enterprise</span>
                       <span className="tier-price">from $45,000 / yr</span>
                       <span className="tier-meta">Custom terms</span>

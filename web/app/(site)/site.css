@@ -318,6 +318,20 @@
 /* The pricing tier price reads in the accent per the design ("price in red");
    the handoff CSS left it as body ink. Screenshots + brief both show crimson. */
 .sn-site .tier-price { color: var(--red); }
+/* In-development marker: a small red caps micro-label above the tier name in
+   the Pro and Enterprise columns (operator 2026-08-03). Fixed height so the
+   empty slots in Free/Weekly keep every tier name and button baseline aligned. */
+.sn-site .tier-flag {
+  display: block;
+  height: 13px;
+  line-height: 13px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--red);
+  margin-bottom: 8px;
+}
 
 /* The About stat band is ONE row. The handoff shipped six facts; the live build
    renders seven (it added "sources collected"), and minmax(170px) only fits six
