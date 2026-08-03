@@ -32,9 +32,17 @@ type TierCells = [CellValue, CellValue, CellValue, CellValue];
 //
 // CUT, and not to be reinstated by inheritance:
 //   Service-by-service read  -- no schema, no component, no design. v2.
-//   Expiring-contract tracking -- 0 of 548 awards carry an end date, so it is
-//     a capability claim we cannot honour. Returns only when the end-date
-//     extraction exists behind it (task #56).
+//
+// REINSTATED, scoped (operator 2026-08-03): "Expiring contracts (federal)".
+// The earlier cut assumed a collection problem (0 of 548 MUNICIPAL awards carry
+// an end date). Federal is different: open.canada.ca proactive disclosure
+// already gives us delivery_date, ingested today into award_text -- a
+// STRUCTURING job on data we hold, not a collection problem. Federal-only until
+// the municipal measurement (link-rate + term-extractability over the 548)
+// comes back; if that rate is decent the row widens to "federal, plus municipal
+// where the contract term is published". The extraction that backs the row is a
+// tracked task, not built yet; the row describes Pro/Enterprise as they ship,
+// same as every other closed-column row.
 const GROUPS: { title: string; rows: { name: string; cells: TierCells }[] }[] = [
   {
     // The brief (the composed publication) and the record (the item list
@@ -67,7 +75,15 @@ const GROUPS: { title: string; rows: { name: string; cells: TierCells }[] }[] = 
       { name: "Watchlists", cells: [false, false, true, true] },
       { name: "Alerts", cells: [false, false, true, true] },
       { name: "Buyer profiles", cells: [false, false, true, true] },
-      { name: "Arc lookup on demand", cells: [false, false, true, true] },
+      // "any buyer and category" is the distinction against Weekly: Weekly is
+      // one arc a week that we chose; Pro is the arc for whatever the member
+      // sells into. It is the mechanical arc (dated nodes, deep links, precedent
+      // set, no composed prose), so it does not touch the human-release rule.
+      { name: "Arc lookup on any buyer and category", cells: [false, false, true, true] },
+      // Federal-scoped: buildable from delivery_date we already hold (see the
+      // reinstatement note above). Widens to municipal only if the measurement
+      // supports it.
+      { name: "Expiring contracts (federal)", cells: [false, false, true, true] },
     ],
   },
   {
