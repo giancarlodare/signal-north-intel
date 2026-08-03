@@ -225,10 +225,8 @@
   background: none;
   border-bottom: 1px solid var(--line);
 }
-.tier-table .tier-group--break th {
-  border-top: 2px solid var(--navy);
-  padding-top: 40px;
-}
+/* The "break" group header (Monitoring) reads like every other group header:
+   no rule across the table (operator 2026-08-03, "just continues as normal"). */
 /* "Partial" and seat counts read as words. A half-glyph is a puzzle. */
 .tier-table .tier-partial {
   text-align: center;
