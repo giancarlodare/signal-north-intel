@@ -465,3 +465,34 @@ change A there is NO Supabase confirm-signup template; 04/05/06 are Supabase
 (magiclink/recovery/email_change), 01/02/03 are our own sends. 03's payment
 block dropped (Stripe sends its own receipt). Brand: "public safety" unhyphenated;
 the brief is the "intelligence brief".
+
+## CASL address SOLVED — correction (operator 2026-08-03)
+
+Correction to the prior entry: the mailing address is confirmed (Richmond Hill
+coworking location). The only remaining step is a ~$60 online Ontario
+business-name registration to make "Signal North" a legally identifiable
+sender. There is NO dependency on incorporation for the free path. The free
+path is gated by the ETHICS GATE like everything else, not by a second address
+dependency. Keep the entity name a flagged variable (never invent); keep
+building capture + confirm independently of the welcome.
+
+## Weekly brief email: state of record (2026-08-03)
+
+Reconciling "no send path exists" vs "#57 pending": both describe different
+halves. web/lib/brief/render.ts is REAL, not a stub -- a complete 600px
+table-based email (navy masthead, THE READ band, lead card, buyer-grouped
+items with dated provenance-labelled links, a standing-exhibit bar chart, navy
+methodology footer), and web/app/brief/[week]/route.ts serves the exact same
+HTML so web and email cannot drift. web/app/brief/actions.ts sendBriefEmail
+DOES send, via Resend from the verified signalnorthintel.com domain, but
+OPERATOR-ONLY (RECIPIENT = BRIEF_RECIPIENT or giancarlo@; "no list, no
+capture"). So: render + operator-preview send EXIST; the subscriber/list send
+(#57) does NOT. The pricing pass's "no send path" was about the free-signup/
+list send, which is accurate for that surface.
+
+GAPS: (1) there is NO Free PARTIAL / locked-items version -- render.ts renders
+the full brief only. (2) the brief email is a fixed 600px column and overflows
+a 390px phone (no fluid media query), unlike the transactional set.
+DIRECTION (operator): the email is the hardest of the three brief surfaces
+(portal, email, public sample), so design it first and derive the other two;
+build the Free partial to the same system.

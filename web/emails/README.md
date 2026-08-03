@@ -27,26 +27,22 @@ Under change A there is **no Supabase "Confirm signup" email** — Weekly accoun
 are provisioned by the webhook (`email_confirm: true`), so that template never
 fires. The Supabase-bound templates are only 04 / 05 / 06.
 
-## The CASL address is a BLOCKER, not a placeholder (operator 2026-08-03)
+## CASL address (operator update 2026-08-03: solved, no incorporation dependency)
 
 CASL requires a physical mailing address on every **commercial** electronic
-message. There is **no registered entity and no business address until
-incorporation** (~September). The holdco will be **Provenance Intelligence**;
-nothing is registered before then, and "Toronto, Ontario" does not satisfy the
-requirement. So `{{business_address}}` is a hard gate on commercial sends, and
-the entity name is a flagged variable that must NEVER be invented.
+message. The mailing address is **confirmed** — a Richmond Hill coworking
+location. What remains is a ~$60 online **Ontario business-name registration**
+so "Signal North" is a legally identifiable sender; there is **no dependency on
+incorporation** for this. `{{business_address}}` stays a flagged variable
+(filled from the confirmed address at send), and the entity name is never
+invented.
 
-What this blocks, and how the free path is built around it:
-- **02-free-welcome** is commercial → cannot send until there is a real
-  registered address (post-incorporation). **Held.**
-- **01-confirm-subscription**: commercial-vs-transactional is a **counsel
-  question**. If transactional (a response to a request), it can ship now.
-- Therefore the free path is built so **capture and confirm ship
-  independently of the welcome**, not as one chain: if counsel says 01 is
-  transactional, the front half (capture → confirm) goes live in August and
-  only 02 waits for the address. See G.
-- **Also bitten: the weekly intelligence brief itself** (#57) is commercial and
-  cannot send commercially until the address exists. Same gate.
+So the free path is **not** blocked by a second address dependency — it is
+gated by the **ethics gate like everything else**. The build structure still
+holds: **capture and confirm ship independently of the welcome**, so the front
+half can go live as soon as the ethics gate and the (small) name registration
+clear, and only 02 waits on nothing more than that. The weekly intelligence
+brief (#57) sits behind the same single gate, not a separate one.
 
 ## Other flags
 
