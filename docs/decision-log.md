@@ -409,3 +409,35 @@ operator's end -- it cannot be cleared from either side. Operator ruling: PARK
 it and stop trying. The ticks are harmless (guard-blocked, zero spend); absorb
 them silently, drop the item from the digest, do not raise it again unless
 something changes. Two days of attention on cosmetic cleanup is enough.
+
+## Expiring-contract row reinstated, scoped federal (operator 2026-08-03)
+
+REVERSAL (operator): the earlier ruling cut expiring-contract tracking from the
+table entirely, based on 0 of 548 MUNICIPAL awards carrying an end date. That
+conflated federal with municipal. Federal end dates ARE already collected:
+src/contracts_federal.py ingests open.canada.ca proactive disclosure
+delivery_date (the contract end/delivery date) into award_text today. So
+federal expiring-contracts is a STRUCTURING job on data we already hold, not a
+collection problem, and it is a real Pro differentiator.
+
+DECISION: row back in the table as "Expiring contracts (federal)", Pro and
+Enterprise (Monitoring group). Honest, buildable, closed-column (describes the
+tier as it ships). Widens to "federal, plus municipal where the contract term
+is published" only if the municipal measurement supports it; otherwise stays
+federal-only and says so.
+
+QUEUED, behind the fortnight work (not built this turn):
+1. Municipal contract-term MEASUREMENT (read-only, negligible cost): over the
+   548 municipal awards, how many link to a tender document stating a contract
+   term, and of those how often the term is extractable as a number of years.
+   Settles whether the row ever widens to municipal. Operator go given;
+   priority is BEHIND the fortnight, not ahead.
+2. Federal end-date STRUCTURING/extraction (delivery_date in award_text -> a
+   queryable end_date field) that actually backs the row. On the list, not this
+   fortnight; scope not cut yet (operator: unless genuinely small).
+
+ARC ROW: renamed "Arc lookup on any buyer and category" (operator wording). The
+distinction against Weekly is ANY, not on-demand: Weekly is one arc a week we
+choose; Pro is the arc for whatever the member sells into. Mechanical arc
+(dated nodes, deep links, precedent set, no prose), clear of the human-release
+rule.
