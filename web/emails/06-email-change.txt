@@ -1,0 +1,25 @@
+SIGNAL NORTH
+Canadian public-safety procurement intelligence
+------------------------------------------------------------
+
+ADDRESS CHANGE
+
+CONFIRM THE NEW ADDRESS
+
+A request was made to move the Signal North account registered to
+{{ .Email }} to this address. Confirm it below.
+
+{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email_change
+
+------------------------------------------------------------
+
+Until this is confirmed, the brief and all account mail continue to go to
+the previous address. The link expires in twenty-four hours. If you did
+not request the change, no action is required and nothing has moved.
+
+------------------------------------------------------------
+SIGNAL NORTH
+Canadian public-safety procurement intelligence
+
+This is a service message about your Signal North account. It is not a
+marketing message and carries no unsubscribe link.
