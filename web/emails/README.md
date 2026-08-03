@@ -21,16 +21,22 @@ copy already approved in `docs/auth-email-templates.md`. The send path itself
 (capture → send confirm → confirm endpoint → add to list) is a separate build,
 not yet wired.
 
-## The compass mark
+## No images: text lockup by design
 
-`assets/compass-mark.png` (navy mark, transparent, 64px for 32px display).
-Email clients do not render SVG or `data:` images reliably, so the templates
-reference a hosted PNG at:
+The header is a **text-only serif "Signal North" lockup**, not an image.
+Remote images are blocked by default in a large share of clients (Outlook, many
+Gmail configs), so a hosted mark would be absent on first open for many
+recipients — and a missing image in the first email we ever send is worse than
+no image. The text lockup always renders. There is nothing to host.
 
-    https://signalnorthintel.com/email/compass-mark.png
+## Reply handling
 
-Upload `assets/compass-mark.png` to that path before the first real send. Until
-it is hosted, clients show the `alt="Signal North"` text — no broken layout.
+`mail@signalnorthintel.com` is send-only. Supabase's auth email UI does not
+expose a per-template Reply-To, so instead every template's footer states
+plainly that the address is not monitored and points to
+`giancarlo@signalnorthintel.com` (the monitored contact used across the site).
+For `confirm-subscription` (sent by our own code via Resend), also set the
+`Reply-To` header to that address when the send path is built.
 
 ## Custom SMTP: point Supabase at Resend
 
@@ -56,8 +62,6 @@ Email Templates**, and set the subjects:
 
 ## Before the first real send
 
-- The domain is verified in Resend, so DKIM and SPF should already be in DNS.
-  Confirm a **DMARC** record exists (`p=none` is enough to start); gov mail
-  filters weight it, and these are the links the whole flow depends on.
+- DKIM, SPF and DMARC are all in DNS (DMARC `_dmarc` TXT added 2026-08-03).
 - Send one of each to a seed address and check rendering in Outlook, Gmail and
   Apple Mail before enabling for real signups.
