@@ -73,6 +73,13 @@ jobs:
       - name: Clean up test member(s) across Stripe test mode + Supabase
         if: inputs.mode == 'cleanup-member'
         run: node scripts/ci/cleanup-test-member.mjs ${{ inputs.arg }}
+      # --- diag-otp: which Supabase email throttle is actually biting ---------
+      # Sends up to 2 real OTP emails to the given address (from the hourly
+      # budget) and prints both responses verbatim. No user created, no token
+      # in logs.
+      - name: Probe OTP rate limiting
+        if: inputs.mode == 'diag-otp'
+        run: node scripts/ci/diag-otp.mjs "${{ inputs.arg }}"
       # --- validate mode (default): full E2E ---------------------------------
       - name: Build
         if: inputs.mode == 'validate'
