@@ -13,11 +13,11 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "validate (full E2E) | inspect (read + clean up one Stripe object)"
+        description: "validate (full E2E) | inspect (read + clean up one Stripe object) | list-accounts (audit auth.users) | create-account (direct provision)"
         type: string
         default: "validate"
       arg:
-        description: "inspect mode only: a cus_/pi_/sub_ id to read and clean up"
+        description: "inspect: cus_/pi_/sub_ id | list-accounts: email substring | create-account: email"
         type: string
         default: ""
 
@@ -61,6 +61,14 @@ jobs:
       - name: Inspect + clean up a Stripe object
         if: inputs.mode == 'inspect'
         run: node scripts/ci/inspect-stripe.mjs "${{ inputs.arg }}"
+      # --- account tools: audit auth.users / direct-provision an account ------
+      # PUBLIC LOGS: account-tools.mjs never prints tokens or sign-in links.
+      - name: List matching accounts
+        if: inputs.mode == 'list-accounts'
+        run: node scripts/ci/account-tools.mjs list "${{ inputs.arg }}"
+      - name: Create account (email confirmed; /login then sends normally)
+        if: inputs.mode == 'create-account'
+        run: node scripts/ci/account-tools.mjs create "${{ inputs.arg }}"
       # --- validate mode (default): full E2E ---------------------------------
       - name: Build
         if: inputs.mode == 'validate'
