@@ -14,6 +14,28 @@ at the bottom; a decision about how bugs get fixed belongs up here.
 
 ---
 
+## 2026-08-04 — Don't let a branch sit open once its work is done
+
+**Rule.** A branch whose work is finished and green does not wait for a human.
+Main moves several merges a day, and every day a branch waits makes the eventual
+merge worse. If a change is safe class (per the 2026-08-01 autonomy grant) and
+CI is green, merge it — resolve mechanical conflicts by rebasing on current
+main; only a substantive conflict (a real disagreement about behaviour, not a
+combined option list) goes to the operator.
+
+**Corollary.** Extracting a sub-part to land it early (e.g. lifting the CI
+workflow files out of a gated PR into their own safe-class PR) is preferred over
+holding the whole thing until the gated part is ready. It also means the gated
+branch must be rebased on main afterward so it does not rot.
+
+**Applied.** #138 (salary ledger, collect-only, approved design, migration
+already pasted) rebased on main and landed; its only conflict was the
+corpus-report option list, purely mechanical. #155 lifted the two dispatch-only
+CI workflows out of the gated change-A branch and landed them so they could be
+dispatched.
+
+---
+
 ## 2026-08-04 — A planning document is not an outcome (editorial discipline)
 
 **Rule.** Never let a planning document read as an outcome. A work-plan item is
