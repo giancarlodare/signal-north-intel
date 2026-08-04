@@ -1,0 +1,34 @@
+SIGNAL NORTH
+Canadian public safety procurement intelligence
+------------------------------------------------------------
+
+CONFIRMATION REQUIRED
+
+CONFIRM THIS ADDRESS
+
+You asked to receive the Signal North intelligence brief. Before we begin
+sending it, confirm that this address is yours.
+
+We ask because the brief circulates among police and fire chiefs,
+government relations staff and vendors who bid on this work. The list
+has to be accurate about who is on it.
+
+Confirm subscription:
+{{confirm_url}}
+
+------------------------------------------------------------
+
+The link is valid for seven days. If you did not enter this address, no
+action is required: nothing further will be sent and the address will be
+removed from our queue.
+
+------------------------------------------------------------
+SIGNAL NORTH
+Canadian public safety procurement intelligence
+
+You are receiving this message because this address was entered at
+signalnorthintel.com.
+Unsubscribe: {{unsubscribe_url}}
+Manage this subscription: {{preferences_url}}
+
+{{business_address}}

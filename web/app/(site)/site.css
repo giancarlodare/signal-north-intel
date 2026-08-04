@@ -157,7 +157,21 @@
 .tier-table th, .tier-table td { text-align: left; padding: 13px 16px; border-top: 1px solid var(--line-soft); font-weight: 400; }
 .tier-table thead th { border-top: 0; vertical-align: top; padding: 24px 16px; }
 .tier-table thead th + th { border-left: 1px solid var(--line-soft); }
-.tier-name { font-family: var(--font-serif); font-size: 21px; line-height: 1.25; color: var(--ink); display: block; }
+/* Reserve two lines for the tier name so a name that wraps at narrower widths
+   ("Signal North Enterprise" in a 18%-wide column on a laptop) does NOT push
+   the price, meta and CTA down out of alignment with the other columns. Every
+   column reserves the same height whether its name is one line or two, so the
+   header row stays aligned across all viewport widths. text-wrap:balance keeps
+   the two-line break even rather than one long line and one orphan word. */
+.tier-name {
+  font-family: var(--font-serif);
+  font-size: 21px;
+  line-height: 1.25;
+  color: var(--ink);
+  display: block;
+  min-height: 2.5em; /* two lines at 1.25 line-height */
+  text-wrap: balance;
+}
 .tier-price { font-family: var(--font-mono); font-size: 13px; color: var(--body); display: block; padding-top: 6px; }
 .tier-meta { font-size: 12px; color: var(--faint); display: block; padding-bottom: 12px; }
 .tier-feature { font-size: 14.5px; color: var(--body); }
@@ -197,7 +211,11 @@
 .login-card input:focus { border-color: var(--blue-soft); }
 
 /* ---------- Responsive ---------- */
-@media (max-width: 1024px) {
+/* Desktop -> stacked at 1180 (operator 2026-08-04, raised from 1024): the
+   two-column layouts collapse BEFORE they get cramped, so a laptop shows either
+   the capped desktop layout (viewport >= ~1296, matching the monitor) or a clean
+   single column, never a squeezed in-between. */
+@media (max-width: 1180px) {
   :root { --fs-display: 48px; --fs-title: 36px; --gutter: 32px; }
   .hero__inner { grid-template-columns: 1fr; gap: 48px; }
   .caps { grid-template-columns: 1fr; }
@@ -236,15 +254,6 @@
   text-align: center;
   font-size: var(--fs-small);
   color: var(--muted);
-}
-.tier-neutrality {
-  margin: 0;
-  max-width: 720px;
-  font-size: var(--fs-ui);
-  line-height: 1.75;
-  color: var(--muted);
-  border-left: 2px solid var(--line);
-  padding-left: var(--sp-5);
 }
 
 /* ---------- Mechanical centralization pass (2026-08-02) ----------
@@ -339,16 +348,45 @@
 /* In-development marker: a small red caps micro-label above the tier name in
    the Pro and Enterprise columns (operator 2026-08-03). Fixed height so the
    empty slots in Free/Weekly keep every tier name and button baseline aligned. */
+/* Marker slot above the tier name. Both the "In development" label and the
+   "Start here" badge occupy the SAME 18px slot so every tier name (and the
+   button below) stays aligned; Free's slot is an empty .tier-flag. */
 .sn-site .tier-flag {
   display: block;
-  height: 13px;
-  line-height: 13px;
+  height: 18px;
+  line-height: 18px;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--red);
   margin-bottom: 8px;
+}
+.sn-site .tier-badge {
+  display: block;
+  width: fit-content;
+  box-sizing: border-box;
+  height: 18px;
+  line-height: 18px;
+  margin-bottom: 8px;
+  padding: 0 9px;
+  background: var(--red);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+/* Weekly-to-Pro bridge line: connective tissue under the table, not a row. */
+.sn-site .tier-bridge {
+  margin: 0;
+  max-width: 720px;
+  text-align: left;
+  font-size: var(--fs-ui);
+  line-height: 1.6;
+  color: var(--muted);
+  border-left: 2px solid var(--line);
+  padding-left: var(--sp-5);
 }
 
 /* The About stat band is ONE row. The handoff shipped six facts; the live build
@@ -366,8 +404,15 @@
 .sn-site .point-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 
 /* Hero left column carries a big display headline; give it more of the row so
-   the statement reads on three lines (not four) at the wider content width. */
-.sn-site .hero__inner { grid-template-columns: minmax(340px, 1.42fr) minmax(320px, 1fr); }
+   the statement reads on three lines (not four) at the wider content width.
+   GATED to the desktop range (min-width:1181px): this scoped rule (0,2,0) is
+   more specific than the unscoped stacking rule in the max-width:1180 block, so
+   without the gate it would win at every width and the hero would never stack
+   on the marketing pages -- it would overflow on a phone. The gate lets the
+   stack rule take over at <=1180. */
+@media (min-width: 1181px) {
+  .sn-site .hero__inner { grid-template-columns: minmax(340px, 1.42fr) minmax(320px, 1fr); }
+}
 
 /* Two-column FAQ: serif heading in a left rail, accordion on the right. */
 .sn-site .faq-block { display: grid; grid-template-columns: minmax(220px, 0.42fr) minmax(0, 1fr); gap: var(--sp-8); align-items: start; }
@@ -464,7 +509,7 @@
 .sn-site .about-rail__label { font-size: var(--fs-label); font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
 .sn-site .about-rail--dark .about-rail__label { color: var(--blue-soft); }
 .sn-site .about-rail__rule { width: 40px; height: 2px; background: var(--red); }
-@media (max-width: 1100px) {
+@media (max-width: 1180px) {
   .sn-site .about-section { grid-template-columns: 1fr; column-gap: 0; row-gap: var(--sp-4); }
   .sn-site .about-rail, .sn-site .about-content { grid-column: 1; }
 }

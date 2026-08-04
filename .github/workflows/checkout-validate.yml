@@ -10,7 +10,16 @@ name: Checkout flow validation (test-mode, dispatch-only)
 # a live one), so no money can move. MEMBER_WELCOME_LIVE is off, so no member
 # email is sent; failure-path alarms go to a Resend sink. Dispatch-only.
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "validate (full E2E) | inspect (read + clean up one Stripe object)"
+        type: string
+        default: "validate"
+      arg:
+        description: "inspect mode only: a cus_/pi_/sub_ id to read and clean up"
+        type: string
+        default: ""
 
 concurrency:
   group: checkout-validate
@@ -48,11 +57,19 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: npm ci
+      # --- inspect mode: read + clean up one Stripe object, nothing else ------
+      - name: Inspect + clean up a Stripe object
+        if: inputs.mode == 'inspect'
+        run: node scripts/ci/inspect-stripe.mjs "${{ inputs.arg }}"
+      # --- validate mode (default): full E2E ---------------------------------
       - name: Build
+        if: inputs.mode == 'validate'
         run: npm run build
       - name: Create throwaway test product + prices
+        if: inputs.mode == 'validate'
         run: node scripts/ci/make-test-price.mjs
       - name: Start server
+        if: inputs.mode == 'validate'
         run: |
           PORT=3123 nohup npm start > /tmp/next-start.log 2>&1 &
           for i in $(seq 1 30); do
@@ -63,10 +80,11 @@ jobs:
             sleep 2
           done
       - name: Run validation
+        if: inputs.mode == 'validate'
         run: node scripts/ci/validate-checkout-flow.mjs
       - name: Server log tail (always)
-        if: always()
+        if: always() && inputs.mode == 'validate'
         run: tail -50 /tmp/next-start.log || true
       - name: Archive throwaway test product + prices (always)
-        if: always()
+        if: always() && inputs.mode == 'validate'
         run: node scripts/ci/cleanup-test-price.mjs

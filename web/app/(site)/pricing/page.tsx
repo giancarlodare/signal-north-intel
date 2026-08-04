@@ -210,7 +210,10 @@ export default function PricingPage() {
                       <FreeBriefForm source="pricing-free" compact reveal />
                     </th>
                     <th>
-                      <span className="tier-flag" aria-hidden="true"></span>
+                      {/* Entry-point marker (operator 2026-08-03): honest, not
+                          "Most Popular" (we have no customers to be popular
+                          with). Badge treatment in the same aligned flag slot. */}
+                      <span className="tier-badge">Start here</span>
                       <span className="tier-name">Signal North Weekly</span>
                       <span className="tier-price">$3,900 / yr</span>
                       <span className="tier-meta">or $390 / mo</span>
@@ -267,10 +270,12 @@ export default function PricingPage() {
               </table>
             </div>
 
-            <p className="tier-neutrality" data-testid="neutrality-line">
-              The record is the same for everyone. A higher tier buys more ways
-              to work with it, never a different version of the truth, and never
-              earlier access to it.
+            {/* Weekly-to-Pro bridge (operator 2026-08-04): the single line that
+                explains the price gap, in the vertical-rule treatment. One line,
+                no supporting copy; Weekly and Pro italicised, nothing else. */}
+            <p className="tier-bridge" data-testid="tier-bridge">
+              <em>Weekly</em> is a publication you read. <em>Pro</em> watches
+              your buyers and categories for you.
             </p>
 
             {/* Two-column FAQ (design: serif heading left, accordion right). */}

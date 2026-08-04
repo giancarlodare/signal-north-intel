@@ -1,0 +1,49 @@
+SIGNAL NORTH
+Canadian public safety procurement intelligence
+------------------------------------------------------------
+
+SUBSCRIPTION CONFIRMED
+
+WHAT ARRIVES, AND WHEN
+
+The Signal North intelligence brief is sent every Monday at 6:00 a.m. Eastern, before
+the week's board meetings and bid deadlines. It runs to roughly a
+thousand words and is written to be read once, carefully.
+
+Each edition reads the week's public record and reports what moved:
+
+01  TENDERS AND AWARDS
+    Every solicitation, amendment and contract award issued by police
+    services, fire departments and the agencies that buy on their behalf.
+
+02  BOARDS AND COUNCILS
+    Police board agendas, minutes and budget items, plus the council
+    votes that decide whether they proceed.
+
+03  LEGISLATURE AND MINISTRY
+    Hansard, estimates, ministry announcements and the regulatory
+    changes that follow them.
+
+------------------------------------------------------------
+
+Nothing else will be sent to this address. No product announcements, no
+sequences, no invitations to webinars.
+
+Members reach the record underneath the brief: every tender, award and
+agenda item we read, filed by service and by date, with the documents
+attached. If that would be useful to your work, reply to this message and
+we will explain what it covers.
+
+Read this week's brief:
+{{welcome_cta_url}}
+
+------------------------------------------------------------
+SIGNAL NORTH
+Canadian public safety procurement intelligence
+
+You are receiving this message because this address was entered at
+signalnorthintel.com.
+Unsubscribe: {{unsubscribe_url}}
+Manage this subscription: {{preferences_url}}
+
+{{business_address}}

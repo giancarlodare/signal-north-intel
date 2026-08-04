@@ -14,6 +14,153 @@ at the bottom; a decision about how bugs get fixed belongs up here.
 
 ---
 
+## 2026-08-04 — Don't let a branch sit open once its work is done
+
+**Rule.** A branch whose work is finished and green does not wait for a human.
+Main moves several merges a day, and every day a branch waits makes the eventual
+merge worse. If a change is safe class (per the 2026-08-01 autonomy grant) and
+CI is green, merge it — resolve mechanical conflicts by rebasing on current
+main; only a substantive conflict (a real disagreement about behaviour, not a
+combined option list) goes to the operator.
+
+**Corollary.** Extracting a sub-part to land it early (e.g. lifting the CI
+workflow files out of a gated PR into their own safe-class PR) is preferred over
+holding the whole thing until the gated part is ready. It also means the gated
+branch must be rebased on main afterward so it does not rot.
+
+**Applied.** #138 (salary ledger, collect-only, approved design, migration
+already pasted) rebased on main and landed; its only conflict was the
+corpus-report option list, purely mechanical. #155 lifted the two dispatch-only
+CI workflows out of the gated change-A branch and landed them so they could be
+dispatched.
+
+---
+
+## 2026-08-04 — A planning document is not an outcome (editorial discipline)
+
+**Rule.** Never let a planning document read as an outcome. A work-plan item is
+not a finding. A tender is not an award. An intent is not a commitment. When a
+node is built from a source, the node may assert only what the source's own
+text asserts, at the source's own stage in the process.
+
+**Origin.** The TPS 9-1-1 / priority-response node. The corpus text is the City
+of Toronto Auditor General's 2023 WORK PLAN scheduling two reviews of the
+Service (911 PSAP operations; responses to calls for service). It was nearly cut
+as unusable because it read as an audit FINDING against a named service, which
+the document does not contain. Pulling the source sentence showed the node is
+usable, but as *scheduled scrutiny*, not a finding. Wording that survives:
+"In February 2023 the City of Toronto Auditor General's work plan scheduled two
+reviews of the Service, covering 9-1-1 public safety answering point operations
+and responses to calls for service." Source: TPSB minutes 2023-11-23.
+
+**Why it recurs.** The rung taxonomy already encodes this (precursor rungs 2-3
+vs outcome rungs 4-5), but composed prose can quietly promote a rung: a
+scheduled review narrated as a finding, a posting narrated as an award. The
+verification that catches it is reading the source sentence, not the summary.
+
+---
+
+## 2026-08-04 — The /portal dashboard is Pro monitoring material, not superseded
+
+**Decided.** The stage-2 "N things changed" dashboard that used to sit at
+/portal is NOT deleted and was not superseded by change A. It is a MONITORING
+surface, and monitoring is Pro. It is logged here as Pro material alongside the
+closing-soon board, watchlists and alerts. Weekly members land on the brief,
+because the brief is what they bought, so /portal stays a pure redirect (paid →
+/portal/brief, unpaid → /portal/account).
+
+**Why.** Change A's redirect made the dashboard look discarded; the operator's
+correction is that it was misplaced, not obsolete. Putting a monitoring view in
+front of a Weekly member shows them a Pro capability they have not bought; the
+brief is the Weekly product and the right landing.
+
+**Corrects.** The "judgment call flagged for reversal" note in the change-A
+entry below, which framed the dashboard as superseded. It is reclassified, not
+removed.
+
+---
+
+## 2026-08-04 — Email preview send uses a scoped, disposable key, never production
+
+**Decided.** The dispatch-only workflow that sends 02/03 to a real inbox
+(.github/workflows/email-preview-send.yml + web/scripts/send-preview-emails.mjs)
+runs against a SEPARATE Resend key: a sending-only key named ci-preview, added
+as the Actions secret RESEND_API_KEY, revoked once the two emails have been
+reviewed. The production key is never placed in GitHub Actions.
+
+**Why.** Real-client rendering differs enough from a browser preview to be worth
+doing, and these are the first thing a customer sees from us. But a leaked
+sending key on our own verified domain is a phishing and reputation risk, so it
+gets a scoped, short-lived key rather than the real one. The four Supabase
+templates are not sent here at all: their faithful render is Supabase's own
+send, done in the install session, never faked from a script.
+
+---
+
+## 2026-08-04 — Change A: checkout-first paid flow (email-anchored provisioning)
+
+**Decided.** "Join Weekly" goes straight to Stripe Checkout with NO account and
+no login. Checkout collects the email/name/card; the webhook provisions the
+account from the Stripe-verified email and emails a sign-in link. This REVERSES
+the confirm-before-pay flow (2026-08-02), where an account was created and
+verified before checkout.
+
+**How identity resolves now.** The webhook was "matching NEVER uses email"
+(2026-08-01). It is now stamp-first, then email. (1) An `sn_member_id` stamp on
+the subscription/session/customer still wins — that is the signed-in path (a
+member subscribing from /portal/account) and dashboard actions, unchanged. (2)
+On `checkout.session.completed` only, with no stamp, the Stripe-verified email
+is the anchor: `admin.generateLink(magiclink)` finds the account or creates one,
+and the id is stamped back onto the subscription + customer so every later event
+resolves by stamp. Provisioning happens on `completed` only; bare
+`subscription.*` events resolve by stamp and 500-retry until `completed` has
+stamped, avoiding double-provision and email/stamp races.
+
+**Free-list dedup.** On provision, `brief_signups.unsubscribed_at` is set for
+the anchor email, so a Free upgrader is on the paid list only, never both.
+
+**Reconciliation alarm (the one out-of-window interrupt).** A PAID checkout that
+cannot be provisioned (no email, unmapped price, failed admin call) is recorded
+in the new `provisioning_failures` table and the operator is emailed directly
+with an unmistakable subject (`[SIGNAL NORTH — ACTION] Paid, not provisioned:
+<email>`). The table makes the alarm fire ONCE per stranded subscription, not
+once per Stripe retry, and is the operator's open worklist. Manual fix:
+`node web/scripts/provision-member.mjs <sub_id|email>` (idempotent). The alarm
+is internal ops and is NOT gated by the member-email flag; it needs only
+`RESEND_API_KEY`.
+
+**Member sends are armed by a flag.** `MEMBER_WELCOME_LIVE` (default off, same
+shape as `PORTAL_ENABLED`) honours "don't wire any send path until I've approved
+the rendered result." While off, a purchase still provisions + entitles and logs
+the sign-in link, but no welcome is sent. Flip it on AFTER the rendered emails
+are approved, before the first live sale. The welcome (template 03) is embedded
+byte-identical to `web/emails/03-member-welcome.{html,txt}`, guarded by a test,
+so the thing sent is the thing approved.
+
+**/portal is now a redirect, regardless of PORTAL_ENABLED.** It sends paid →
+/portal/brief, unpaid → /portal/account, and never 404s (fixing the magic-link
+landing bug). The gate also changed: a SIGNED-IN member reaches the member
+surface regardless of the flag, so a purchase works before the marketing-site
+flip. The public is still bounced to /login while dark; the paywall still
+governs every product page. **Flag flip stays a deliberate, separate operator
+decision, never coupled to a purchase.**
+
+**Judgment call flagged for reversal.** Making /portal a pure redirect
+supersedes the stage-2 member dashboard that lived at the index. The dashboard
+JSX is preserved in git history; if the operator wants it back as a route, say
+so. Chosen because the operator's ruling was explicit ("/portal becomes a
+redirect ... /portal/brief (paid) or /portal/account (unpaid)").
+
+**Validation.** Test mode exhaustively first; live validation uses a temporary
+$1 live Price, never a real $3,900 card. **Build paused at the live step for the
+operator's go.**
+
+**Supersedes.** The confirm-before-pay Weekly flow (2026-08-02) and the "matching
+NEVER uses email" default (2026-08-01), for the anonymous checkout path only; the
+account-anchored stamp path is unchanged.
+
+---
+
 ## 2026-08-01 — Autonomy: safe class gets merge authority
 
 **Decided.** Merge on green CI without approval for a defined safe class
@@ -444,3 +591,91 @@ distinction against Weekly is ANY, not on-demand: Weekly is one arc a week we
 choose; Pro is the arc for whatever the member sells into. Mechanical arc
 (dated nodes, deep links, precedent set, no prose), clear of the human-release
 rule.
+
+## CASL address blocker + free-path decoupling (operator 2026-08-03)
+
+CASL requires a physical mailing address on commercial electronic messages.
+Signal North is NOT incorporated; the holdco will be "Provenance Intelligence"
+but nothing is registered until ~September, and "Toronto, Ontario" does not
+satisfy the requirement. Never invent an entity name or address.
+
+CONSEQUENCE, scoped as a real blocker:
+- The free WELCOME (02) and the weekly intelligence brief (#57) are commercial
+  and cannot send until a real registered address exists (post-incorporation).
+- Whether the free CONFIRM (01) is commercial or transactional is a counsel
+  question. If transactional, capture + confirm can ship in August.
+- BUILD DIRECTIVE: the free path is built so capture and confirm go live
+  INDEPENDENTLY of the welcome, not as one chain. If counsel clears 01 as
+  transactional, ship the front half in August and hold only 02 for the
+  address. (Design lands in G.)
+
+EMAIL SET (Claude Design export, integrated): text wordmark lockup (no image;
+Outlook blocks remote images), 600px, six emails + plain-text twins. Under
+change A there is NO Supabase confirm-signup template; 04/05/06 are Supabase
+(magiclink/recovery/email_change), 01/02/03 are our own sends. 03's payment
+block dropped (Stripe sends its own receipt). Brand: "public safety" unhyphenated;
+the brief is the "intelligence brief".
+
+## CASL address SOLVED — correction (operator 2026-08-03)
+
+Correction to the prior entry: the mailing address is confirmed (Richmond Hill
+coworking location). The only remaining step is a ~$60 online Ontario
+business-name registration to make "Signal North" a legally identifiable
+sender. There is NO dependency on incorporation for the free path. The free
+path is gated by the ETHICS GATE like everything else, not by a second address
+dependency. Keep the entity name a flagged variable (never invent); keep
+building capture + confirm independently of the welcome.
+
+## Weekly brief email: state of record (2026-08-03)
+
+Reconciling "no send path exists" vs "#57 pending": both describe different
+halves. web/lib/brief/render.ts is REAL, not a stub -- a complete 600px
+table-based email (navy masthead, THE READ band, lead card, buyer-grouped
+items with dated provenance-labelled links, a standing-exhibit bar chart, navy
+methodology footer), and web/app/brief/[week]/route.ts serves the exact same
+HTML so web and email cannot drift. web/app/brief/actions.ts sendBriefEmail
+DOES send, via Resend from the verified signalnorthintel.com domain, but
+OPERATOR-ONLY (RECIPIENT = BRIEF_RECIPIENT or giancarlo@; "no list, no
+capture"). So: render + operator-preview send EXIST; the subscriber/list send
+(#57) does NOT. The pricing pass's "no send path" was about the free-signup/
+list send, which is accurate for that surface.
+
+GAPS: (1) there is NO Free PARTIAL / locked-items version -- render.ts renders
+the full brief only. (2) the brief email is a fixed 600px column and overflows
+a 390px phone (no fluid media query), unlike the transactional set.
+DIRECTION (operator): the email is the hardest of the three brief surfaces
+(portal, email, public sample), so design it first and derive the other two;
+build the Free partial to the same system.
+
+## Brief email: phone-fluid now; Free partial folded into G (operator 2026-08-03)
+
+1. PHONE-FLUID (shipped, this pass): render.ts had a fixed 600px wrapper that
+   overflowed narrow screens (390px viewport -> 624px scrollWidth = the 600
+   column + 24 outer padding). Added a head <style> media query: at
+   max-width:600px the wrapper goes width:100% and band side padding drops to
+   24px. Phone scrollWidth now 390, no overflow; desktop and Outlook keep the
+   fixed 600px. Everything downstream (portal [week] view, public sample C)
+   inherits it.
+
+2. FREE PARTIAL IS PART OF G, not a separate track. G is the free path END TO
+   END: capture, confirm, welcome, AND the partial brief that lands each Monday.
+   A confirmed free list with nothing tier-appropriate to send is half a
+   product. Order unchanged: A, then G (partial inside), then B, D, C.
+
+3. NEW SHIP-GATE (4th, alongside Weekly's builds, saved-items round trip, and
+   the resolved arc-row name): the pricing table's "Weekly email -> Partial"
+   cell for Free is a claim about something that does not exist yet -- same
+   class as the false Weekly rows the verification pass caught. The table
+   CANNOT publish with that cell until the partial renderer is live.
+
+4. PARTIAL DESIGN (operator): lock by RELEVANCE, not by count. Order items by
+   the relevance score and lock the HIGHEST-relevance ones, so a Free reader
+   sees the SHAPE of the market and what they cannot see is the thing they most
+   want -- the strongest upgrade prompt. Arbitrary/by-count locking wastes it.
+   Locked treatment shows buyer, title and one line, then the unlock link:
+   enough to know it matters, not enough to act on.
+
+5. ARCHITECTURE (do not break): the /brief/[week] route serves the SAME HTML as
+   the email, so C (public sample) is nearly free once the renderer is right.
+   The partial must be a PARAMETER on the one renderer (render.ts), never a
+   second renderer.

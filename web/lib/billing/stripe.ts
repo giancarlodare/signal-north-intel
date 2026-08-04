@@ -10,6 +10,7 @@ import {
   type Interval,
   type Tier,
 } from "./config";
+import { anonymousCheckoutParams } from "./checkout-params";
 
 export interface MemberSubscription {
   tier: Tier;
@@ -58,8 +59,50 @@ export async function getMemberSubscription(
   }
 }
 
-// A Checkout session for one tier. Returns the redirect URL or null when
-// billing is dark / the tier has no configured price.
+// CHECKOUT-FIRST (operator 2026-08-03, change A). The primary purchase path is
+// now anonymous: someone with no account presses "Join Weekly" and lands in
+// hosted Checkout, which collects the email itself. That address is the
+// provisioning anchor -- the webhook creates the account from it. There is no
+// member id to pin here because there is no member yet, so nothing is stamped;
+// the webhook resolves this subscription by its Stripe-verified email instead.
+//
+// This does NOT collect email/name ourselves and redirect: hosted Checkout
+// already collects them with the card, and adding a form in front only adds a
+// step someone can abandon. The interval is chosen on OUR page before this call
+// (hosted Checkout has no in-session interval toggle), which is why it is a
+// parameter rather than something Checkout offers.
+export async function createAnonymousCheckoutUrl(
+  tier: Tier,
+  origin: string,
+  interval: Interval = "annual",
+): Promise<string | null> {
+  const cfg = billingConfig();
+  const price = cfg?.prices[tier]?.[interval];
+  if (!cfg || !price) {
+    console.error("[billing] no configured price for", tier, interval);
+    return null;
+  }
+  try {
+    const stripe = client(cfg.secretKey);
+    // Params come from the pure anonymousCheckoutParams (checkout-params.ts),
+    // whose mode:"subscription" invariant is asserted by a unit test that runs
+    // on every push -- so a payment-mode regression fails CI, not a live sale.
+    const session = await stripe.checkout.sessions.create(
+      anonymousCheckoutParams(price, origin),
+    );
+    return session.url ?? null;
+  } catch (e) {
+    console.error("[billing] anon checkout session failed:", (e as Error).message);
+    return null;
+  }
+}
+
+// A Checkout session for one tier, ANCHORED TO AN EXISTING ACCOUNT. This is the
+// secondary path: a member who is already signed in (on /portal/account)
+// choosing to subscribe. Here we DO have a verified account id, so identity is
+// pinned to it (sn_member_id in four places) exactly as before -- the webhook
+// resolves this subscription by that stamp, never needing the email fallback.
+// Returns the redirect URL or null when billing is dark / the tier has no price.
 export async function createCheckoutUrl(
   memberId: string,
   email: string | null,

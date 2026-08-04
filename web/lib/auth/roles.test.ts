@@ -28,16 +28,30 @@ test("path classifiers", () => {
   assert.ok(!isMemberPath("/corpus"));
 });
 
-test("flag OFF is exact pre-Wave-3 behavior: no role gating, member 404", () => {
+test("flag OFF: no role gating, and (change A) a SIGNED-IN member reaches the portal", () => {
   // an operator page is allowed with NO role gating (member role, flag off)
   assert.equal(
     gate({ enabled: false, authenticated: true, role: "member", path: "/corpus" }),
     "allow"
   );
-  // the member surface does not exist while dark
+  // CHANGE A (operator 2026-08-03): the member surface is reachable by an
+  // authenticated session regardless of the flag, so a checkout-first purchase
+  // works before the marketing-site flip. It used to 404 here.
   assert.equal(
     gate({ enabled: false, authenticated: true, role: "member", path: "/portal" }),
-    "not-found"
+    "allow"
+  );
+  // ...and its product routes too (the paywall, not the flag, governs whether
+  // they READ once here).
+  assert.equal(
+    gate({ enabled: false, authenticated: true, role: "member", path: "/portal/brief" }),
+    "allow"
+  );
+  // But the surface is still hidden from the PUBLIC while dark: an
+  // unauthenticated request is sent to login, never shown the portal.
+  assert.equal(
+    gate({ enabled: false, authenticated: false, role: "member", path: "/portal" }),
+    "to-login"
   );
 });
 
@@ -76,7 +90,7 @@ test("unauthenticated always routes to login except on login", () => {
 
 test("marketing site: public only when the flag is on", () => {
   // Flag ON: the site paths open without auth.
-  for (const p of ["/", "/about", "/pricing", "/contact", "/join"]) {
+  for (const p of ["/", "/about", "/pricing", "/contact", "/join", "/join/thank-you"]) {
     assert.equal(
       gate({ enabled: true, authenticated: false, role: "member", path: p }),
       "allow",

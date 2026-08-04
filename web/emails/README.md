@@ -1,63 +1,77 @@
-# Signal North transactional emails
+# Signal North transactional + lifecycle emails
 
-One shared template (off-white column ~480px, compass mark, serif heading, one
-crimson table-based button, hairline, muted footer; table-based so it survives
-Outlook, no web fonts, no imagery beyond the hosted mark). Every send has an
-HTML file and a plain-text `.txt` alternative — pair them, never send HTML
-alone.
+Claude Design's six-email set (export integrated 2026-08-03), replacing the
+earlier hand-built template set. 600px column, text serif wordmark lockup +
+3px navy rule masthead (no image — Outlook blocks remote images by default),
+crimson bulletproof button, Outlook-safe tables. HTML + plain-text twin each.
 
-| File | Where it goes | Link variable |
-|------|---------------|---------------|
-| `confirm-signup.*` | Supabase Auth → Email Templates → **Confirm signup** | `{{ .ConfirmationURL }}` |
-| `magic-link.*` | Supabase Auth → Email Templates → **Magic Link** | `{{ .ConfirmationURL }}` |
-| `reset-password.*` | Supabase Auth → Email Templates → **Reset Password** | `{{ .ConfirmationURL }}` |
-| `change-email.*` | Supabase Auth → Email Templates → **Change Email Address** | `{{ .ConfirmationURL }}` |
-| `confirm-subscription.*` | **Our code (Resend)**, free-brief double opt-in | `{{confirm_url}}` (filled by the send path) |
+**Nothing is wired.** These are files for operator approval; the send paths
+(free double opt-in, Stripe welcome, Supabase templates) are built in G.
 
-`confirm-subscription` is NOT a Supabase template — the free brief has no
-`auth.users` row, so its confirm email is sent by our own code through Resend.
-Its copy is DRAFTED (2026-08-03), pending operator approval; the other four use
-copy already approved in `docs/auth-email-templates.md`. The send path itself
-(capture → send confirm → confirm endpoint → add to list) is a separate build,
-not yet wired.
+## The six
 
-## The compass mark
+| File | Sent by | Link variable | CASL |
+|------|---------|---------------|------|
+| `01-confirm-subscription` | our code (Resend) — free double opt-in | `{{confirm_url}}` | commercial-list opt-in: unsubscribe + address |
+| `02-free-welcome` | our code (Resend) — after 01 confirms | `{{welcome_cta_url}}` / `{{welcome_cta_label}}` | **commercial**: unsubscribe + address |
+| `03-member-welcome` | our code (Stripe webhook) — post-payment | `{{signin_url}}` (generated magic link) | transactional service message, no unsubscribe |
+| `04-sign-in-link` | **Supabase** → Magic Link | `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=magiclink` | transactional |
+| `05-password-reset` | **Supabase** → Reset Password | `…&type=recovery` | transactional |
+| `06-email-change` | **Supabase** → Change Email Address | `…&type=email_change`; old address `{{ .Email }}` | transactional |
 
-`assets/compass-mark.png` (navy mark, transparent, 64px for 32px display).
-Email clients do not render SVG or `data:` images reliably, so the templates
-reference a hosted PNG at:
+The `type` differs per Supabase template and must be exact — our
+`app/auth/confirm/route.ts` calls `verifyOtp(token_hash, type)`, so a wrong
+`type` produces a link that looks fine and verifies nothing.
 
-    https://signalnorthintel.com/email/compass-mark.png
+Under change A there is **no Supabase "Confirm signup" email** — Weekly accounts
+are provisioned by the webhook (`email_confirm: true`), so that template never
+fires. The Supabase-bound templates are only 04 / 05 / 06.
 
-Upload `assets/compass-mark.png` to that path before the first real send. Until
-it is hosted, clients show the `alt="Signal North"` text — no broken layout.
+## CASL address (operator update 2026-08-03: solved, no incorporation dependency)
 
-## Custom SMTP: point Supabase at Resend
+CASL requires a physical mailing address on every **commercial** electronic
+message. The mailing address is **confirmed** — a Richmond Hill coworking
+location. What remains is a ~$60 online **Ontario business-name registration**
+so "Signal North" is a legally identifiable sender; there is **no dependency on
+incorporation** for this. `{{business_address}}` stays a flagged variable
+(filled from the confirmed address at send), and the entity name is never
+invented.
 
-Supabase Dashboard → your project → **Authentication → Emails → SMTP Settings**
-→ enable **Custom SMTP**, then fill:
+So the free path is **not** blocked by a second address dependency — it is
+gated by the **ethics gate like everything else**. The build structure still
+holds: **capture and confirm ship independently of the welcome**, so the front
+half can go live as soon as the ethics gate and the (small) name registration
+clear, and only 02 waits on nothing more than that. The weekly intelligence
+brief (#57) sits behind the same single gate, not a separate one.
+
+## Other flags
+
+- **03 payment block: dropped** (operator 2026-08-03). Stripe emails its own
+  receipt under change A; two receipts for one payment is confusing and a
+  reference number we must get right is risk with no upside. The welcome
+  welcomes; Stripe handles the accounting. `{{first_brief_date}}` (the upcoming
+  Monday from the purchase date) is filled at send.
+- **02 CTA** (`{{welcome_cta_url}}` / `{{welcome_cta_label}}`): the export
+  pointed at `/brief/latest` (the public sample brief, which does not exist
+  until C). Until then it points at `/pricing` with label "See what Weekly
+  includes"; re-point to the sample brief when C ships.
+
+Brand consistency: **"public safety"** never hyphenated (matches the site);
+the brief is the **"intelligence brief"**.
+
+## Custom SMTP (Supabase → Resend), unchanged
+
+Authentication → Emails → SMTP Settings → Custom SMTP:
 
 | Field | Value |
 |-------|-------|
-| Sender email | `mail@signalnorthintel.com` (the address on the Resend-verified domain) |
+| Sender email | `mail@signalnorthintel.com` |
 | Sender name | `Signal North` |
 | Host | `smtp.resend.com` |
 | Port | `465` |
 | Username | `resend` |
-| Password | your Resend API key (`re_…`) |
+| Password | Resend API key (`re_…`) |
 
-Save, then paste each HTML file into its template under **Authentication →
-Email Templates**, and set the subjects:
-
-- Confirm signup — `Confirm your email to join Signal North`
-- Magic Link — `Your Signal North sign-in link`
-- Reset Password — `Reset your Signal North password`
-- Change Email Address — `Confirm your new email address`
-
-## Before the first real send
-
-- The domain is verified in Resend, so DKIM and SPF should already be in DNS.
-  Confirm a **DMARC** record exists (`p=none` is enough to start); gov mail
-  filters weight it, and these are the links the whole flow depends on.
-- Send one of each to a seed address and check rendering in Outlook, Gmail and
-  Apple Mail before enabling for real signups.
+`mail@` is send-only; auth templates carry a footer pointing replies to
+`giancarlo@signalnorthintel.com`. DKIM/SPF/DMARC are in DNS (`_dmarc` added
+2026-08-03).
