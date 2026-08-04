@@ -86,6 +86,22 @@ async function postCompleted({ subId, customerId, addr }) {
   return { status: resp.status, body: await resp.text().catch(() => "") };
 }
 
+// Read-only lookup of a user id by email (GoTrue admin has no email filter, so
+// page and match). Used to assert the reorder does NOT leave an orphan account.
+async function userIdByEmail(addr) {
+  let page = 1;
+  while (page <= 20) {
+    const { data, error } = await db.auth.admin.listUsers({ page, perPage: 200 });
+    if (error) throw new Error(error.message);
+    const users = data?.users ?? [];
+    const hit = users.find((u) => (u.email || "").toLowerCase() === addr.toLowerCase());
+    if (hit) return hit.id;
+    if (users.length < 200) return null;
+    page++;
+  }
+  return null;
+}
+
 const subRow = (subId) =>
   db.from("member_subscriptions")
     .select("member_id,tier,interval,status")
@@ -138,7 +154,7 @@ async function main() {
   const { count: n1 } = await db.from("member_subscriptions").select("member_id", { count: "exact", head: true }).eq("stripe_subscription_id", s1.id);
   check("S3 still exactly one subscription row for the sub", n1 === 1, `count=${n1}`);
 
-  // ---- S4: unmapped price -> failure row + idempotent alarm --------------
+  // ---- S4: unmapped price -> failure row, NO orphan account, idempotent --
   const e4 = email(4);
   const c4 = await mkCustomer(e4);
   const s4 = await mkSub(c4.id, UNMAPPED);
@@ -147,9 +163,9 @@ async function main() {
   check("S4 unmapped price rejected (422)", r4a.status === 422, `status=${r4a.status}`);
   const { data: f4 } = await failRow(s4.id);
   check("S4 provisioning_failures row, reason unmapped-price", f4?.reason === "unmapped-price", f4?.reason);
-  // the account is provisioned before the price check; capture it for cleanup
-  const { data: link4 } = await db.auth.admin.generateLink({ type: "magiclink", email: e4 });
-  if (link4?.user?.id) created.userIds.add(link4.user.id);
+  // The reorder (operator 2026-08-04): an unmapped price is refused BEFORE
+  // provisioning, so it must NOT leave an orphan account behind.
+  check("S4 no orphan account created for the unmapped checkout", (await userIdByEmail(e4)) === null);
   const r4b = await postCompleted({ subId: s4.id, customerId: c4.id, addr: e4 });
   check("S4 re-delivery still 422", r4b.status === 422, `status=${r4b.status}`);
   const { count: nf4 } = await db.from("provisioning_failures").select("id", { count: "exact", head: true }).eq("stripe_subscription_id", s4.id);

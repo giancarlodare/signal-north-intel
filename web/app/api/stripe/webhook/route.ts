@@ -133,24 +133,34 @@ export async function POST(req: Request) {
     const priceId = sub.items.data[0]?.price?.id ?? null;
     const match = tierForPrice(priceId, cfg.prices);
 
-    // Resolve the member: stamp first, then provision-by-email on completed.
-    const resolved = await resolveMember(stripe, db, event, sub, originFor(req));
+    // Resolve the member: stamp first, then provision-by-email on completed --
+    // but ONLY when the price maps to a tier, so an unmapped checkout never
+    // provisions an orphan account (the reorder, operator 2026-08-04).
+    const resolved = await resolveMember(stripe, db, event, sub, originFor(req), Boolean(match));
 
     if (!resolved) {
       // Could not attribute this subscription to a member.
       if (event.type === "checkout.session.completed") {
-        // A PAID checkout with no account: the loud case. Record + alarm, then
-        // 500 so Stripe retries (a retry can still succeed once transient).
+        // A PAID checkout we could not provision. Name the reason precisely
+        // WITHOUT having created an account: an unmapped price is refused
+        // (422, no retry) before provisioning; a missing email or a failed
+        // admin call is retryable (500). This is the loud case either way.
         const email = anchorEmailFor(event, sub);
+        const reason: ProvisionFailureReason = !match
+          ? "unmapped-price"
+          : email
+            ? "provision-failed"
+            : "no-email";
         await recordFailureAndAlarm(db, {
           email,
           subscriptionId: sub.id,
           customerId: customerIdOf(sub),
           tier: match?.tier ?? null,
           interval: match?.interval ?? null,
-          reason: email ? "provision-failed" : "no-email",
+          reason,
         });
-        return NextResponse.json({ error: "unprovisioned" }, { status: 500 });
+        const status = reason === "unmapped-price" ? 422 : 500;
+        return NextResponse.json({ error: reason }, { status });
       }
       // A bare subscription.* event with no stamp yet: almost always a race
       // with a checkout.session.completed that will stamp the customer. 500 so
@@ -255,17 +265,28 @@ interface ResolvedMember {
 }
 
 // Stamp-first, then provision-by-email (completed only). See the file header.
+// PROVISION ONLY WHEN THE PRICE MAPS TO A TIER (`mapped`): an unmapped price is
+// refused BEFORE any account is created, so a checkout we cannot turn into a
+// subscription never leaves an orphan account behind (operator 2026-08-04). An
+// orphan account is worse than none: the member can sign in and land on a
+// paywalled portal that says "no subscription on file" despite having paid,
+// which reads as broken rather than pending, and it is residue in auth.users.
 async function resolveMember(
   stripe: Stripe,
   db: SupabaseClient,
   event: Stripe.Event,
   sub: Stripe.Subscription,
   origin: string,
+  mapped: boolean,
 ): Promise<ResolvedMember | null> {
   const stamped = await resolveByStamp(stripe, event, sub);
   if (stamped) return { memberId: stamped, provisioned: null, signInLink: null };
 
   if (event.type !== "checkout.session.completed") return null;
+
+  // Refuse before provisioning when the price maps to no tier: the caller
+  // records the unmapped-price failure and 422s, and no account is created.
+  if (!mapped) return null;
 
   const email = anchorEmailFor(event, sub);
   if (!email) return null;

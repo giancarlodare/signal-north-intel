@@ -4,11 +4,24 @@
 // email. So this page cannot show the portal -- it confirms the payment landed
 // and tells them to watch their inbox. Public (SITE_PATHS).
 import SiteHeader, { BrandMark } from "@/components/site/SiteHeader";
+import { firstBriefMonday } from "@/lib/billing/provision";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Payment received — Signal North" };
 
+// The Monday the member's first brief lands, computed by the SAME function the
+// welcome email uses (firstBriefMonday), so the page and the email can never
+// disagree about the date. Formatted here as "10 August" (the email formats the
+// same date as "August 10"); the shared thing is the date, not the wording. The
+// page is force-dynamic, so this is the request (≈ purchase) time, and the edge
+// cases -- a Sunday buy, a Monday buy after the brief has gone -- are handled in
+// firstBriefMonday, not by naive day-adding.
 export default function JoinThankYouPage() {
+  const firstBrief = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "UTC",
+    day: "numeric",
+    month: "long",
+  }).format(firstBriefMonday(new Date()));
   return (
     <>
       <SiteHeader />
@@ -55,9 +68,9 @@ export default function JoinThankYouPage() {
                 color: "var(--blue-ghost)",
               }}
             >
-              The member edition of the intelligence brief begins the coming
-              Monday. If the link does not arrive, reply to your receipt or write
-              to{" "}
+              The member edition of the intelligence brief begins this coming
+              Monday, {firstBrief}. If the link does not arrive, reply to your
+              receipt or write to{" "}
               <a
                 href="mailto:giancarlo@signalnorthintel.com"
                 style={{ fontSize: 13, color: "var(--blue-soft)" }}
