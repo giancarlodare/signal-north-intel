@@ -7,6 +7,7 @@ import "./dashboard.css";
 import DashHeader from "@/components/portal/DashHeader";
 import { memberIdentity } from "@/lib/portal/identity";
 import { createClient } from "@/lib/supabase/server";
+import { portalAccess } from "@/lib/billing/member-access";
 
 export default async function MemberLayout({
   children,
@@ -23,6 +24,12 @@ export default async function MemberLayout({
       "full_name"
     ] as string | undefined,
   );
+  // Tier for the nav filter (ship-gate 2026-08-04): the nav shows only the
+  // surfaces this member's tier opens, from the same matrix RequireTier
+  // enforces. No paid-up row -> null -> Weekly-level items only, and the
+  // paywall answers honestly on click.
+  const access = await portalAccess(supabase);
+  const tier = access.allowed ? access.row!.tier : null;
 
   return (
     <div className="sn-site">
@@ -36,7 +43,11 @@ export default async function MemberLayout({
         href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
         rel="stylesheet"
       />
-      <DashHeader initials={identity.initials} shortname={identity.shortname} />
+      <DashHeader
+        initials={identity.initials}
+        shortname={identity.shortname}
+        tier={tier}
+      />
       {children}
     </div>
   );

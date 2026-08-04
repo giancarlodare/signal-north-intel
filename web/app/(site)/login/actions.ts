@@ -22,13 +22,20 @@ export async function sendMagicLink(formData: FormData) {
   if (email) {
     const supabase = createClient();
     // shouldCreateUser: false — founding members are provisioned manually;
-    // a link request must never create an account. The result is ignored on
-    // purpose (no user enumeration): unknown addresses get the same "if that
-    // address belongs to a member" message as real ones.
-    await supabase.auth.signInWithOtp({
+    // a link request must never create an account. The VISITOR-FACING result
+    // is ignored on purpose (no user enumeration): unknown addresses get the
+    // same "if that address belongs to a member" message as real ones.
+    const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: confirmUrl(), shouldCreateUser: false },
     });
+    if (error) {
+      // Logged SERVER-SIDE only (operator 2026-08-04): no-enumeration holds
+      // for the visitor, but a swallowed send failure -- the auth-email rate
+      // limit choking, SMTP down -- must be visible to us in the logs, or a
+      // member locked out of their own account looks exactly like nothing.
+      console.error("[login] magic-link send failed:", error.message);
+    }
   }
   redirect("/login?sent=1");
 }

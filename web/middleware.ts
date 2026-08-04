@@ -33,7 +33,21 @@ export async function middleware(request: NextRequest) {
 
   const {
     data: { user },
+    error: authError,
   } = await supabase.auth.getUser();
+  if (authError && !/session/i.test(authError.message ?? "")) {
+    // VISIBILITY, not behavior (operator 2026-08-04, the live-window /pricing
+    // bounce). The gate collapses ANY getUser failure into "unauthenticated",
+    // which is the right fail-closed policy -- but without this line a Supabase
+    // Auth outage or per-IP rate limit (429) is indistinguishable from a
+    // signed-out visitor, and a real member bounced to /login looks like
+    // nothing in the logs. Missing-session errors are excluded: an anonymous
+    // visitor is normal traffic, not a failure.
+    console.error(
+      "[middleware] auth check failed (treating as unauthenticated):",
+      authError.status ?? "", authError.message,
+    );
+  }
 
   const path = request.nextUrl.pathname;
 

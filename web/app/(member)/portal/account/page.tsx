@@ -142,6 +142,39 @@ export default async function AccountPage({
           </p>
         </section>
 
+        {/* TIER UPGRADE STATE (ship-gate 2026-08-04). A Weekly member who
+            reached for a Pro surface lands here. Operator's ruling: that is
+            the strongest upgrade signal we have, so it renders the SAME Pro
+            early-access capture the pricing page uses -- prefilled with the
+            member's verified address -- never a bare refusal. */}
+        {searchParams.access === "tier" ? (
+          <section
+            className="card"
+            style={{
+              padding: "26px 30px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 14,
+            }}
+            data-testid="tier-upgrade"
+          >
+            <span className="t-label">That page is part of Signal North Pro</span>
+            <span style={{ fontSize: 15, lineHeight: 1.7, color: "var(--muted)" }}>
+              The closing-soon board, watchlists and alerts are Pro surfaces:
+              Weekly is a publication you read, Pro watches your buyers and
+              categories for you. Pro is in development; request early access
+              and you shape what it watches first.
+            </span>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <InquiryDialog
+                tier="pro"
+                defaultEmail={user?.email}
+                triggerClassName="follow-btn"
+              />
+            </div>
+          </section>
+        ) : null}
+
         {billing && !sub ? (
           <section
             className="card"

@@ -1,8 +1,16 @@
 "use client";
 // Member dashboard header (Claude Design handoff, shared across portal
-// pages). Client component only for usePathname (aria-current); identity is
-// computed server-side and passed in.
+// pages). Client component only for usePathname (aria-current); identity and
+// tier are computed server-side and passed in.
+//
+// NAV IS TIER-FILTERED (ship-gate 2026-08-04): Pro surfaces (Closing soon,
+// Watching) render only for a tier that opens them, via the SAME pure matrix
+// the server-side RequireTier guard enforces -- so the nav can never advertise
+// a page the guard would bounce. Hiding, not disabling: a Weekly member's
+// upgrade path is the account page and the pricing table, not a dead link.
 import { usePathname } from "next/navigation";
+import { navShows } from "@/lib/billing/tier-surfaces";
+import type { Tier } from "@/lib/billing/config";
 
 const MARK = "M48 4 L76 90 L48 72 L20 90 Z";
 
@@ -17,11 +25,14 @@ const NAV = [
 export default function DashHeader({
   initials,
   shortname,
+  tier = null,
 }: {
   initials: string;
   shortname: string;
+  tier?: Tier | null;
 }) {
   const path = usePathname();
+  const items = NAV.filter((n) => navShows(tier, n.href));
   const current = (href: string) =>
     path === href ? ("page" as const) : undefined;
   return (
@@ -39,7 +50,7 @@ export default function DashHeader({
           </a>
           <span className="dash-header__spacer"></span>
           <nav className="dash-nav">
-            {NAV.map((n) => (
+            {items.map((n) => (
               <a key={n.href} href={n.href} aria-current={current(n.href)}>
                 {n.label}
               </a>
