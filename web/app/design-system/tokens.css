@@ -52,7 +52,13 @@
   --sp-6: 32px; --sp-7: 48px; --sp-8: 64px; --sp-9: 96px; --sp-10: 120px;
 
   /* Layout */
-  --content-max: 1360px;
+  /* 1200, not 1360 (operator 2026-08-04): common laptops (1280/1366/1440) sit
+     below a 1360 cap, so they rendered the desktop layout at less than its
+     design width and everything read compressed, while a wide monitor hit the
+     cap and looked right. At 1200 those laptops reach the SAME capped layout the
+     monitor shows (>= ~1296 viewport), and the grids collapse at 1180 below
+     that, so there is no squeezed in-between band. */
+  --content-max: 1200px;
   --gutter: 48px;
   --header-h: 76px;
   --radius: 4px;          /* cards */

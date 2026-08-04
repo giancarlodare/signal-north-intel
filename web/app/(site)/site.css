@@ -211,7 +211,11 @@
 .login-card input:focus { border-color: var(--blue-soft); }
 
 /* ---------- Responsive ---------- */
-@media (max-width: 1024px) {
+/* Desktop -> stacked at 1180 (operator 2026-08-04, raised from 1024): the
+   two-column layouts collapse BEFORE they get cramped, so a laptop shows either
+   the capped desktop layout (viewport >= ~1296, matching the monitor) or a clean
+   single column, never a squeezed in-between. */
+@media (max-width: 1180px) {
   :root { --fs-display: 48px; --fs-title: 36px; --gutter: 32px; }
   .hero__inner { grid-template-columns: 1fr; gap: 48px; }
   .caps { grid-template-columns: 1fr; }
@@ -400,8 +404,15 @@
 .sn-site .point-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 
 /* Hero left column carries a big display headline; give it more of the row so
-   the statement reads on three lines (not four) at the wider content width. */
-.sn-site .hero__inner { grid-template-columns: minmax(340px, 1.42fr) minmax(320px, 1fr); }
+   the statement reads on three lines (not four) at the wider content width.
+   GATED to the desktop range (min-width:1181px): this scoped rule (0,2,0) is
+   more specific than the unscoped stacking rule in the max-width:1180 block, so
+   without the gate it would win at every width and the hero would never stack
+   on the marketing pages -- it would overflow on a phone. The gate lets the
+   stack rule take over at <=1180. */
+@media (min-width: 1181px) {
+  .sn-site .hero__inner { grid-template-columns: minmax(340px, 1.42fr) minmax(320px, 1fr); }
+}
 
 /* Two-column FAQ: serif heading in a left rail, accordion on the right. */
 .sn-site .faq-block { display: grid; grid-template-columns: minmax(220px, 0.42fr) minmax(0, 1fr); gap: var(--sp-8); align-items: start; }
@@ -498,7 +509,7 @@
 .sn-site .about-rail__label { font-size: var(--fs-label); font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
 .sn-site .about-rail--dark .about-rail__label { color: var(--blue-soft); }
 .sn-site .about-rail__rule { width: 40px; height: 2px; background: var(--red); }
-@media (max-width: 1100px) {
+@media (max-width: 1180px) {
   .sn-site .about-section { grid-template-columns: 1fr; column-gap: 0; row-gap: var(--sp-4); }
   .sn-site .about-rail, .sn-site .about-content { grid-column: 1; }
 }
