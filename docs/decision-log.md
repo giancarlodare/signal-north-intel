@@ -14,6 +14,23 @@ at the bottom; a decision about how bugs get fixed belongs up here.
 
 ---
 
+## 2026-08-04 — SHIP-GATE: tier gating on portal surfaces before launch
+
+**Finding (operator, from the production dark-run).** The portal gates
+paid-vs-unpaid only. `grantsPortal()` treats every active tier
+(weekly/pro/founding) identically, and the member nav is static — so a Weekly
+member reaches Closing-soon and Watching, which the pricing table sells as Pro.
+Nothing anywhere enforces tier.
+
+**Ruling.** Ship-gate: the tier table must not claim a distinction the product
+does not enforce. Before launch, Pro-tier surfaces (closing-soon board,
+watchlists/alerts) are gated by tier, with the Weekly member redirected to an
+honest upgrade state, and the nav filtered to what the tier can reach. Build is
+gated class (member-facing): a small pure surface→tier matrix + per-page guard +
+nav filter, proposed and approved before it lands.
+
+---
+
 ## 2026-08-04 — Don't let a branch sit open once its work is done
 
 **Rule.** A branch whose work is finished and green does not wait for a human.

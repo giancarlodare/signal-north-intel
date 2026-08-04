@@ -69,6 +69,10 @@ jobs:
       - name: Create account (email confirmed; /login then sends normally)
         if: inputs.mode == 'create-account'
         run: node scripts/ci/account-tools.mjs create "${{ inputs.arg }}"
+      # --- cleanup-member: remove ALL test residue for email(s), verified -----
+      - name: Clean up test member(s) across Stripe test mode + Supabase
+        if: inputs.mode == 'cleanup-member'
+        run: node scripts/ci/cleanup-test-member.mjs ${{ inputs.arg }}
       # --- validate mode (default): full E2E ---------------------------------
       - name: Build
         if: inputs.mode == 'validate'
