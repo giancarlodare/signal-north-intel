@@ -1,0 +1,72 @@
+name: Checkout flow validation (test-mode, dispatch-only)
+
+# End-to-end TEST-MODE validation of the checkout-first webhook (operator
+# 2026-08-04, path a). Builds the app, starts it, creates throwaway Stripe TEST
+# objects, POSTs signed checkout.session.completed events to the REAL webhook,
+# asserts the member_subscriptions / brief_signups / provisioning_failures rows,
+# then removes every test artifact and VERIFIES the removal (re-query + counts).
+#
+# SAFE BY CONSTRUCTION: STRIPE_SECRET_KEY must be a test key (the scripts refuse
+# a live one), so no money can move. MEMBER_WELCOME_LIVE is off, so no member
+# email is sent; failure-path alarms go to a Resend sink. Dispatch-only.
+on:
+  workflow_dispatch: {}
+
+concurrency:
+  group: checkout-validate
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    env:
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      # We sign the test events ourselves, so this is a fixed local value used on
+      # both sides (never a real endpoint secret).
+      STRIPE_WEBHOOK_SECRET: whsec_ci_validation_only
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      # Non-empty dummy: the webhook uses the service role for its DB work; the
+      # anon key only needs to satisfy the middleware client's constructor.
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-dummy-anon-key
+      NEXT_PUBLIC_SITE_URL: https://signalnorthintel.com
+      # ci-preview sending-only key; used only if a failure-path alarm fires,
+      # and then only to the Resend sink below (never the operator).
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      OPERATOR_ALARM_EMAIL: delivered@resend.dev
+      MEMBER_WELCOME_LIVE: "false"
+      CI_RUN_TAG: ${{ github.run_id }}
+      CI_WEBHOOK_BASE: http://127.0.0.1:3123
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Create throwaway test product + prices
+        run: node scripts/ci/make-test-price.mjs
+      - name: Start server
+        run: |
+          PORT=3123 nohup npm start > /tmp/next-start.log 2>&1 &
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 3 http://127.0.0.1:3123/api/stripe/webhook || true)
+            echo "webhook readiness attempt $i -> $code"
+            # 400 (unsigned) or 405 (no GET) both mean the route is up.
+            if [ "$code" = "400" ] || [ "$code" = "405" ] || [ "$code" = "503" ]; then echo up; break; fi
+            sleep 2
+          done
+      - name: Run validation
+        run: node scripts/ci/validate-checkout-flow.mjs
+      - name: Server log tail (always)
+        if: always()
+        run: tail -50 /tmp/next-start.log || true
+      - name: Archive throwaway test product + prices (always)
+        if: always()
+        run: node scripts/ci/cleanup-test-price.mjs
