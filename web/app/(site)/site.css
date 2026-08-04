@@ -157,7 +157,21 @@
 .tier-table th, .tier-table td { text-align: left; padding: 13px 16px; border-top: 1px solid var(--line-soft); font-weight: 400; }
 .tier-table thead th { border-top: 0; vertical-align: top; padding: 24px 16px; }
 .tier-table thead th + th { border-left: 1px solid var(--line-soft); }
-.tier-name { font-family: var(--font-serif); font-size: 21px; line-height: 1.25; color: var(--ink); display: block; }
+/* Reserve two lines for the tier name so a name that wraps at narrower widths
+   ("Signal North Enterprise" in a 18%-wide column on a laptop) does NOT push
+   the price, meta and CTA down out of alignment with the other columns. Every
+   column reserves the same height whether its name is one line or two, so the
+   header row stays aligned across all viewport widths. text-wrap:balance keeps
+   the two-line break even rather than one long line and one orphan word. */
+.tier-name {
+  font-family: var(--font-serif);
+  font-size: 21px;
+  line-height: 1.25;
+  color: var(--ink);
+  display: block;
+  min-height: 2.5em; /* two lines at 1.25 line-height */
+  text-wrap: balance;
+}
 .tier-price { font-family: var(--font-mono); font-size: 13px; color: var(--body); display: block; padding-top: 6px; }
 .tier-meta { font-size: 12px; color: var(--faint); display: block; padding-bottom: 12px; }
 .tier-feature { font-size: 14.5px; color: var(--body); }
