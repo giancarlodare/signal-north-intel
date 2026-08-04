@@ -270,18 +270,12 @@ export default function PricingPage() {
               </table>
             </div>
 
-            {/* Weekly-to-Pro bridge (operator 2026-08-03): the one line that
-                explains the price gap. Short form only, no latency promise
-                before alerts exist. */}
+            {/* Weekly-to-Pro bridge (operator 2026-08-04): the single line that
+                explains the price gap, in the vertical-rule treatment. One line,
+                no supporting copy; Weekly and Pro italicised, nothing else. */}
             <p className="tier-bridge" data-testid="tier-bridge">
-              Weekly is a publication you read. Pro watches your buyers and
-              categories for you.
-            </p>
-
-            <p className="tier-neutrality" data-testid="neutrality-line">
-              The record is the same for everyone. A higher tier buys more ways
-              to work with it, never a different version of the truth, and never
-              earlier access to it.
+              <em>Weekly</em> is a publication you read. <em>Pro</em> watches
+              your buyers and categories for you.
             </p>
 
             {/* Two-column FAQ (design: serif heading left, accordion right). */}

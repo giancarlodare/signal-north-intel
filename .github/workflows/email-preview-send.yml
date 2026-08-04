@@ -1,0 +1,38 @@
+name: Email preview send (dispatch-only)
+
+# Sends the two transactional emails we author (02 free-welcome, 03
+# member-welcome) to one address, so the operator can see them in a real client
+# before any customer does (operator 2026-08-04).
+#
+# KEY HYGIENE: this runs against a SCOPED, DISPOSABLE Resend key (secret
+# RESEND_API_KEY, set to a sending-only "ci-preview" key), NEVER the production
+# key. The operator revokes it once 02 and 03 have been reviewed. There is no
+# schedule and no other trigger: it fires only when a human dispatches it.
+on:
+  workflow_dispatch:
+    inputs:
+      to:
+        description: "Recipient address (where to send the two previews)"
+        type: string
+        required: true
+        default: "giancarlo@signalnorthintel.com"
+
+concurrency:
+  group: email-preview-send
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # No install step: the script uses only Node built-ins (fetch, fs).
+      - name: Send previews
+        working-directory: web
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          EMAIL_PREVIEW_TO: ${{ inputs.to }}
+        run: node scripts/send-preview-emails.mjs

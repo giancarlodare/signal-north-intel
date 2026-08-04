@@ -237,15 +237,6 @@
   font-size: var(--fs-small);
   color: var(--muted);
 }
-.tier-neutrality {
-  margin: 0;
-  max-width: 720px;
-  font-size: var(--fs-ui);
-  line-height: 1.75;
-  color: var(--muted);
-  border-left: 2px solid var(--line);
-  padding-left: var(--sp-5);
-}
 
 /* ---------- Mechanical centralization pass (2026-08-02) ----------
    Consolidations of verbatim-duplicated inline styles only; values are
@@ -371,10 +362,13 @@
 /* Weekly-to-Pro bridge line: connective tissue under the table, not a row. */
 .sn-site .tier-bridge {
   margin: 0;
-  text-align: center;
+  max-width: 720px;
+  text-align: left;
   font-size: var(--fs-ui);
   line-height: 1.6;
-  color: var(--ink-soft);
+  color: var(--muted);
+  border-left: 2px solid var(--line);
+  padding-left: var(--sp-5);
 }
 
 /* The About stat band is ONE row. The handoff shipped six facts; the live build

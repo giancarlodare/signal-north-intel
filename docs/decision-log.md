@@ -14,6 +14,43 @@ at the bottom; a decision about how bugs get fixed belongs up here.
 
 ---
 
+## 2026-08-04 — The /portal dashboard is Pro monitoring material, not superseded
+
+**Decided.** The stage-2 "N things changed" dashboard that used to sit at
+/portal is NOT deleted and was not superseded by change A. It is a MONITORING
+surface, and monitoring is Pro. It is logged here as Pro material alongside the
+closing-soon board, watchlists and alerts. Weekly members land on the brief,
+because the brief is what they bought, so /portal stays a pure redirect (paid →
+/portal/brief, unpaid → /portal/account).
+
+**Why.** Change A's redirect made the dashboard look discarded; the operator's
+correction is that it was misplaced, not obsolete. Putting a monitoring view in
+front of a Weekly member shows them a Pro capability they have not bought; the
+brief is the Weekly product and the right landing.
+
+**Corrects.** The "judgment call flagged for reversal" note in the change-A
+entry below, which framed the dashboard as superseded. It is reclassified, not
+removed.
+
+---
+
+## 2026-08-04 — Email preview send uses a scoped, disposable key, never production
+
+**Decided.** The dispatch-only workflow that sends 02/03 to a real inbox
+(.github/workflows/email-preview-send.yml + web/scripts/send-preview-emails.mjs)
+runs against a SEPARATE Resend key: a sending-only key named ci-preview, added
+as the Actions secret RESEND_API_KEY, revoked once the two emails have been
+reviewed. The production key is never placed in GitHub Actions.
+
+**Why.** Real-client rendering differs enough from a browser preview to be worth
+doing, and these are the first thing a customer sees from us. But a leaked
+sending key on our own verified domain is a phishing and reputation risk, so it
+gets a scoped, short-lived key rather than the real one. The four Supabase
+templates are not sent here at all: their faithful render is Supabase's own
+send, done in the install session, never faked from a script.
+
+---
+
 ## 2026-08-04 — Change A: checkout-first paid flow (email-anchored provisioning)
 
 **Decided.** "Join Weekly" goes straight to Stripe Checkout with NO account and

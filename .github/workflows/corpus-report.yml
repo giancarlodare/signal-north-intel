@@ -41,6 +41,10 @@ on:
           # Full read-only dump of one buyer x category arc + precedent set,
           # with content bodies. args: <buyer-terms> <category-term>.
           - arc_pull
+          # Read-only content grep with a context window: prints the source
+          # sentence around each term hit, for verifying what a document
+          # actually says. args: <term> [term ...].
+          - doc_text
           # eScribe/CivicWeb tenant discovery: buckets the fleet before any
           # board seeding. Read-only; one shared polite delay, sequential.
           - fleet_discovery
