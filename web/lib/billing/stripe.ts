@@ -10,6 +10,7 @@ import {
   type Interval,
   type Tier,
 } from "./config";
+import { anonymousCheckoutParams } from "./checkout-params";
 
 export interface MemberSubscription {
   tier: Tier;
@@ -83,16 +84,12 @@ export async function createAnonymousCheckoutUrl(
   }
   try {
     const stripe = client(cfg.secretKey);
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      line_items: [{ price, quantity: 1 }],
-      // No `customer` and no `customer_email`: Checkout collects the payer's
-      // address, and it becomes the provisioning anchor. We do NOT prefill it,
-      // because there is no verified address to prefill from.
-      billing_address_collection: "auto",
-      success_url: `${origin}/join/thank-you?checkout=success`,
-      cancel_url: `${origin}/pricing?checkout=cancelled`,
-    });
+    // Params come from the pure anonymousCheckoutParams (checkout-params.ts),
+    // whose mode:"subscription" invariant is asserted by a unit test that runs
+    // on every push -- so a payment-mode regression fails CI, not a live sale.
+    const session = await stripe.checkout.sessions.create(
+      anonymousCheckoutParams(price, origin),
+    );
     return session.url ?? null;
   } catch (e) {
     console.error("[billing] anon checkout session failed:", (e as Error).message);
