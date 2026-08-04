@@ -1,18 +1,14 @@
-// Join Weekly: the public signup (operator 2026-08-02, template 2026-08-03).
+// Join Weekly: the public purchase (operator 2026-08-03, change A, CHECKOUT
+// FIRST). This reverses the earlier confirm-before-pay flow. "Join Weekly" no
+// longer sends a link and waits for an account before checkout; it goes
+// straight to Stripe. The account is created by the webhook from the email
+// Stripe collects, and the sign-in link is emailed after the payment clears.
 //
-// Same centred template as /login (the operator's original for both): logo
-// mark, serif heading that says what the page is for, one honest instruction
-// line, one email input, one full-width button, a hairline, a small footer
-// line. NO password fallback -- this is a signup, not a sign-in.
-//
-// It is deliberately PUBLIC (see SITE_PATHS in lib/auth/roles.ts): gating it
-// behind a session would mean you need an account to get an account.
-//
-// CONFIRM BEFORE PAY: the emailed link creates the account and proves the
-// address; the term is chosen and paid on the account page after that, never
-// before. The instruction line states that sequence honestly.
+// The ONLY thing chosen here is the term, because hosted Checkout cannot toggle
+// it in session (operator's "option c"). It is deliberately PUBLIC (see
+// SITE_PATHS in lib/auth/roles.ts).
 import SiteHeader, { BrandMark } from "@/components/site/SiteHeader";
-import JoinWeeklyForm from "@/components/site/JoinWeeklyForm";
+import JoinWeeklyCheckout from "@/components/site/JoinWeeklyCheckout";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Join Weekly — Signal North" };
@@ -52,14 +48,13 @@ export default function JoinPage() {
                 color: "var(--blue-soft)",
               }}
             >
-              Enter your work email and we send one link. Clicking it creates
-              your account and confirms the address. You choose your term, $3,900
-              a year or $390 a month, and pay on your account page after that,
-              never before.
+              Choose your term and continue to secure checkout. You enter your
+              details and pay with Stripe on the next screen; there is nothing to
+              set up first.
             </p>
           </div>
 
-          <JoinWeeklyForm />
+          <JoinWeeklyCheckout />
 
           <div
             style={{

@@ -86,6 +86,11 @@ export const SITE_PATHS = [
   "/pricing",
   "/contact",
   "/join",
+  // Where Stripe returns after a checkout-first purchase (change A). The buyer
+  // has no session yet -- the webhook is still provisioning -- so this must be
+  // publicly reachable, or a paid customer would be bounced to /login the
+  // instant their payment succeeds.
+  "/join/thank-you",
 ] as const;
 
 export function isSitePath(path: string): boolean {
@@ -140,10 +145,21 @@ export function gate(args: {
     return "to-login";
   }
 
-  // Flag OFF: pre-Wave-3 behavior. Member routes do not exist yet (404),
-  // everything else is allowed exactly as before. No role gating.
+  // Flag OFF. Pre-Wave-3 behavior for the marketing/operator surfaces (no role
+  // gating), with ONE change from change A (operator 2026-08-03): an
+  // AUTHENTICATED session may reach the member surface regardless of the flag.
+  //
+  // WHY THIS CHANGED. The staged-dark contract hid the member surface behind a
+  // 404 even from a signed-in member, which coupled "a member can use what they
+  // paid for" to the marketing-site flag flip. Checkout-first deliberately
+  // decouples them: a purchase provisions an account and emails a sign-in link
+  // while the flag is still off, and that member must land in their portal, not
+  // a 404. Hiding from the PUBLIC is unaffected -- an unauthenticated request
+  // was already handled above (to-login), never reaching here. The paywall
+  // (RequirePaid) still governs every product page, so "reachable" is not
+  // "readable": an unpaid session is redirected to /portal/account.
   if (!enabled) {
-    return isMemberPath(path) ? "not-found" : "allow";
+    return "allow";
   }
 
   // Flag ON: role gating is live.

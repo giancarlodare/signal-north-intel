@@ -14,6 +14,70 @@ at the bottom; a decision about how bugs get fixed belongs up here.
 
 ---
 
+## 2026-08-04 — Change A: checkout-first paid flow (email-anchored provisioning)
+
+**Decided.** "Join Weekly" goes straight to Stripe Checkout with NO account and
+no login. Checkout collects the email/name/card; the webhook provisions the
+account from the Stripe-verified email and emails a sign-in link. This REVERSES
+the confirm-before-pay flow (2026-08-02), where an account was created and
+verified before checkout.
+
+**How identity resolves now.** The webhook was "matching NEVER uses email"
+(2026-08-01). It is now stamp-first, then email. (1) An `sn_member_id` stamp on
+the subscription/session/customer still wins — that is the signed-in path (a
+member subscribing from /portal/account) and dashboard actions, unchanged. (2)
+On `checkout.session.completed` only, with no stamp, the Stripe-verified email
+is the anchor: `admin.generateLink(magiclink)` finds the account or creates one,
+and the id is stamped back onto the subscription + customer so every later event
+resolves by stamp. Provisioning happens on `completed` only; bare
+`subscription.*` events resolve by stamp and 500-retry until `completed` has
+stamped, avoiding double-provision and email/stamp races.
+
+**Free-list dedup.** On provision, `brief_signups.unsubscribed_at` is set for
+the anchor email, so a Free upgrader is on the paid list only, never both.
+
+**Reconciliation alarm (the one out-of-window interrupt).** A PAID checkout that
+cannot be provisioned (no email, unmapped price, failed admin call) is recorded
+in the new `provisioning_failures` table and the operator is emailed directly
+with an unmistakable subject (`[SIGNAL NORTH — ACTION] Paid, not provisioned:
+<email>`). The table makes the alarm fire ONCE per stranded subscription, not
+once per Stripe retry, and is the operator's open worklist. Manual fix:
+`node web/scripts/provision-member.mjs <sub_id|email>` (idempotent). The alarm
+is internal ops and is NOT gated by the member-email flag; it needs only
+`RESEND_API_KEY`.
+
+**Member sends are armed by a flag.** `MEMBER_WELCOME_LIVE` (default off, same
+shape as `PORTAL_ENABLED`) honours "don't wire any send path until I've approved
+the rendered result." While off, a purchase still provisions + entitles and logs
+the sign-in link, but no welcome is sent. Flip it on AFTER the rendered emails
+are approved, before the first live sale. The welcome (template 03) is embedded
+byte-identical to `web/emails/03-member-welcome.{html,txt}`, guarded by a test,
+so the thing sent is the thing approved.
+
+**/portal is now a redirect, regardless of PORTAL_ENABLED.** It sends paid →
+/portal/brief, unpaid → /portal/account, and never 404s (fixing the magic-link
+landing bug). The gate also changed: a SIGNED-IN member reaches the member
+surface regardless of the flag, so a purchase works before the marketing-site
+flip. The public is still bounced to /login while dark; the paywall still
+governs every product page. **Flag flip stays a deliberate, separate operator
+decision, never coupled to a purchase.**
+
+**Judgment call flagged for reversal.** Making /portal a pure redirect
+supersedes the stage-2 member dashboard that lived at the index. The dashboard
+JSX is preserved in git history; if the operator wants it back as a route, say
+so. Chosen because the operator's ruling was explicit ("/portal becomes a
+redirect ... /portal/brief (paid) or /portal/account (unpaid)").
+
+**Validation.** Test mode exhaustively first; live validation uses a temporary
+$1 live Price, never a real $3,900 card. **Build paused at the live step for the
+operator's go.**
+
+**Supersedes.** The confirm-before-pay Weekly flow (2026-08-02) and the "matching
+NEVER uses email" default (2026-08-01), for the anonymous checkout path only; the
+account-anchored stamp path is unchanged.
+
+---
+
 ## 2026-08-01 — Autonomy: safe class gets merge authority
 
 **Decided.** Merge on green CI without approval for a defined safe class
