@@ -14,6 +14,30 @@ at the bottom; a decision about how bugs get fixed belongs up here.
 
 ---
 
+## 2026-08-04 — A planning document is not an outcome (editorial discipline)
+
+**Rule.** Never let a planning document read as an outcome. A work-plan item is
+not a finding. A tender is not an award. An intent is not a commitment. When a
+node is built from a source, the node may assert only what the source's own
+text asserts, at the source's own stage in the process.
+
+**Origin.** The TPS 9-1-1 / priority-response node. The corpus text is the City
+of Toronto Auditor General's 2023 WORK PLAN scheduling two reviews of the
+Service (911 PSAP operations; responses to calls for service). It was nearly cut
+as unusable because it read as an audit FINDING against a named service, which
+the document does not contain. Pulling the source sentence showed the node is
+usable, but as *scheduled scrutiny*, not a finding. Wording that survives:
+"In February 2023 the City of Toronto Auditor General's work plan scheduled two
+reviews of the Service, covering 9-1-1 public safety answering point operations
+and responses to calls for service." Source: TPSB minutes 2023-11-23.
+
+**Why it recurs.** The rung taxonomy already encodes this (precursor rungs 2-3
+vs outcome rungs 4-5), but composed prose can quietly promote a rung: a
+scheduled review narrated as a finding, a posting narrated as an award. The
+verification that catches it is reading the source sentence, not the summary.
+
+---
+
 ## 2026-08-04 — The /portal dashboard is Pro monitoring material, not superseded
 
 **Decided.** The stage-2 "N things changed" dashboard that used to sit at
