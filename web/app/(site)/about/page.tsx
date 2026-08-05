@@ -157,18 +157,10 @@ export default async function AboutPage() {
                     We cover one market deeply rather than every market thinly.
                   </strong>
                 </p>
-                {/* Canadian-owned callout: one of the two deliberate shadows. */}
-                <div
-                  style={{
-                    background: "var(--navy)",
-                    borderRadius: "var(--radius)",
-                    boxShadow: "var(--shadow-lg)",
-                    padding: 36,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 14,
-                  }}
-                >
+                {/* Canadian-owned callout: one of the two deliberate shadows.
+                    Styling + hover live in site.css (.about-ca-callout) so the
+                    hover box-shadow isn't blocked by an inline one. */}
+                <div className="about-ca-callout">
                   <span
                     className="t-label"
                     style={{ color: "var(--red-on-dark)", letterSpacing: "0.2em" }}

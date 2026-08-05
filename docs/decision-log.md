@@ -830,3 +830,23 @@ Locked with a permanent test in render.test.ts: the renderer must never emit a
 "Standing Exhibit" / by-quarter chart, and an exhibit object force-injected
 onto the view renders nothing. Full brief suite green (120 lib tests), web
 build clean.
+
+## About/home marketing polish: callout hover + two-sides 2x2 (operator 2026-08-05)
+
+Gated class (marketing-site), operator-directed. Two cosmetic fixes:
+
+1. CANADIAN CALLOUT HOVER. The about page "Canadian-owned and operated" navy
+   callout is now interactive. Moved off inline styles into
+   `.sn-site .about-ca-callout` in site.css so a hover box-shadow isn't blocked
+   by an inline one. Hover lifts the card (translateY -4px) and surfaces a red
+   left edge (inset 4px var(--red-on-dark)) plus a deeper shadow -- the same
+   red-accent language as the FAQ hover. prefers-reduced-motion resets it.
+
+2. TWO SIDES = 2 x 2, never 3 + 1. The homepage "One market, two sides of the
+   table" point-grid used auto-fit, which dropped the fourth card alone onto a
+   second line at content width. Fixed to `repeat(2, minmax(0,1fr))`
+   (collapses to one column <=640px). A single row of four was considered and
+   rejected: the longest nowrap heading ("Every contract in your category")
+   clips at a quarter-width track, so two columns is the honest fit. Verified
+   by screenshot: clean 2 x 2, no clipped headings, callout lifts with the red
+   edge on hover.
