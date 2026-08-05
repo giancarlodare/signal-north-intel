@@ -229,7 +229,7 @@ export default async function SiteHome() {
             <div className="point-grid" data-panel-group="sides" data-panel="supplier">
               <article className="point">
                 <h3>Every contract in your category</h3>
-                <p>Who holds it, what was paid, and when it comes back to market.</p>
+                <p>Who holds it, what was paid, and the full award history behind it.</p>
               </article>
               <article className="point">
                 <h3>What comparable buyers paid</h3>
@@ -258,8 +258,8 @@ export default async function SiteHome() {
                 <p>Category concentration, useful before any sole-source case.</p>
               </article>
               <article className="point">
-                <h3>Your recompete calendar</h3>
-                <p>Every agreement approaching expiry, in one place.</p>
+                <h3>What your peers are tendering</h3>
+                <p>Open solicitations across services of your size, as they post.</p>
               </article>
             </div>
           </div>
