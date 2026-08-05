@@ -14,6 +14,31 @@ at the bottom; a decision about how bugs get fixed belongs up here.
 
 ---
 
+## 2026-08-05 — Corridor: collection ON, construction pack + extraction holdback
+
+**Decided (operator directive).** The Corridor vertical's collection turns on
+immediately: a `# ---CONSTRUCTION---` keyword pack keeps civil-works documents
+the keep-filter was discarding on portals we already visit (permanent loss
+daily). Term pack over capture-all: unmatched rows can never be
+domain-attributed, and domain-as-a-dimension is now load-bearing.
+
+**Extraction isolation (operator requirement, same day).** Construction-ONLY
+keeps insert as `status='captured_construction'`; the daily forward pass and
+extract-backfill select exact `status='captured'` (verified sole selectors),
+so the daily extraction budget cannot grow. Corridor extraction later targets
+the held status under its OWN envelope. No migration (unconstrained status
+text; the 'irrelevant' quarantine precedent). Storage delta immaterial on the
+forward pass; awarded-history drains would be the material case and remain
+envelope-gated.
+
+**Also binding.** (a) The design-award → construction-tender chain per buyer
+and asset class stays queryable — the design-side terms are in the pack so
+both ends are captured; unit-price extraction is later and envelope-gated.
+(b) Construction is the fourth domain DIMENSION (police/fire/EMS/defence/
+construction), never a fork. Full scope: docs/corridor-collection.md.
+
+---
+
 ## 2026-08-05 — Contract chains stay queryable as chains (capital-reader option)
 
 **Decided (operator addendum, NATO 2026 Summit outputs).** Where a defence

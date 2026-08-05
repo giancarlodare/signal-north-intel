@@ -45,7 +45,7 @@ import sys
 from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
 
 from . import config, supabase_client
-from .filters import Keywords, evaluate, load_keywords
+from .filters import Keywords, evaluate, document_status, load_keywords
 from .hashing import content_hash
 
 log = logging.getLogger(__name__)
@@ -240,7 +240,7 @@ def build_payload(muni: dict, source_id: str, doc_type: str, row: dict,
         "url": url,
         "title": title[:500],
         "doc_type": doc_type,
-        "status": "captured",
+        "status": document_status(result),
         "published_on": date_iso,
         # documents.date_precision is NOT NULL (day|month); a bid whose date did
         # not parse still needs a valid value, and published_on=None carries the

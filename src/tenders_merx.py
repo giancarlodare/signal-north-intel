@@ -42,7 +42,7 @@ from urllib.parse import parse_qsl, urldefrag, urljoin, urlparse
 
 from . import supabase_client
 from .board_minutes import PoliteFetcher, extract_links, html_to_text
-from .filters import Keywords, evaluate, load_keywords
+from .filters import Keywords, evaluate, document_status, load_keywords
 from .hashing import content_hash
 
 log = logging.getLogger(__name__)
@@ -221,7 +221,7 @@ def build_payload(merx_id: str, url: str, title: str, doc_type: str,
         "url": url,
         "title": (title or "(untitled solicitation)")[:500],
         "doc_type": doc_type,
-        "status": "captured",
+        "status": document_status(result),
         "published_on": abstract["closing_on"],
         # documents.date_precision is NOT NULL (day|month); an undated award
         # (amended-solicitation ceiling) still needs a valid value, and

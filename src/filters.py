@@ -22,34 +22,48 @@ from dataclasses import dataclass
 from . import config
 
 DEFENCE_MARKER = "# ---DEFENCE---"
+# Corridor vertical (operator 2026-08-05): construction/civil-works terms are
+# a third pack, not additions to general. The section keeps the DOMAIN a
+# dimension (construction alongside police/fire/EMS/defence), and it is what
+# lets a construction-ONLY keep insert under a status the daily extraction
+# pass never selects -- collection turns on with zero LLM cost.
+CONSTRUCTION_MARKER = "# ---CONSTRUCTION---"
 
 
 @dataclass(frozen=True)
 class Keywords:
     general: tuple[str, ...]
     defence: tuple[str, ...]
+    construction: tuple[str, ...] = ()
 
 
 def load_keywords(path: str | None = None) -> Keywords:
     path = path or config.KEYWORDS_FILE
     general: list[str] = []
     defence: list[str] = []
-    in_defence_section = False
+    construction: list[str] = []
+    target = general
 
     with open(path, encoding="utf-8") as f:
         for raw_line in f:
             line = raw_line.strip()
             if not line:
                 continue
-            if line.strip() == DEFENCE_MARKER:
-                in_defence_section = True
+            if line == DEFENCE_MARKER:
+                target = defence
+                continue
+            if line == CONSTRUCTION_MARKER:
+                target = construction
                 continue
             if line.startswith("#"):
                 continue
-            target = defence if in_defence_section else general
             target.append(line.lower())
 
-    return Keywords(general=tuple(general), defence=tuple(defence))
+    return Keywords(
+        general=tuple(general),
+        defence=tuple(defence),
+        construction=tuple(construction),
+    )
 
 
 def _word_pattern(kw: str) -> re.Pattern:
@@ -105,6 +119,27 @@ class FilterResult:
     defence_relevant: bool
     matched_keyword: str | None
     matched_unspsc_segment: str | None
+    # Corridor (operator 2026-08-05): matched a construction-pack term.
+    construction_relevant: bool = False
+    # Kept ONLY because of the construction pack -- no core (general/defence/
+    # UNSPSC) match. This is the flag the status split keys on: a document the
+    # public-safety pipeline would have dropped must not enter its extraction
+    # budget.
+    construction_only: bool = False
+
+
+# The status a collector writes for a kept document. Core keeps stay
+# 'captured' (today's pipeline, byte-identical behavior). Construction-ONLY
+# keeps get their own status so the daily forward pass and extract-backfill --
+# both of which select status='captured' -- never see them: the Corridor
+# corpus accrues at zero LLM cost until its own envelope targets this status.
+# Same mechanism as the 2026-07-09 'irrelevant' quarantine; documents.status
+# is unconstrained text, so no migration is involved.
+CONSTRUCTION_HOLD_STATUS = "captured_construction"
+
+
+def document_status(result: FilterResult) -> str:
+    return CONSTRUCTION_HOLD_STATUS if result.construction_only else "captured"
 
 
 def evaluate(title: str, description: str, unspsc_code: str, keywords: Keywords) -> FilterResult:
@@ -115,11 +150,15 @@ def evaluate(title: str, description: str, unspsc_code: str, keywords: Keywords)
 
     defence_match = _matches_any(text, keywords.defence)
     general_match = _matches_any(text, keywords.general)
+    construction_match = _matches_any(text, keywords.construction)
 
-    kept = bool(segment_match or defence_match or general_match)
+    core = bool(segment_match or defence_match or general_match)
+    kept = bool(core or construction_match)
     return FilterResult(
         kept=kept,
         defence_relevant=bool(defence_match),
-        matched_keyword=defence_match or general_match,
+        matched_keyword=defence_match or general_match or construction_match,
         matched_unspsc_segment=segment if segment_match else None,
+        construction_relevant=bool(construction_match),
+        construction_only=bool(construction_match and not core),
     )

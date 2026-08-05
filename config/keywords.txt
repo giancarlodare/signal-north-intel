@@ -335,3 +335,46 @@ sustainment
 in-service support
 issc
 
+
+# ---CONSTRUCTION---
+# --- Corridor vertical term pack (operator 2026-08-05: collection turns on
+# --- now; a narrow keep-filter at drop-at-collection sources is permanent
+# --- data loss). These keeps insert as status='captured_construction' and are
+# --- EXCLUDED from the daily extraction pass until Corridor has its own
+# --- envelope (src/filters.py document_status). Bare 'EA' is HELD OUT like
+# --- bare 'rms' (matches "$5 ea." and initials); the spelled-out forms carry
+# --- it. ---
+sewer
+watermain
+sanitary
+storm
+cipp
+road reconstruction
+resurfacing
+culvert
+bridge
+sidewalk
+sitework
+excavation
+granular
+asphalt
+concrete
+engineering design services
+consulting engineering
+environmental assessment
+class ea
+municipal class environmental assessment
+detail design
+detailed design
+contract administration
+# --- Council-agenda document classes (operator item 2, same pattern as fire
+# --- master plan / CSWB): the demand-plan documents themselves. ---
+asset management plan
+water master plan
+wastewater master plan
+water and wastewater master plan
+transportation master plan
+development charges background study
+development charge
+capital budget
+capital plan

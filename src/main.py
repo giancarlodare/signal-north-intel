@@ -14,7 +14,7 @@ from dateutil import parser as dateparser
 from . import config, supabase_client
 from .canadabuys import (build_tender_content, fetch_csv_rows, find_column,
                          parse_unspsc_codes)
-from .filters import Keywords, evaluate, load_keywords
+from .filters import Keywords, document_status, evaluate, load_keywords
 from .hashing import content_hash
 from .vendors import extract_contract_terms
 
@@ -187,7 +187,7 @@ def process_tender_notices(source_id: str, keywords: Keywords) -> dict:
             "source_id": source_id,
             "url": url,
             "doc_type": "tender_notice",
-            "status": "captured",
+            "status": document_status(result),
             "content_hash": chash,
             "defence_relevant": result.defence_relevant,
             **payload,
@@ -256,7 +256,7 @@ def _process_award_rows(rows: list, source_id: str, keywords: Keywords, stats: d
             "url": url,
             "title": title,
             "doc_type": "award_notice",
-            "status": "captured",
+            "status": document_status(result),
             "published_on": awarded_on,
             "content_hash": chash,
             "defence_relevant": result.defence_relevant,
