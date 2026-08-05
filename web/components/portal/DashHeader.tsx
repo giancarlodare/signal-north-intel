@@ -12,7 +12,11 @@ import { usePathname } from "next/navigation";
 import { navShows } from "@/lib/billing/tier-surfaces";
 import type { Tier } from "@/lib/billing/config";
 
-const MARK = "M48 4 L76 90 L48 72 L20 90 Z";
+// Maple-leaf mark (operator 2026-08-05, replacing the compass arrow). Kept in
+// sync with the same path in components/site/SiteHeader.tsx (BrandMark); both
+// render it white-on-navy.
+const MARK =
+  "M48 4 L56 22 L73 16 L70 33 L90 34 L60 50 L70 62 L52 60 L48 84 L44 60 L26 62 L36 50 L6 34 L26 33 L23 16 L40 22 Z";
 
 const NAV = [
   { href: "/portal", label: "Home" },

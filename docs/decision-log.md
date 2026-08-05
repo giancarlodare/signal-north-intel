@@ -883,3 +883,40 @@ FLAGGED, not touched: the design-handoff caps illustrative panels (05
 "Recompete calendar / Nearest expiries", 01 "Ends 2030" sample rows) are
 frozen design-exploration mock data already removed from the live product;
 left as-is pending an operator call on whether the mock should be scrubbed.
+
+## Logo mark: compass arrow -> maple leaf (operator 2026-08-05)
+
+Safe class (web-only presentation, no schema, no member data). The compass
+arrow mark is replaced by a maple leaf. Wordmark "Signal North" and sub-label
+"PROCUREMENT INTELLIGENCE" are unchanged -- mark-only.
+
+SCOPE: web app ONLY. The mark is the single path in BrandMark
+(components/site/SiteHeader.tsx), rendered in the site header (22px), footer
+(20px), and login/join/thank-you (34px); plus the duplicated path in
+components/portal/DashHeader.tsx (portal, 22px). All white-on-navy via the
+`fill` prop; navy-on-off-white verified to render cleanly for future use.
+
+EMAILS + BRIEF: deliberately NOT touched. They keep the text serif wordmark
+lockup, no image mark. Operator's standing reason: Outlook blocks remote
+images, and a broken-image icon in the first email we send is worse than no
+image. So there was never a compass image or a local path in the templates or
+render.ts to swap -- the "brief renderer references a local path" premise did
+not match the code.
+
+SIMPLIFIED SILHOUETTE (operator directive): derived a clean geometric maple,
+NOT the detailed realistic leaf supplied -- fine serrations and a thin stem
+would muddy at the 20-22px header/footer sizes. VERIFIED FINDING: a truly
+STEMLESS maple silhouette reads as an 8-point starburst, not a leaf, at every
+size (~15 derivations). The stem is the cue that disambiguates leaf from star.
+Operator chose a short STUBBY stem over pure no-stem so the mark actually reads
+as a maple. Final path (viewBox 0 0 96 96), kept in sync across both files:
+  M48 4 L56 22 L73 16 L70 33 L90 34 L60 50 L70 62 L52 60 L48 84 L44 60 L26 62
+  L36 50 L6 34 L26 33 L23 16 L40 22 Z
+Verified in situ: header, footer, login (34px) white-on-navy, plus a standalone
+both-contexts render. Portal DashHeader is the identical path/treatment.
+
+EMAIL PNG HOST (future reference, operator-agreed 2026-08-05): IF a leaf image
+is ever added to email, host the PNG in a Supabase Storage PUBLIC bucket, not
+web/public. Reason: the site middleware gate would redirect a /public asset to
+/login while the portal is dark, and email clients are unauthenticated; a
+Supabase public bucket URL is gate-independent and stable. Not doing it now.
