@@ -783,3 +783,27 @@ suite green, no new silent-failure path). Shipped in PR #158 (squash
    migrations (2026-07-10_prospects_seed.sql + two note fields) LEFT UNTOUCHED
    as historical record; the two prospects seed-note DB fields still read
    "Synapse" -- offered the operator a data UPDATE if wanted, open question.
+
+## About stat subline: interval-timing claim pulled (operator 2026-08-05)
+
+Gated class (marketing-site copy), operator-directed and wording approved
+via question. The "Years of disclosed award history" stat carried the
+subline "Enough depth to measure how long each organisation actually takes
+between decision and tender." That is a capability claim the product no
+longer makes: the calibration work showed decision-to-tender intervals are
+NOT reliably derivable at the organisation level, and predictive interval
+timing was removed. Same defect class as the false Weekly rows -- a claim on
+a public surface the product can't back.
+
+Replaced with: "Enough history to compare what different organisations have
+paid for the same work, going back years." States what the depth genuinely
+gives -- cross-buyer disclosed VALUES across years -- fully backed by the
+award value data.
+
+The operator's own candidate ("...and when contracts come back to market")
+was NOT shipped: return-to-market timing leans on contract end dates, and
+0 of 548 awards carry one (end-date extraction backlog, task #56), so that
+clause would reintroduce a claim the data can't support -- and return-timing
+is adjacent to the very interval capability that was pulled. Operator chose
+the value/comparison-only wording. The stat VALUE (dynamic, ~14 years) is
+real and unchanged; only the subline moved.

@@ -46,7 +46,13 @@ function statCells(s: MarketingStats) {
     {
       value: String(s.years_of_award_history),
       label: "Years of disclosed award history",
-      note: "Enough depth to measure how long each organisation actually takes between decision and tender.",
+      // Interval-timing claim removed (operator 2026-08-05): calibration showed
+      // decision-to-tender intervals aren't reliably derivable at the org level,
+      // so the product no longer makes that claim. This subline states what the
+      // depth genuinely gives -- cross-buyer disclosed VALUES across years -- and
+      // deliberately avoids any return-to-market/expiry timing claim, which end
+      // dates (0 of 548 awards carry one) can't back either.
+      note: "Enough history to compare what different organisations have paid for the same work, going back years.",
     },
     {
       value: formatCountFloor(s.documents_last_7_days),
