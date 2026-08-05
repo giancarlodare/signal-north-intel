@@ -850,3 +850,36 @@ Gated class (marketing-site), operator-directed. Two cosmetic fixes:
    clips at a quarter-width track, so two columns is the honest fit. Verified
    by screenshot: clean 2 x 2, no clipped headings, callout lifts with the red
    edge on hover.
+
+## Missing-data sweep: no live surface claims contract-expiry timing (operator 2026-08-05)
+
+Operator: "we shouldn't have anything leaning on that missing data." The
+missing data is municipal contract END dates (0 of 548 awards carry one,
+task #56). Swept every marketing/product surface for claims that assert we
+know when a contract expires / recompetes / comes back to market.
+
+FIXED (live homepage, web/app/(site)/page.tsx, "two sides" panels):
+- Supplier card 1 subline "...and when it comes back to market" ->
+  "...and the full award history behind it" (backed by the award record).
+- Agency card 4 "Your recompete calendar / Every agreement approaching
+  expiry, in one place" -> "What your peers are tendering / Open solicitations
+  across services of your size, as they post" (backed by tender notices we
+  collect now). The recompete/expiry capability is not live and (municipally)
+  not backed.
+- Synced the two matching point cards in the design-handoff index.html so the
+  copy the live page mirrors is clean and can't be reintroduced.
+
+KEPT (not leaning on the missing data):
+- Pricing "Expiring contracts (federal)" row: the operator's scoped
+  2026-08-03 exception, federal-only, backed by delivery_date from
+  open.canada.ca proactive disclosure (a real federal source, NOT the missing
+  municipal end dates), governed by the pricing table's ship-gate discipline.
+- brief_copy.py "recompete" lines: they tell the reader to note the
+  buyer/category to be positioned for the eventual recompete and assert NO
+  date -- the honest framing, not an expiry claim.
+- main.py / relink_vendors.py: internal code comments, not user-facing.
+
+FLAGGED, not touched: the design-handoff caps illustrative panels (05
+"Recompete calendar / Nearest expiries", 01 "Ends 2030" sample rows) are
+frozen design-exploration mock data already removed from the live product;
+left as-is pending an operator call on whether the mock should be scrubbed.
