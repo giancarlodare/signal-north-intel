@@ -59,7 +59,7 @@ import re
 import sys
 
 from . import supabase_client
-from .filters import Keywords, evaluate, load_keywords
+from .filters import Keywords, evaluate, document_status, load_keywords
 from .hashing import content_hash
 
 log = logging.getLogger(__name__)
@@ -154,7 +154,7 @@ def build_payload(buyer: dict, source_id, row: dict,
         "url": row["url"],
         "title": title[:500],
         "doc_type": row["doc_type"],
-        "status": "captured",
+        "status": document_status(result),
         # Closing date, bids&tenders semantics (module docstring). Falls back
         # to the posted date rather than NULL when closing did not parse.
         "published_on": closing_iso or posted_iso,

@@ -14,6 +14,54 @@ at the bottom; a decision about how bugs get fixed belongs up here.
 
 ---
 
+## 2026-08-05 — Corridor: collection ON, construction pack + extraction holdback
+
+**Decided (operator directive).** The Corridor vertical's collection turns on
+immediately: a `# ---CONSTRUCTION---` keyword pack keeps civil-works documents
+the keep-filter was discarding on portals we already visit (permanent loss
+daily). Term pack over capture-all: unmatched rows can never be
+domain-attributed, and domain-as-a-dimension is now load-bearing.
+
+**Extraction isolation (operator requirement, same day).** Construction-ONLY
+keeps insert as `status='captured_construction'`; the daily forward pass and
+extract-backfill select exact `status='captured'` (verified sole selectors),
+so the daily extraction budget cannot grow. Corridor extraction later targets
+the held status under its OWN envelope. No migration (unconstrained status
+text; the 'irrelevant' quarantine precedent). Storage delta immaterial on the
+forward pass; awarded-history drains would be the material case and remain
+envelope-gated.
+
+**Also binding.** (a) The design-award → construction-tender chain per buyer
+and asset class stays queryable — the design-side terms are in the pack so
+both ends are captured; unit-price extraction is later and envelope-gated.
+(b) Construction is the fourth domain DIMENSION (police/fire/EMS/defence/
+construction), never a fork. Full scope: docs/corridor-collection.md.
+
+---
+
+## 2026-08-05 — Contract chains stay queryable as chains (capital-reader option)
+
+**Decided (operator addendum, NATO 2026 Summit outputs).** Where a defence
+contract's full history is held (award → options exercised → extensions →
+value changes), the linkage is preserved as a first-class chain. The current
+federal ingest already satisfies this, and the behavior is now BINDING:
+`contracts_federal.py` keys re-disclosures on reference + value, so an
+amendment inserts as a fresh dated document (original kept, original_value /
+amendment_value captured), and grouping on `documents.reference_number` in
+disclosure order yields the contract's revenue trajectory. Re-disclosures are
+never collapsed into updates; reference_number remains the chain key.
+
+**Why.** The trajectory is the credit signal a future capital-markets reader
+would pay for, and it is derivable from what we already collect ONLY if the
+linkage survives. Costs nothing today; losing it silently would cost the
+option. The full addendum — three NATO/BDC candidate sources (Aggregated
+Demand Signal as a revision-tracked document class, Innovation Scale-Up
+Package, BDC investment announcements) and the two-reader lens on
+ITB/DIP/Estimates/ACAN — is docs/adjacent-collection-design.md §8.
+Collect-only, fortnight queue, nothing jumps.
+
+---
+
 ## 2026-08-04 — SHIP-GATE: tier gating on portal surfaces before launch
 
 **Built same day (operator go).** `lib/billing/tier-surfaces.ts` is the one

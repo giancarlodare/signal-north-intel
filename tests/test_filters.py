@@ -94,3 +94,56 @@ def test_plural_tolerance_keeps_bendix_class_closed():
     kw = Keywords(general=("ems",), defence=("uas", "ppe"))
     r = evaluate("Bendix Air Brake Systems", "quashed appeals shipped", "", kw)
     assert not r.kept and not r.defence_relevant
+
+
+# --- Corridor construction pack (operator 2026-08-05) ------------------------
+# The load-bearing property: a construction-ONLY keep is captured but held out
+# of the daily extraction pass via its status. A document that ALSO matches the
+# core packs stays on the core pipeline byte-identically.
+from src.filters import CONSTRUCTION_HOLD_STATUS, document_status
+
+
+def test_construction_section_loads_separately():
+    kw = load_keywords()
+    assert "watermain" in kw.construction
+    assert "asset management plan" in kw.construction
+    assert "watermain" not in kw.general
+    assert "police" not in kw.construction
+
+
+def test_construction_only_keep_gets_hold_status():
+    kw = Keywords(general=("police",), defence=("drone",), construction=("watermain",))
+    result = evaluate("Watermain replacement Contract 4", "sanitary sewer works", "", kw)
+    assert result.kept
+    assert result.construction_relevant
+    assert result.construction_only
+    assert not result.defence_relevant
+    assert document_status(result) == CONSTRUCTION_HOLD_STATUS
+
+
+def test_core_plus_construction_stays_on_core_pipeline():
+    kw = Keywords(general=("police",), defence=("drone",), construction=("concrete",))
+    result = evaluate("Police station concrete works", "", "", kw)
+    assert result.kept
+    assert result.construction_relevant
+    assert not result.construction_only
+    assert document_status(result) == "captured"
+
+
+def test_core_only_keep_status_unchanged():
+    kw = Keywords(general=("police",), defence=("drone",), construction=("watermain",))
+    result = evaluate("Police radio system", "", "", kw)
+    assert document_status(result) == "captured"
+
+
+def test_no_match_still_dropped():
+    kw = Keywords(general=("police",), defence=("drone",), construction=("watermain",))
+    result = evaluate("Office furniture standing offer", "janitorial services", "", kw)
+    assert not result.kept
+
+
+def test_bare_ea_not_in_pack_but_spelled_forms_are():
+    kw = load_keywords()
+    assert "ea" not in kw.construction  # bare-EA held out (the 'rms' precedent)
+    assert "environmental assessment" in kw.construction
+    assert "class ea" in kw.construction

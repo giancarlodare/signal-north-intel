@@ -62,7 +62,7 @@ import requests
 
 from . import supabase_client
 from .board_minutes import PoliteFetcher
-from .filters import Keywords, evaluate, load_keywords
+from .filters import Keywords, evaluate, document_status, load_keywords
 from .hashing import content_hash
 
 log = logging.getLogger(__name__)
@@ -337,7 +337,7 @@ def build_payload(rec: dict, cols: dict, ds: dict, source_id: Optional[str],
         # signal rides in the title ("Non-competitive: ...") and the content's
         # first line ("NON-COMPETITIVE (sole-source) contract."), both
         # machine-readable, so downstream can isolate it without a schema change.
-        "status": "captured",
+        "status": document_status(result),
         "published_on": published_on,
         # documents.date_precision is NOT NULL (day|month); a row with no
         # parsed date still needs a valid value, and published_on=None carries

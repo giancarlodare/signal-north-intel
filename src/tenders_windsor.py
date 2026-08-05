@@ -39,7 +39,7 @@ from urllib.parse import urljoin
 
 from . import supabase_client
 from .board_minutes import PoliteFetcher
-from .filters import Keywords, evaluate, load_keywords
+from .filters import Keywords, evaluate, document_status, load_keywords
 from .hashing import content_hash
 
 log = logging.getLogger(__name__)
@@ -208,7 +208,7 @@ def build_payload(item: dict, source_id: Optional[str], doc_type: str,
         "url": url,
         "title": title[:500],
         "doc_type": doc_type,
-        "status": "captured",
+        "status": document_status(result),
         # The close date is the event the spine cares about (the results PDF
         # publishes no award date, and none beats a wrong date).
         "published_on": item["close_on"],
