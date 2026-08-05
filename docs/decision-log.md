@@ -14,6 +14,29 @@ at the bottom; a decision about how bugs get fixed belongs up here.
 
 ---
 
+## 2026-08-05 — Contract chains stay queryable as chains (capital-reader option)
+
+**Decided (operator addendum, NATO 2026 Summit outputs).** Where a defence
+contract's full history is held (award → options exercised → extensions →
+value changes), the linkage is preserved as a first-class chain. The current
+federal ingest already satisfies this, and the behavior is now BINDING:
+`contracts_federal.py` keys re-disclosures on reference + value, so an
+amendment inserts as a fresh dated document (original kept, original_value /
+amendment_value captured), and grouping on `documents.reference_number` in
+disclosure order yields the contract's revenue trajectory. Re-disclosures are
+never collapsed into updates; reference_number remains the chain key.
+
+**Why.** The trajectory is the credit signal a future capital-markets reader
+would pay for, and it is derivable from what we already collect ONLY if the
+linkage survives. Costs nothing today; losing it silently would cost the
+option. The full addendum — three NATO/BDC candidate sources (Aggregated
+Demand Signal as a revision-tracked document class, Innovation Scale-Up
+Package, BDC investment announcements) and the two-reader lens on
+ITB/DIP/Estimates/ACAN — is docs/adjacent-collection-design.md §8.
+Collect-only, fortnight queue, nothing jumps.
+
+---
+
 ## 2026-08-04 — SHIP-GATE: tier gating on portal surfaces before launch
 
 **Built same day (operator go).** `lib/billing/tier-surfaces.ts` is the one

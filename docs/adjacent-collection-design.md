@@ -154,3 +154,49 @@ and precisely the thing that must not have one.
   the deferred-liability math).
 * **D4.** Priority position. Recommendation and current standing
   instruction: BEHIND Signal North launch, revisited after September.
+
+## 8. ADDENDUM — NATO 2026 Summit outputs (operator, 2026-08-05)
+
+Collect-only, same disciplines, nothing jumps the fortnight queue. Context:
+the Ankara summit launched a "Call to Action" directing private financial
+institutions into defence investment, alongside the first PUBLIC NATO
+Aggregated Demand Signal -- a structured statement of Allied capability
+needs published specifically so capital can underwrite against it. BDC is
+among the named institutions, which makes the Canadian response a live
+thread. Strategically this validates the thesis (demand signals must be
+legible before money moves) and points at a future CAPITAL-MARKETS reader
+of the corpus. Collection choices preserve that option; nothing is built
+for it now.
+
+**New candidate sources (UNVERIFIED, same standing as section 3 -- robots
+posture, structure, licensing all unprobed; they enter the same probe round
+D1 governs, at queue position, never ahead of it):**
+
+1. **NATO Aggregated Demand Signal (public version)** -- as a document
+   class with REVISIONS TRACKED: each published revision is a fresh dated
+   document, never an overwrite. It is the alliance-level analogue of our
+   demand arcs.
+2. **NATO Innovation Scale-Up Package materials** (2026 summit), including
+   the NATO Engine and Drone Edge announcements -- capability-direction
+   signals.
+3. **BDC defence/security investment announcements** -- the Canadian
+   institution named in the Call to Action; program structure and
+   commitments are the domestic trace of the initiative.
+
+**Priority bump, no scope change:** the ITB/offset obligations database,
+Defence Investment Plan, Estimates, and ACAN/RFI recovery now serve TWO
+readers -- the vendor reader we built for and the lender who would price
+against them. Their queue positions are unchanged; their value is not.
+
+**Data-model constraint (binding, costs nothing today):** where a defence
+contract's full history is held (award, options exercised, extensions,
+value changes), the chain stays QUERYABLE AS A CHAIN. The current federal
+ingest already satisfies this -- `contracts_federal.py` writes the
+procurement_id into indexed `documents.reference_number`, and its identity
+rule (reference + value) inserts a re-disclosed amendment as a fresh dated
+document while the original stays, with original_value / amendment_value
+captured -- so the revenue trajectory is derivable by grouping on
+reference_number in disclosure order. That behavior is now LOAD-BEARING:
+re-disclosures are never collapsed into updates, and reference_number
+remains the chain key. A contract's revenue trajectory over time is the
+credit signal a capital reader would pay for.
