@@ -411,10 +411,42 @@
 /* Home 01 point headings sit on ONE line each (a single word spilling to a
    second line looked worse than the ellipsis did). The handoff's 23px clips the
    longest heading; measured against the real font, 20px fits every heading in
-   the column with no wrap and no ellipsis, and the grid drops to fewer (wider)
-   columns before any heading could overflow. */
+   the two-column track with no wrap and no ellipsis. */
 .sn-site .point h3 { white-space: nowrap; overflow: visible; text-overflow: clip; font-size: 20px; }
-.sn-site .point-grid { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+/* Fixed 2 x 2 (operator 2026-08-05): the four points are two-and-two, never a
+   3 + 1 orphan on the second line. auto-fit dropped the fourth card alone once
+   the row could not hold four; a single row of four would clip the longest
+   nowrap heading at content width, so two columns is the honest fit. Collapses
+   to one column on phones. minmax(0,1fr) keeps a long heading from forcing its
+   track wider than half. */
+.sn-site .point-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 640px) {
+  .sn-site .point-grid { grid-template-columns: 1fr; }
+}
+
+/* About page "Canadian-owned and operated" callout (moved off inline styles so
+   a hover shadow isn't blocked by an inline one). Hover lifts the navy card and
+   surfaces a red edge -- the same red-accent language as the FAQ hover -- so the
+   deliberate shadow reads as an interactive object. */
+.sn-site .about-ca-callout {
+  background: var(--navy);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: transform 220ms var(--ease), box-shadow 220ms var(--ease);
+}
+.sn-site .about-ca-callout:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.12), 0 28px 60px rgba(0, 0, 0, 0.22),
+    inset 4px 0 0 var(--red-on-dark);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sn-site .about-ca-callout { transition: none; }
+  .sn-site .about-ca-callout:hover { transform: none; }
+}
 
 /* Hero left column carries a big display headline; give it more of the row so
    the statement reads on three lines (not four) at the wider content width.
