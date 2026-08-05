@@ -209,39 +209,17 @@ export default async function AboutPage() {
                 <span className="about-rail__label">The Team</span>
                 <span className="about-rail__rule"></span>
               </div>
+            {/* Portrait placeholder removed (operator 2026-08-05): the bio is
+                text-only and fills the card's full width. */}
             <div
               className="card card--hover"
               style={{
                 padding: 40,
-                display: "grid",
-                gridTemplateColumns: "minmax(160px,200px) minmax(300px,1fr)",
-                gap: "var(--sp-7)",
-                alignItems: "start",
+                display: "flex",
+                flexDirection: "column",
+                gap: 20, // off-scale, flagged
               }}
             >
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                <div
-                  style={{
-                    width: "100%",
-                    aspectRatio: "4/5",
-                    background: "#dedbd4",
-                    border: "1px solid var(--line)",
-                  }}
-                  data-field="portrait"
-                  aria-label="Portrait placeholder"
-                ></div>
-                <span className="t-label" style={{ fontSize: 10 }}>
-                  Portrait to be supplied
-                </span>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 20, // off-scale, flagged
-                  maxWidth: 700,
-                }}
-              >
                 <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                   <h3
                     style={{
@@ -283,7 +261,6 @@ export default async function AboutPage() {
                   of government decision-making: a working knowledge of how public
                   money moves from intention to purchase.
                 </p>
-              </div>
             </div>
             </div>
           </div>
