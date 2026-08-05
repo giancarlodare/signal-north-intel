@@ -920,3 +920,40 @@ is ever added to email, host the PNG in a Supabase Storage PUBLIC bucket, not
 web/public. Reason: the site middleware gate would redirect a /public asset to
 /login while the portal is dark, and email clients are unauthenticated; a
 Supabase public bucket URL is gate-independent and stable. Not doing it now.
+
+## Logo mark: real maple leaf replaces the hand-drawn one (operator 2026-08-05)
+
+Supersedes the previous entry. The operator rejected the hand-authored
+geometric mark ("looks like shit") -- it read as a starburst, not a leaf
+(confirmed: a stemless simplified maple is geometrically a star). Directive:
+use an actual maple leaf from the internet.
+
+NOTE: the "PNG I gave you earlier" was not retrievable -- the only file that
+landed on disk (/root/.claude/uploads/.../IMG_5748.png) is a GitHub Actions
+failure-notification screenshot (Daily CanadaBuys run 2d6ae88), not the leaf.
+The leaf images rendered inline in chat but were never saved as files. Operator
+also authorised sourcing from the internet, so:
+
+MARK NOW: a real maple-leaf silhouette from game-icons.net, author **Lorc**,
+licensed **CC BY 3.0**. Single solid outer path (source's interior vein detail
+dropped for small-size cleanliness), viewBox 0 0 512 512, coloured via the
+BrandMark `fill` prop. Verified in situ (header 22px, login 34px) white-on-navy
+and standalone navy-on-off-white across 20/22/34/64/96px -- reads as an actual
+maple leaf at every size.
+
+NOT the official Canadian flag leaf: that is protected under the Trade Marks
+Act (Dept. of Canadian Heritage) and unsafe as a commercial brand mark. A
+generic botanical maple avoids that.
+
+SURFACES (deduped): SiteHeader.tsx now exports MARK + MARK_VIEWBOX as the
+single source of truth; DashHeader.tsx imports them (no duplicated path).
+web/public/brand/logo-symbol-{white,navy}.svg and web/app/icon.svg (favicon)
+were ALSO updated -- PR #164 had missed these three static assets, which still
+carried the old compass path.
+
+ATTRIBUTION OBLIGATION (CC BY 3.0): a credit is required and must be reasonably
+visible to users, e.g. "Maple leaf icon by Lorc, game-icons.net, CC BY 3.0" in
+a site colophon/credits or footer. Recorded here + in SVG comments as the
+minimum; a VISIBLE credit line is a marketing-surface change still to be
+placed. If the operator wants zero attribution, swap for a CC0/public-domain
+maple (harder to source under the current egress allowlist) or commission art.

@@ -11,12 +11,8 @@
 import { usePathname } from "next/navigation";
 import { navShows } from "@/lib/billing/tier-surfaces";
 import type { Tier } from "@/lib/billing/config";
-
-// Maple-leaf mark (operator 2026-08-05, replacing the compass arrow). Kept in
-// sync with the same path in components/site/SiteHeader.tsx (BrandMark); both
-// render it white-on-navy.
-const MARK =
-  "M48 4 L56 22 L73 16 L70 33 L90 34 L60 50 L70 62 L52 60 L48 84 L44 60 L26 62 L36 50 L6 34 L26 33 L23 16 L40 22 Z";
+// Single source of truth for the maple-leaf mark (no duplicated path to drift).
+import { MARK, MARK_VIEWBOX } from "@/components/site/SiteHeader";
 
 const NAV = [
   { href: "/portal", label: "Home" },
@@ -44,7 +40,7 @@ export default function DashHeader({
       <header className="dash-header">
         <div className="dash-header__inner">
           <a href="/portal" className="brand">
-            <svg width="22" height="22" viewBox="0 0 96 96" aria-hidden="true">
+            <svg width="22" height="22" viewBox={MARK_VIEWBOX} aria-hidden="true">
               <path d={MARK} fill="#ffffff" />
             </svg>
             <span className="brand__text">
