@@ -957,3 +957,30 @@ a site colophon/credits or footer. Recorded here + in SVG comments as the
 minimum; a VISIBLE credit line is a marketing-surface change still to be
 placed. If the operator wants zero attribution, swap for a CC0/public-domain
 maple (harder to source under the current egress allowlist) or commission art.
+
+## Logo mark: official Canadian flag maple leaf, operator-APPROVED (2026-08-05)
+
+Supersedes the game-icons/Lorc leaf, which the operator rejected. New standing
+rule from this round: the operator APPROVES the mark before it ships (they now
+approved this one explicitly before any code changed).
+
+MARK NOW: the official Canadian flag maple leaf -- the precise 11-point flag
+geometry with rounded lobe tips -- taken from a PUBLIC-DOMAIN flag SVG
+(hampusborgos/country-flags, svg/ca.svg; flags are public domain). PUBLIC
+DOMAIN => no attribution obligation anywhere (unlike the previous CC BY 3.0
+game-icons leaf; that obligation is now gone). The leaf subpath was lifted from
+the flag's white-square path, made a standalone absolute path, and the viewBox
+cropped tight to its bounding box (measured via getBBox): "2463 78 4675 4675".
+
+Matches the operator's reference image. Verified in situ (header 22px, login
+34px) white-on-navy and standalone navy-on-off-white at 20/22/34/64/120px.
+
+TRADEMARK NOTE (raised, operator directed anyway): the official flag itself is
+protected under the Trade Marks Act for use "in connection with business
+activities" (Dept. of Canadian Heritage). A standalone maple-leaf logo is
+common commercial practice and distinct from flying/representing the flag;
+operator chose the flag-accurate leaf with this noted.
+
+SURFACES: SiteHeader.tsx MARK + MARK_VIEWBOX (single source of truth);
+DashHeader imports them; public/brand/logo-symbol-{white,navy}.svg and
+app/icon.svg (favicon) all updated to the flag leaf + tight viewBox.
