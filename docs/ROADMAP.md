@@ -119,9 +119,9 @@ commitment signals) is what makes walking the arc possible. Keep that linkage
 clean in every collector and the proposer. Full spec:
 `docs/prediction-ledger-design.md` section 5.7.
 
-## Synapse Advisory drafting engine (banked 2026-07-21; separate IP, build on first paid engagement)
+## Da-Ré Advisory drafting engine (banked 2026-07-21; separate IP, build on first paid engagement)
 
-**Banked as Synapse Advisory IP, operator instruction 2026-07-21
+**Banked as Da-Ré Advisory IP, operator instruction 2026-07-21
 (expanded spec same day). Not a Signal North product: zero SN code, zero
 SN data, zero SN branding.** A bid/grant application drafting engine in
 four layers; automated pipeline, human judgment at the top, the SN
@@ -129,7 +129,7 @@ operating model pointed at proposals:
 
 1. **Client-material ingestion.** Uploads (Excel financials, capability
    decks, past proposals, CVs) parsed into a per-client, per-engagement
-   knowledge base. Lives entirely on the Synapse side; this is the
+   knowledge base. Lives entirely on the Da-Ré Advisory side; this is the
    material the firewall says never enters SN.
 2. **Intelligence layer.** The SN subscription feed as ONE input among
    several: procurement history with the buyer, incumbent and award
@@ -144,25 +144,25 @@ operating model pointed at proposals:
    the human sharpens; version-stamped trail throughout, adjudicated the
    way the calibration audit adjudicates predictions. The methodology
    (the audit-loop discipline) is what transfers from Signal North; the
-   implementation is built fresh as Synapse IP.
+   implementation is built fresh as Da-Ré Advisory IP.
 
 Demand evidence recorded: unsolicited McKinsey partner interest (would
 anchor founding membership) and the Peel grant-writing thread.
 
 **Founding-member structure (operator, 2026-07-21):** SN founding
-membership includes preferred standing at Synapse (priority engine
+membership includes preferred standing at Da-Ré Advisory (priority engine
 access, founding engagement rates) as a CROSS-ENTITY PERK, never a
 bundled product. Separate contracts and separate invoices: the SN
-membership agreement references the Synapse benefit; Synapse engagements
+membership agreement references the Da-Ré Advisory benefit; Da-Ré Advisory engagements
 are their own paper. The legal form and disclosure language are a
-September counsel question (docs/legal-seam-investor.md, Synapse
+September counsel question (docs/legal-seam-investor.md, Da-Ré Advisory
 section).
 
-**Firewall implications live in docs/legal-seam-investor.md (Synapse
+**Firewall implications live in docs/legal-seam-investor.md (Da-Ré Advisory
 section), for counsel alongside the investor-seam flags.** Short form:
-information flows SN to Synapse exactly as to any subscriber, never in
+information flows SN to Da-Ré Advisory exactly as to any subscriber, never in
 reverse; no client RFP responses, drafts, or engagement material ever
-enters SN's corpus; conflict-check protocol so Synapse cannot draft
+enters SN's corpus; conflict-check protocol so Da-Ré Advisory cannot draft
 competing bids on the same solicitation.
 
 **Build trigger: the first paid engagement post-gate, not before.** The

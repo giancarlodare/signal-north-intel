@@ -53,7 +53,7 @@ export default function SiteFooter() {
             >
               Advisory services such as grant support, market-entry strategy,
               and program delivery are available through{" "}
-              <a href="#">Synapse Advisory</a>, our independent advisory
+              <a href="#">Da-Ré Advisory</a>, our independent advisory
               practice.
             </p>
           </div>

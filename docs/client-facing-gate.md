@@ -83,7 +83,7 @@ only what cleared the gate.)
 - Weekly Signal (docs/published-brief-design.md): the brief's honesty rules
   are the editorial half of the gate; this doctrine adds the backend half
   (coverage bounding and the verification layer).
-- Grant Engine (docs/synapse-drafting-engine.md): the drafted-application
+- Grant Engine (docs/da-re-advisory-drafting-engine.md): the drafted-application
   test above is a required component of its build, whenever that build is
   triggered.
 - Predictive layer (docs/demand-arc-backtest-design.md sections 0 and 0d):
