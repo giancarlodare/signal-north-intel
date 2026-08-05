@@ -807,3 +807,26 @@ clause would reintroduce a claim the data can't support -- and return-timing
 is adjacent to the very interval capability that was pulled. Operator chose
 the value/comparison-only wording. The stat VALUE (dynamic, ~14 years) is
 real and unchanged; only the subline moved.
+
+## Brief renderer: corpus-statistics exhibits removed permanently (operator 2026-08-05)
+
+Standing editorial rule. The standing-exhibit bar chart (the Peel / award-
+volume "Standing Exhibit" card) is removed from the member-facing brief
+entirely and permanently. In operator previews these corpus-statistics
+visualizations were useful diagnostics; in a member-facing brief they add no
+intelligence value and read as the brief explaining itself rather than
+reporting the market. A vendor reading Monday morning does not need to know
+how many documents we processed. The brief's job is the arc and the sourced
+record; everything else is noise.
+
+Removed: the `Exhibit` type and `BriefView.exhibits` field, `exhibitRow` /
+`exhibitHtml` in render.ts, the exhibit band in `renderBrief`, the exhibit
+block in `renderBriefText`, and `buildAwardExhibit` in view.ts. The quiet-week
+copy (HTML + text) no longer points at "the standing exhibits" -- it now
+stands on its own ("We report what the record holds and do not manufacture
+items to fill space").
+
+Locked with a permanent test in render.test.ts: the renderer must never emit a
+"Standing Exhibit" / by-quarter chart, and an exhibit object force-injected
+onto the view renders nothing. Full brief suite green (120 lib tests), web
+build clean.

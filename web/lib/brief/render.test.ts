@@ -28,13 +28,6 @@ function view(over: Partial<BriefView> = {}): BriefView {
     supporting: [item({ headline: "TPSB benefits administration award", timing_path: "recent",
       doc: { doc_type: "board_minutes", url: "https://tpsb.ca/y", published_on: "2026-04-01",
              date_precision: "month" } })],
-    exhibits: [{
-      title: "Peel municipal contract awards by quarter",
-      basis: "2,758 award notices, Q1 2017 to Q3 2026, source: Peel Region bids&tenders.",
-      format: "count",
-      rows: [{ label: "Q1 2026", value: 74 }, { label: "Q2 2026", value: 81 },
-             { label: "Q3 2026", value: 33, note: "partial" }],
-    }],
     reviewedHeldCount: 4,
     methodNote: "Items are selected on event-date timing and a materiality bar.",
     ...over,
@@ -90,8 +83,28 @@ test("a quiet week is stated honestly, not padded", () => {
   const html = renderBrief(view({ lead: null, supporting: [] }));
   assert.ok(html.includes("quiet week"), "quiet-week note present");
   assert.ok(html.includes("do not manufacture items"), "explicit no-padding statement");
-  // The standing exhibit still carries substance.
-  assert.ok(html.includes("Peel municipal contract awards by quarter"));
+  // A quiet week does not fall back to a corpus-statistics exhibit (removed
+  // permanently, operator 2026-08-05): the copy stands on its own.
+  assert.ok(!html.includes("Standing Exhibit"), "no exhibit even on a quiet week");
+});
+
+// PERMANENT EDITORIAL RULE (operator 2026-08-05): corpus-statistics
+// visualizations (the standing-exhibit bar chart, Peel/award-volume graphs)
+// are removed from the member-facing brief. They report our machinery, not the
+// market. This test locks that: the renderer must never emit an exhibit chart.
+test("no standing-exhibit / corpus-statistics chart is ever rendered", () => {
+  const full = renderBrief(view());
+  const quiet = renderBrief(view({ lead: null, supporting: [] }));
+  for (const html of [full, quiet]) {
+    assert.ok(!html.includes("Standing Exhibit"), "no Standing Exhibit label");
+    assert.ok(!html.includes("awards by quarter"), "no by-quarter volume chart");
+  }
+  // The BriefView type no longer carries an exhibits field; a stray one on the
+  // object is inert and never reaches the output.
+  const sneaky = renderBrief({ ...view(), exhibits: [{ title: "x", basis: "b",
+    format: "count", rows: [{ label: "Q1", value: 9 }] }] } as unknown as BriefView);
+  assert.ok(!sneaky.includes("Standing Exhibit"), "an injected exhibit still renders nothing");
+  assert.ok(!sneaky.includes(">x<"), "injected exhibit title never appears");
 });
 
 test("The Read appears and is the editorial lede", () => {
@@ -124,7 +137,7 @@ test("plain-text alternative carries the same structure, no em dashes", () => {
   assert.ok(txt.includes("THE READ"));
   assert.ok(txt.includes("Tender closes 24 Jul 2026"), "type-labeled date in text");
   assert.ok(txt.includes("Source: https://peelregion.bidsandtenders.ca/x"));
-  assert.ok(txt.includes("Peel municipal contract awards by quarter".toUpperCase()));
+  assert.ok(!txt.includes("BY QUARTER"), "no corpus-statistics exhibit block in the text part");
 });
 
 test("plain-text states a quiet week honestly", () => {
