@@ -199,81 +199,13 @@ export default async function AboutPage() {
         </section>
 
         <section
-          className="band band--cream"
-          style={{ paddingTop: 88, paddingBottom: 88 }}
-        >
-          <div className="container">
-            <div className="about-section">
-              <div className="about-rail">
-                <span className="about-rail__num">02</span>
-                <span className="about-rail__label">The Team</span>
-                <span className="about-rail__rule"></span>
-              </div>
-            {/* Portrait placeholder removed (operator 2026-08-05): the bio is
-                text-only and fills the card's full width. */}
-            <div
-              className="card card--hover"
-              style={{
-                padding: 40,
-                display: "flex",
-                flexDirection: "column",
-                gap: 20, // off-scale, flagged
-              }}
-            >
-                <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-                  <h3
-                    style={{
-                      fontFamily: "var(--font-serif)",
-                      fontSize: 36,
-                      lineHeight: 1.15,
-                      letterSpacing: "-0.02em",
-                      color: "var(--ink)",
-                    }}
-                  >
-                    Giancarlo Da-Ré
-                  </h3>
-                  <span
-                    className="t-label"
-                    style={{ color: "var(--red)", letterSpacing: "0.2em" }}
-                  >
-                    Founder &amp; Chief Executive
-                  </span>
-                </div>
-                <p style={{ margin: 0, fontSize: 16, lineHeight: 1.8 }}>
-                  Giancarlo Da-Ré spent his career inside the Ontario
-                  government&apos;s most consequential public safety files. As
-                  Executive Director of Policy to the Premier, he carried a
-                  portfolio spanning public safety, emergency management, justice,
-                  critical infrastructure, transportation, housing, and
-                  procurement.
-                </p>
-                <p style={{ margin: 0, fontSize: 16, lineHeight: 1.8 }}>
-                  Before that, he served as Director of Policy and Stakeholder
-                  Relations to the Solicitor General, the ministry responsible for
-                  policing, firefighting, private security, and corrections in
-                  Canada&apos;s largest province, where he shaped law enforcement
-                  policy, public safety technology, public safety broadband and
-                  radio networks, simultaneous notification, and next-generation
-                  9-1-1 infrastructure.
-                </p>
-                <p style={{ margin: 0, fontSize: 16, lineHeight: 1.8 }}>
-                  Signal North is built from that vantage point, at the epicentre
-                  of government decision-making: a working knowledge of how public
-                  money moves from intention to purchase.
-                </p>
-            </div>
-            </div>
-          </div>
-        </section>
-
-        <section
           className="band band--paper band--rule"
           style={{ paddingTop: 88, paddingBottom: 88 }}
         >
           <div className="container">
             <div className="about-section">
               <div className="about-rail">
-                <span className="about-rail__num">03</span>
+                <span className="about-rail__num">02</span>
                 <span className="about-rail__label">What we stand on</span>
                 <span className="about-rail__rule"></span>
               </div>
@@ -300,7 +232,7 @@ export default async function AboutPage() {
           <div className="container">
             <div className="about-section">
               <div className="about-rail about-rail--dark">
-                <span className="about-rail__num">04</span>
+                <span className="about-rail__num">03</span>
                 <span className="about-rail__label">The Principle</span>
                 <span className="about-rail__rule"></span>
               </div>
@@ -343,7 +275,7 @@ export default async function AboutPage() {
               Where members want help acting on what they see, advisory services
               are available separately through{" "}
               <a href="#" style={{ color: "var(--blue-pale)" }}>
-                Synapse Advisory
+                Da-Ré Advisory
               </a>
               .
             </p>

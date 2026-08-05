@@ -45,8 +45,8 @@ ledger. Five pieces, in dependency order:
 
 - The investor-facing export seam (docs/legal-seam-investor.md) stays dark and
   gated; the portal is the SELLER audience, isolated at the export layer.
-- Synapse Advisory (docs/ROADMAP.md) consumes the portal's published outputs
-  as any subscriber; no reverse flow. The founding-member Synapse benefit is
+- Da-Ré Advisory (docs/ROADMAP.md) consumes the portal's published outputs
+  as any subscriber; no reverse flow. The founding-member Da-Ré Advisory benefit is
   a cross-entity perk with separate paper (September counsel question).
 
 ## What is deliberately NOT in this wave
@@ -196,8 +196,8 @@ Two scoping decisions, banked:
    before there are users is guessing. (Design of the fixed layout is
    Giancarlo's Claude Design work, per the firm boundary above.)
 2. **Automated grant-application tooling is NOT a member-facing Signal
-   North feature.** It is internal / Synapse-side service delivery, kept
+   North feature.** It is internal / Da-Ré Advisory-side service delivery, kept
    across the neutrality wall (docs/legal-seam-investor.md, ROADMAP
-   firewall). Members wanting grant help are REFERRED to Synapse; they do
+   firewall). Members wanting grant help are REFERRED to Da-Ré Advisory; they do
    not do grant work inside the neutral product. Do not build grant tooling
    into the member portal.

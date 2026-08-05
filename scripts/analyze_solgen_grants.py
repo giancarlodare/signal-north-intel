@@ -1,4 +1,4 @@
-"""SOLGEN grant-capture analysis (Synapse Tier-1 targeting, strategy/analysis).
+"""SOLGEN grant-capture analysis (Da-Ré Advisory Tier-1 targeting, strategy/analysis).
 
 Source: https://www.ontario.ca/page/current-community-safety-project-grant-recipients
 the authoritative per-service Ministry of the Solicitor General grant-award

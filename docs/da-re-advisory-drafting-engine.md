@@ -1,10 +1,12 @@
-# Synapse Advisory drafting engine: go-to-market structure (banked)
+# Da-Ré Advisory drafting engine: go-to-market structure (banked)
+
+(Formerly "Synapse Advisory"; rebranded to Da-Ré Advisory 2026-08-05.)
 
 Status: BANKED strategy, operator 2026-07-25. NOT a build. The engine stays
 gated to the first paid engagement, post-October; nothing here changes the
-sprint. Synapse Advisory IP, separate from Signal North: zero SN code, zero SN
+sprint. Da-Ré Advisory IP, separate from Signal North: zero SN code, zero SN
 data crossing the firewall, zero SN branding. The four-layer engine spec lives
-in docs/ROADMAP.md ("Synapse Advisory drafting engine"); this doc records how
+in docs/ROADMAP.md ("Da-Ré Advisory drafting engine"); this doc records how
 it goes to market.
 
 Governing doctrine: THE CLIENT-FACING GATE (docs/client-facing-gate.md).
@@ -17,20 +19,20 @@ required component of the engine's build when it triggers.
 ## 1. One engine, three tiers (differentiated by how much human judgment wraps it)
 
 The same scored-draft engine serves BOTH the enterprise and small-service
-markets. The tiers differ only in how much Synapse human judgment wraps the
+markets. The tiers differ only in how much Da-Ré Advisory human judgment wraps the
 identical engine output.
 
 - **Tier 1 Self-serve** (small police/fire services with no grant writers,
   chiefs writing their own applications): the customer edits the tool's scored
-  draft themselves. No Synapse human time. Priced as software, anchored to ROI.
+  draft themselves. No Da-Ré Advisory human time. Priced as software, anchored to ROI.
   Hypothesis: $2 to 5K/yr subscription, or $500 to 1.5K/application. The
   public-data ROI pitch ("here is the grant money you are eligible for and not
   winning") is what sells it.
-- **Tier 2 Assisted** (mid-market): tool draft PLUS a Synapse associate review
+- **Tier 2 Assisted** (mid-market): tool draft PLUS a Da-Ré Advisory associate review
   pass on the rubric-flagged weak sections. Priced as software-plus-hours.
   Hypothesis: $3 to 8K/application.
 - **Tier 3 Done-for-you** (enterprise / McKinsey-tier / high-stakes): a full
-  Synapse engagement; the engine is the internal accelerator the client never
+  Da-Ré Advisory engagement; the engine is the internal accelerator the client never
   sees. Priced at consulting rates (five figures and up). The client is buying
   the outcome, the accountability, and senior human judgment, not software.
 
@@ -62,7 +64,7 @@ percentage falls as the cheque grows.
 
 - **Tier 1 Self-serve, small services** (CSP local-allocation tier, ~$28K to
   150K claims, chiefs self-filing): $1.5K to 4K/yr subscription OR $750 to
-  1,500/application. Self-serve, no Synapse human time. ALSO test a
+  1,500/application. Self-serve, no Da-Ré Advisory human time. ALSO test a
   SUCCESS-BASED model for the pure formula-allocation case (e.g. ~5% of the
   otherwise-forfeited allocation recovered): removes buyer risk, an easier yes.
 - **Tier 2 Assisted, mid-size services** (mid-six-figure claims): $4K to
