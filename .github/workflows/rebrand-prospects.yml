@@ -1,0 +1,38 @@
+name: Rebrand prospects (Synapse -> Da-Ré, one-off)
+
+# One-off data fix (operator 2026-08-05): swaps "Synapse Advisory" -> "Da-Ré
+# Advisory" in prospects.conflict_note on the LIVE table only. The seed
+# migration is left as historical record. Default run is a dry-run that prints
+# before/after; check "apply" to write. Idempotent: a second run finds nothing
+# to change.
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Write the update (unchecked = dry-run report only)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: rebrand-prospects
+  cancel-in-progress: false
+
+jobs:
+  rebrand:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Rebrand prospects conflict_note
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m scripts.rebrand_prospects ${{ inputs.apply && '--apply' || '' }}

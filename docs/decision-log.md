@@ -754,3 +754,32 @@ build the Free partial to the same system.
    the email, so C (public sample) is nearly free once the renderer is right.
    The partial must be a PARAMETER on the one renderer (render.ts), never a
    second renderer.
+
+## Marketing-site copy pass: About Team removed, FAQ hover, Da-Ré rebrand (operator 2026-08-05)
+
+Safe class (marketing-site copy/CSS, no schema, no member surface, full
+suite green, no new silent-failure path). Shipped in PR #158 (squash
+0181c08).
+
+1. ABOUT — TEAM SECTION REMOVED. Operator: "remove the founder about page...
+   keep the rest of the about page just not the team section." Dropped the
+   portrait placeholder + the whole Team band from about/page.tsx. Rails
+   renumbered 01 The mission / 02 What we stand on / 03 The Principle (was a
+   four-rail layout with the founder bio). Nothing else on the page changed.
+
+2. FAQ MORE HOVER-INTERACTIVE (operator). site.css: a hovered <details> now
+   previews its open state -- white lift + inset red bar
+   (box-shadow: inset 3px 0 0 var(--red)) + summary padding-left:16px, the
+   ::after marker goes red and scale(1.3). prefers-reduced-motion resets the
+   transitions. Same treatment on [open] so hover reads as a preview of the
+   click.
+
+3. SYNAPSE ADVISORY -> DA-RÉ ADVISORY (operator: "rebranded... fix it
+   everywhere"). 44 references across SiteFooter.tsx, about/page.tsx,
+   design-handoff HTML snapshots, docs (ROADMAP, wave3-portal-design,
+   legal-seam-investor, client-facing-gate path refs, analyze_solgen_grants
+   docstring). docs/synapse-drafting-engine.md git-mv'd to
+   docs/da-re-advisory-drafting-engine.md with a "formerly" note. Applied
+   migrations (2026-07-10_prospects_seed.sql + two note fields) LEFT UNTOUCHED
+   as historical record; the two prospects seed-note DB fields still read
+   "Synapse" -- offered the operator a data UPDATE if wanted, open question.
