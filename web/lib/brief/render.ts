@@ -3,8 +3,10 @@
 // and is the ONE canonical format shared by the web published view and the
 // Resend email (they cannot drift). Layout is the designed Weekly Signal
 // template (operator-supplied, 2026-07-20): navy masthead and footer, cream
-// Read band, crimson lead card, buyer-grouped item list, framed standing
-// exhibit. Table layout, inline styles, single 600px column, email-client
+// Read band, crimson lead card, and a buyer-grouped item list. Corpus-
+// statistics exhibits were removed permanently (operator 2026-08-05): they
+// reported our machinery, not the market. Table layout, inline styles, single
+// 600px column, email-client
 // fonts (Georgia/Arial/Courier). The honesty rules are enforced IN the output
 // and asserted in tests: no em dashes, every reader-facing date carries its
 // type label, every claim carries a provenance link, month-precision dates
@@ -26,12 +28,6 @@ export interface RenderItem {
   amountCad: number | null;
   doc: BriefDoc;
 }
-export interface Exhibit {
-  title: string;
-  basis: string;                 // data basis: record count, range, sources
-  format: "count" | "cad";
-  rows: { label: string; value: number; note?: string }[];
-}
 export interface BriefView {
   masthead: string;              // "The Weekly Signal"
   weekLabel: string;             // e.g. "14 to 20 July 2026"
@@ -39,7 +35,6 @@ export interface BriefView {
   theRead: string | null;        // the editorial judgment paragraph (brief.intro)
   lead: RenderItem | null;
   supporting: RenderItem[];
-  exhibits: Exhibit[];
   reviewedHeldCount: number;     // excluded_below_threshold (honest density)
   methodNote: string;            // selection + provenance method footer
   // The design reserves a per-item "Watchlist" action ({{WATCH_URL}}). No
@@ -256,51 +251,11 @@ function itemsHtml(view: BriefView): string {
     // A quiet week is stated honestly, never padded.
     const rows = `<tr><td style="padding:20px 0 22px 0;font-family:${SERIF};font-size:16px;`
       + `color:${NAVY};mso-line-height-rule:exactly;line-height:26px;">`
-      + `A quiet week for new signals. The standing exhibits below carry the `
-      + `through-line; we do not manufacture items to fill space.</td></tr>`;
+      + `A quiet week for new signals. We report what the record holds and `
+      + `do not manufacture items to fill space.</td></tr>`;
     return band(rows, PAPER, "32px 44px 12px 44px");
   }
   return "";
-}
-
-// Exhibit bars per the template geometry: 300px track, px = value/max * 300,
-// 4px floor so zero-adjacent values stay visible. Counts and CAD both honest;
-// the "partial" note rides the label so a part-quarter is never a full bar lie.
-function exhibitRow(r: { label: string; value: number; note?: string }, max: number,
-                    fmt: "count" | "cad"): string {
-  const px = max > 0 ? Math.max(4, Math.round((r.value / max) * 300)) : 4;
-  const shown = fmt === "cad" ? (formatCad(r.value) ?? "0") : String(r.value);
-  const labelText = r.note ? `${r.label} (${r.note})` : r.label;
-  return `<tr><td style="padding:0 0 12px 0;">`
-    + `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="454" style="width:100%;">`
-    + `<tr><td width="104" style="width:104px;font-family:${SANS};font-size:12px;color:${BODY};`
-    + `mso-line-height-rule:exactly;line-height:16px;padding-right:10px;">${esc(labelText)}</td>`
-    + `<td width="300" style="width:300px;" valign="middle">`
-    + `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>`
-    + `<td width="${px}" height="14" bgcolor="${NAVY}" style="width:${px}px;height:14px;`
-    + `background-color:${NAVY};font-size:1px;line-height:1px;">&nbsp;</td></tr></table></td>`
-    + `<td align="right" style="font-family:${MONO};font-size:12px;color:${NAVY};`
-    + `mso-line-height-rule:exactly;line-height:16px;padding-left:10px;white-space:nowrap;">`
-    + `${esc(shown)}</td></tr></table></td></tr>`;
-}
-
-function exhibitHtml(ex: Exhibit): string {
-  const max = ex.rows.reduce((m, r) => Math.max(m, r.value), 0);
-  const bars = ex.rows.map((r) => exhibitRow(r, max, ex.format)).join("");
-  const card = `<tr><td style="padding:0;">`
-    + `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="512" `
-    + `style="width:100%;border:1px solid ${BORDER};" bgcolor="${CREAM}">`
-    + `<tr><td style="padding:26px 28px 28px 28px;background-color:${CREAM};">`
-    + `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="454" style="width:100%;">`
-    + `<tr><td style="${KICKER}color:${NAVY};">Standing Exhibit</td></tr>`
-    + `<tr><td style="padding:6px 0 18px 0;font-family:${SERIF};font-size:17px;color:${NAVY};`
-    + `mso-line-height-rule:exactly;line-height:24px;">${esc(ex.title)}</td></tr>`
-    + `${bars}`
-    + `<tr><td style="padding-top:8px;border-top:1px solid ${BORDER};font-family:${SANS};`
-    + `font-size:11px;color:${MUTED};mso-line-height-rule:exactly;line-height:16px;">`
-    + `${esc(ex.basis)}</td></tr>`
-    + `</table></td></tr></table></td></tr>`;
-  return band(card, PAPER, "28px 44px 40px 44px");
 }
 
 function footerHtml(view: BriefView): string {
@@ -332,7 +287,6 @@ export function renderBrief(view: BriefView): string {
     readHtml(view),
     leadHtml(view),
     itemsHtml(view),
-    view.exhibits.map(exhibitHtml).join(""),
     footerHtml(view),
   ].join("");
   return renderShell(view, bands);
@@ -360,16 +314,8 @@ export function renderBriefText(view: BriefView): string {
     for (const it of view.supporting) L.push(itemText(it), "");
   } else if (!view.lead) {
     L.push("THIS WEEK",
-      "A quiet week for new signals. The standing exhibits carry the through-line; "
-      + "we do not manufacture items to fill space.", "");
-  }
-  for (const ex of view.exhibits) {
-    L.push(ex.title.toUpperCase(), ex.basis);
-    for (const r of ex.rows) {
-      const v = ex.format === "cad" ? (formatCad(r.value) ?? "0") : String(r.value);
-      L.push(`  ${r.label}: ${v}${r.note ? ` (${r.note})` : ""}`);
-    }
-    L.push("");
+      "A quiet week for new signals. We report what the record holds and "
+      + "do not manufacture items to fill space.", "");
   }
   const held = view.reviewedHeldCount > 0
     ? ` ${view.reviewedHeldCount} further item${view.reviewedHeldCount === 1 ? "" : "s"} `

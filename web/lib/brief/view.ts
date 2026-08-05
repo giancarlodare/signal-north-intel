@@ -5,7 +5,7 @@
 // takes a Supabase client so this module imports no server-only runtime.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { BriefView, RenderItem, Exhibit } from "./render.ts";
+import type { BriefView, RenderItem } from "./render.ts";
 import type { TimingPath } from "./date-label.ts";
 
 const MFULL = ["January", "February", "March", "April", "May", "June",
@@ -105,53 +105,6 @@ function toRenderItem(it: ItemRow, sig: SignalRow | undefined): RenderItem | nul
   };
 }
 
-// Standing exhibit: PUBLIC-SAFETY-relevant award activity by quarter.
-// Replaces the all-Peel contract-volume chart (operator 2026-07-26): raw
-// corpus volume is our machinery, not intelligence for the reader; the
-// exhibit now counts only defence/public-safety-relevant award notices
-// across the monitored buyers. Paged reads (PostgREST caps a single page);
-// zero rows renders no exhibit rather than an empty chart.
-async function buildAwardExhibit(supabase: SupabaseClient): Promise<Exhibit[]> {
-  const dates: string[] = [];
-  for (let page = 0; page < 20; page++) {
-    const { data, error } = await supabase
-      .from("documents")
-      .select("published_on")
-      .eq("doc_type", "award_notice")
-      .eq("defence_relevant", true)
-      .not("published_on", "is", null)
-      .order("published_on", { ascending: true })
-      .range(page * 1000, page * 1000 + 999);
-    if (error || !data || data.length === 0) break;
-    for (const r of data as { published_on: string }[]) dates.push(r.published_on);
-    if (data.length < 1000) break;
-  }
-  if (dates.length === 0) return [];
-  const byQuarter = new Map<string, number>();
-  for (const d of dates) {
-    const q = Math.floor((Number(d.slice(5, 7)) - 1) / 3) + 1;
-    byQuarter.set(d.slice(0, 4) + "-Q" + q, (byQuarter.get(d.slice(0, 4) + "-Q" + q) ?? 0) + 1);
-  }
-  const keys = [...byQuarter.keys()].sort();
-  const now = new Date();
-  const curQ = now.getUTCFullYear() + "-Q" + (Math.floor(now.getUTCMonth() / 3) + 1);
-  const lbl = (k: string) => "Q" + k.slice(6) + " " + k.slice(0, 4);
-  const recent = keys.slice(-8).map((k) => ({
-    label: lbl(k),
-    value: byQuarter.get(k) ?? 0,
-    note: k === curQ ? "partial" : undefined,
-  }));
-  return [{
-    title: "Public-safety contract awards by quarter",
-    basis: dates.length.toLocaleString("en-CA") + " public-safety-relevant award "
-      + "notices across monitored buyers, " + lbl(keys[0]) + " to "
-      + lbl(keys[keys.length - 1]) + " (current quarter partial). "
-      + "Source: publisher portals and open-data records.",
-    format: "count",
-    rows: recent,
-  }];
-}
-
 const METHOD_NOTE =
   "Items are selected on event-date timing (closing soon, or decided in the last "
   + "seven days) and a materiality bar. Every claim links to the publisher's own record.";
@@ -206,7 +159,6 @@ export async function buildBriefView(
     theRead: brief.intro ?? null,
     lead,
     supporting,
-    exhibits: await buildAwardExhibit(supabase),
     reviewedHeldCount: brief.excluded_below_threshold ?? 0,
     methodNote: METHOD_NOTE,
   };
