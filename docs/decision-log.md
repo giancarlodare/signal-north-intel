@@ -984,3 +984,14 @@ operator chose the flag-accurate leaf with this noted.
 SURFACES: SiteHeader.tsx MARK + MARK_VIEWBOX (single source of truth);
 DashHeader imports them; public/brand/logo-symbol-{white,navy}.svg and
 app/icon.svg (favicon) all updated to the flag leaf + tight viewBox.
+
+## Logo mark: viewBox fix -- top spike was clipped (operator 2026-08-05)
+
+Operator reported the flag leaf's top was cut off. Cause: the earlier tight
+viewBox ("2463 78 4675 4675") was computed from getBBox, which mis-measured
+this arc-heavy path (it reported the leaf top at y~400; the true top spike sits
+near y~50 in the flag geometry, and the stem also extended below the reported
+box). So the crop clipped the top point. Fixed by framing to "2260 -140 5080
+5080" -- even headroom around the top spike, balanced margins, verified in the
+header. Approved leaf PATH is unchanged; only the framing/viewBox moved. Applied
+to SiteHeader MARK_VIEWBOX (single source) + the brand SVGs + the favicon rect.
