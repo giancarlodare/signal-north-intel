@@ -1,7 +1,13 @@
 // Marketing site header (Claude Design handoff, shared across pages).
 // Presentation-only; `current` drives the aria-current page state.
 
-const MARK = "M48 4 L76 90 L48 72 L20 90 Z";
+// Maple-leaf mark (operator 2026-08-05, replacing the compass arrow). A
+// simplified geometric silhouette -- top fan, side waist, lower lobes, short
+// stubby stem -- derived to stay legible down to the 20-22px header/footer
+// sizes where the realistic leaf's fine serrations would muddy. Single filled
+// path; both colour contexts come from the `fill` prop.
+const MARK =
+  "M48 4 L56 22 L73 16 L70 33 L90 34 L60 50 L70 62 L52 60 L48 84 L44 60 L26 62 L36 50 L6 34 L26 33 L23 16 L40 22 Z";
 
 export function BrandMark({ size, fill }: { size: number; fill: string }) {
   return (
