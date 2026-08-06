@@ -14,6 +14,28 @@ at the bottom; a decision about how bugs get fixed belongs up here.
 
 ---
 
+## 2026-08-06 — Safe-class: relevance scorer + calibration batch (2026-08-06)
+
+**Changed.** `src/relevance_scorer.py` (new): scores `signals.relevance` 1..5
+via Haiku-class LLM (title + summary in, integer out, JSON-schema constrained).
+`tests/test_relevance_scorer.py` (new): 14 fixture tests covering clamping,
+fallback parse paths, dry-run write isolation, error counting, and limit
+enforcement. `scripts/relevance_calibration.py` (new): stratified 200-signal
+sample, scores via scorer, renders side-by-side lens comparison table (current
+vs relevance floor 3 and 4, windows +30 and +35). `.github/workflows/relevance-
+calibration.yml` (new): workflow_dispatch, dry-run/run toggle.
+
+**Why.** Scorer is Phase 1 gate before floor ruling and apply_lens update.
+No schema change (migration 2026-08-02 already applied), no member-facing
+surface, no money spent until calibration workflow is dispatched. Safe class
+by CLAUDE.md criteria.
+
+**Also.** Fixed `_USER_TEMPLATE` curly-brace escaping (`{{"relevance": ...}}`):
+the literal JSON in the prompt return line was being parsed as a `.format()`
+placeholder and raising KeyError at scoring time.
+
+---
+
 ## 2026-08-05 — Corridor: collection ON, construction pack + extraction holdback
 
 **Decided (operator directive).** The Corridor vertical's collection turns on

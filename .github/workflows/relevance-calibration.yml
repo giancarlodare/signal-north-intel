@@ -1,0 +1,80 @@
+name: Relevance calibration batch
+
+# Score 200 signals and render the side-by-side DECISION table.
+# Runs on demand only; never scheduled (operator ruling: scoring runs are
+# approved events, not background noise).
+#
+# --dry-run: scores via LLM but does NOT write to DB. Use for the first
+#   pass so the operator can review the distribution before committing.
+# --run: scores AND writes relevance to the signals table.
+#
+# Typical dispatch: --dry-run first, then --run after operator approval.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "dry-run (score only) or run (score + write to DB)"
+        required: true
+        default: "dry-run"
+        type: choice
+        options:
+          - dry-run
+          - run
+      limit:
+        description: "Number of signals to score (default 200)"
+        required: false
+        default: "200"
+      model:
+        description: "Override model (leave blank for default Haiku)"
+        required: false
+        default: ""
+
+concurrency:
+  group: relevance-calibration
+  cancel-in-progress: false
+
+jobs:
+  calibrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run relevance calibration
+        run: |
+          MODE="${{ github.event.inputs.mode }}"
+          LIMIT="${{ github.event.inputs.limit }}"
+          MODEL="${{ github.event.inputs.model }}"
+          ARGS="--${MODE} --limit ${LIMIT:-200} --out-dir docs"
+          if [ -n "${MODEL}" ]; then
+            ARGS="${ARGS} --model ${MODEL}"
+          fi
+          python scripts/relevance_calibration.py ${ARGS}
+
+      - name: Upload calibration report
+        uses: actions/upload-artifact@v4
+        with:
+          name: relevance-calibration
+          path: docs/relevance-calibration-*.md
+          if-no-files-found: warn
+
+      - name: Upload calibration data
+        uses: actions/upload-artifact@v4
+        with:
+          name: relevance-calibration-json
+          path: docs/relevance-calibration-*.json
+          if-no-files-found: warn
