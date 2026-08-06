@@ -413,16 +413,46 @@
    second line looked worse than the ellipsis did). The handoff's 23px clips the
    longest heading; measured against the real font, 20px fits every heading in
    the two-column track with no wrap and no ellipsis. */
-.sn-site .point h3 { white-space: nowrap; overflow: visible; text-overflow: clip; font-size: 20px; }
+.sn-site .point h3 { white-space: normal; overflow: visible; text-overflow: clip; font-size: 20px; }
 /* Fixed 2 x 2 (operator 2026-08-05): the four points are two-and-two, never a
    3 + 1 orphan on the second line. auto-fit dropped the fourth card alone once
    the row could not hold four; a single row of four would clip the longest
    nowrap heading at content width, so two columns is the honest fit. Collapses
    to one column on phones. minmax(0,1fr) keeps a long heading from forcing its
    track wider than half. */
-.sn-site .point-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sn-site .point-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 @media (max-width: 640px) {
   .sn-site .point-grid { grid-template-columns: 1fr; }
+}
+
+/* Almost-invisible glass tiles with hover interactivity (operator 2026-08-06).
+   Each .point becomes a self-contained frosted panel (the subgrid alignment is
+   dropped): a faint translucent fill + hairline border that sit quietly on the
+   paper band, then lift and take the red accent on hover. */
+.sn-site .point {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  grid-row: auto;
+  padding: 22px 22px 24px;
+  border: 1px solid rgba(13, 27, 46, 0.07);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.30);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  transition: transform 0.28s var(--ease), box-shadow 0.28s var(--ease),
+    background-color 0.28s var(--ease), border-color 0.28s var(--ease);
+}
+.sn-site .point:hover {
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(196, 18, 48, 0.35);
+  box-shadow: 0 14px 34px rgba(13, 27, 46, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sn-site .point { transition: none; }
+  .sn-site .point:hover { transform: none; }
 }
 
 /* About page "Canadian-owned and operated" callout (moved off inline styles so
