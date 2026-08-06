@@ -1,0 +1,33 @@
+name: Probe Hamilton PSB (structure discovery)
+
+# Renders hamiltonpsb.ca/meetings/agendas-and-materials/ with Playwright and
+# dumps links, selectors, and DOM structure so we can write the adapter.
+# Never writes to the database.
+
+on:
+  workflow_dispatch: {}
+
+concurrency:
+  group: probe-hamiltonpsb
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Playwright + Chromium
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Probe Hamilton PSB
+        run: python scripts/probe_hamiltonpsb.py

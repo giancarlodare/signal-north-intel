@@ -996,6 +996,30 @@ box). So the crop clipped the top point. Fixed by framing to "2260 -140 5080
 header. Approved leaf PATH is unchanged; only the framing/viewBox moved. Applied
 to SiteHeader MARK_VIEWBOX (single source) + the brand SVGs + the favicon rect.
 
+## Safe-class: eScribe adapter wired to board_minutes + Niagara/Ottawa boards parked (2026-08-06)
+
+Niagara RPSB and Ottawa PSB wired through the eScribe html-mode adapter
+(`collect_escribe_board`); both remain `enabled=False` pending `fleet_validate`
+results (see probe results in evening digest). London PSB confirmed clean by
+fleet_validate (3 meetings / 17 docs); its board_minutes dry-run is next before
+enabling. Merged in PR #176 (commit 61b40b5). Safe class: src/ only, no schema,
+no member surface, test-covered.
+
+---
+
+## Safe-class: bids&tenders _REF_PAT extended for 4 held tier-2 buyers (2026-08-06)
+
+Four held buyers (Markham, Niagara, Halton Hills, Mississauga) returned 0
+parsed rows despite the grid rendering correctly. Root cause: `_REF_PAT` in
+`src/tenders_bidsandtenders.py` did not match their ref formats: `135-T-26`
+(3-digit-letter-digit), `2026-T-103` (year-letter-number), `2026-047-PQ`
+(extra dash-letter suffix), `PRC005534` (prefix+digits no dash). Fixed by
+adding four new alternates to `_REF_PAT`; 8 new test cases added and passing
+(489 total). Merged in PR #176 (commit 5358006). Safe class: src/ only, no
+schema, no member surface, tests cover the fix.
+
+---
+
 ## Outage + fix: captured_construction enum missing (operator 2026-08-06)
 
 daily-collect's 06:17 ET scheduled run failed (05 + 06 Aug) with Postgres
