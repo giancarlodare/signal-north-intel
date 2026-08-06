@@ -995,3 +995,27 @@ box). So the crop clipped the top point. Fixed by framing to "2260 -140 5080
 5080" -- even headroom around the top spike, balanced margins, verified in the
 header. Approved leaf PATH is unchanged; only the framing/viewBox moved. Applied
 to SiteHeader MARK_VIEWBOX (single source) + the brand SVGs + the favicon rect.
+
+## Outage + fix: captured_construction enum missing (operator 2026-08-06)
+
+daily-collect's 06:17 ET scheduled run failed (05 + 06 Aug) with Postgres
+22P02: invalid value "captured_construction" for enum processing_status, then
+"Run finished with failures in: tender notices, award notices". Healthcheck
+fired /fail (loud failure worked).
+
+ROOT CAUSE (mine): the Corridor civil-works holdback (src/filters.py
+document_status()) writes status='captured_construction' for construction-only
+docs, shipped on the belief that documents.status was unconstrained text. It is
+NOT -- it is the `processing_status` enum. So every run that captured a
+construction-classified tender/award doc had its insert rejected and the whole
+collector run went down. The holdback shipped ahead of its schema -- exactly the
+"tell me before capture-all's first expensive morning" case the operator flagged.
+
+FIX (operator approved option a, 2026-08-06): migrations/2026-08-06_captured_
+construction_status.sql adds 'captured_construction' to the enum (idempotent,
+resolves the type from documents.status, same pattern as the 2026-07-11 /
+2026-07-26 enum adds). Applied by paste in the Supabase SQL editor (the standing
+migration mechanism). Corrected the false "unconstrained text, no migration"
+comment in src/filters.py. No permanent data loss: daily-collect is
+content-hash idempotent, so the held-off docs are re-collected on the next run
+after the paste.
