@@ -133,8 +133,11 @@ class FilterResult:
 # keeps get their own status so the daily forward pass and extract-backfill --
 # both of which select status='captured' -- never see them: the Corridor
 # corpus accrues at zero LLM cost until its own envelope targets this status.
-# Same mechanism as the 2026-07-09 'irrelevant' quarantine; documents.status
-# is unconstrained text, so no migration is involved.
+# documents.status is the `processing_status` ENUM (not free text -- the
+# 2026-07-09 'irrelevant' quarantine value is itself an enum label), so this
+# label REQUIRES migrations/2026-08-06_captured_construction_status.sql to be
+# applied before any collector writes it; without it the insert 400s (22P02)
+# and fails the whole run.
 CONSTRUCTION_HOLD_STATUS = "captured_construction"
 
 
