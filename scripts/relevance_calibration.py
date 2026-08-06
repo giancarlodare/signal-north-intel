@@ -35,10 +35,12 @@ SAMPLE_N = 200
 # Stratified by materiality bucket so every tier is represented.
 PER_MATERIALITY = 40  # 5 buckets x 40 = 200 (shortfalls from thin strata are honest)
 
-# The select must include timing fields for window sensitivity analysis.
+# defence_relevant lives on documents, not signals (same lesson as the
+# 2026-07-28 portal incident). Join it via documents(defence_relevant) and
+# flatten it into the signal dict in _load_signals().
 _SELECT = (
-    "id,title,summary,defence_relevant,materiality,relevance,"
-    "public_safety,expected_timing"
+    "id,title,summary,materiality,relevance,"
+    "public_safety,expected_timing,documents(defence_relevant)"
 )
 
 REPORT_MD = "relevance-calibration.md"
@@ -125,6 +127,15 @@ def _load_signals() -> list:
         filters={"materiality": "not.is.null"},
         limit=5000,
     )
+    # Flatten defence_relevant from the nested documents join.
+    # PostgREST returns documents as a list; take the first doc's flag.
+    for row in rows:
+        docs = row.pop("documents", None) or []
+        if isinstance(docs, list):
+            doc = docs[0] if docs else {}
+        else:
+            doc = docs or {}
+        row["defence_relevant"] = bool(doc.get("defence_relevant"))
     log.info("  pool: %d signals with materiality", len(rows))
     return rows
 
