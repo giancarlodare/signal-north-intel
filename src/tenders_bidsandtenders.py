@@ -155,6 +155,11 @@ BID_REF = re.compile(rf"^{_REF_PAT}$")
 BID_REF_WORD = re.compile(rf"\b{_REF_PAT}\b")
 MAX_STORED_CHARS = 20000
 
+# Column-header terms that identify the bid-name column. The bids&tenders
+# platform is configurable: most tenants say "Bid Name" but some use "Tender
+# Name" or "Project Name". All three map to the same parse_bid_name path.
+_BID_NAME_HEADERS = frozenset(("bid name", "tender name", "project name", "project title"))
+
 
 def portal_url(subdomain: str) -> str:
     return f"https://{subdomain}.bidsandtenders.ca/Module/Tenders/en"
@@ -315,19 +320,26 @@ def read_grid(page, status_label: str, is_default: bool) -> list:
         if gm and rm:
             guid_by_ref.setdefault(rm.group(0), gm.group(1))
 
-    header = next((r for r in grid if any("bid name" in (c or "").lower() for c in r)), None)
+    header = next(
+        (r for r in grid
+         if any(any(h in (c or "").lower() for h in _BID_NAME_HEADERS) for c in r)
+         and sum(1 for c in r if c) >= 2),
+        None,
+    )
     if not header:
-        log.warning("[read_grid %s] no 'bid name' header in %d grid rows; first=%r",
+        log.warning("[read_grid %s] no bid-name header in %d grid rows; first=%r",
                     status_label, len(grid), grid[:2])
         return []
     idx = map_columns(header)
+    # Bid name column: extracted under whichever header label this tenant uses.
+    bid_name_key = next((k for k in idx if any(h in k for h in _BID_NAME_HEADERS)), "bid name")
     out = []
     for r in grid:
         if r is header or len(r) < 2:
             continue
-        name = _col(idx, r, "bid name")
+        name = _col(idx, r, bid_name_key)
         ref, title = parse_bid_name(name)
-        if not title or "bid name" in name.lower():
+        if not title or any(h in name.lower() for h in _BID_NAME_HEADERS):
             continue  # skip the header echo / empty spacer rows
         if ref is None:
             # bids&tenders assigns every bid a reference number (e.g. 2026-104P);
@@ -426,8 +438,9 @@ def fetch_awarded(page, captured: dict, muni: dict, source_id, keywords,
         if resp.status != 200:
             raise RuntimeError(f"[{muni['org_key']}] awarded endpoint HTTP {resp.status}")
         doc = resp.json()
-        data = doc.get("data") or []
-        total = doc.get("total") or 0
+        # "data" is the standard field; some tenant configs use "rows" or "items".
+        data = doc.get("data") or doc.get("rows") or doc.get("items") or []
+        total = doc.get("total") or doc.get("totalCount") or 0
         if not data:
             break
         for jr in data:
