@@ -305,6 +305,27 @@ def test_parse_bid_name_rejects_reference_lookalikes():
         assert ref is None, f"{text!r} wrongly parsed ref {ref!r}"
 
 
+def test_parse_bid_name_held_buyer_references():
+    # Ref formats from the four held tier-2 buyers that were blocked by the
+    # original _REF_PAT. Each format now has a dedicated alt in the pattern.
+    for text, want_ref in [
+        # Markham: 3-digit numeric prefix
+        ("135-T-26 - Floodlights, Poles & Cross Arms Replacement", "135-T-26"),
+        ("113-Q-26 - Fire Station 95 Structural Repairs", "113-Q-26"),
+        # Niagara: year-letter(s)-number
+        ("2026-T-103 - Removal and Replacement of Wooden Stairs", "2026-T-103"),
+        ("2026-RFP-114 - Railway Grade Crossing Safety Assessment", "2026-RFP-114"),
+        # Halton Hills: year-number-letter suffix (extra dash segment)
+        ("2026-047-PQ - Prequalification for Heritage General Contractors", "2026-047-PQ"),
+        ("2026-060-T - Tree Maintenance Services", "2026-060-T"),
+        # Mississauga: letter prefix + 6+ digits, no dashes
+        ("PRC005534 - Construction Services for Garry W. Morden Hoist Replacement", "PRC005534"),
+        ("PRC005269 - Contracting Services for Installation of RFID Machines", "PRC005269"),
+    ]:
+        ref, _title = bt.parse_bid_name(text)
+        assert ref == want_ref, f"{text!r} -> {ref!r}, wanted {want_ref!r}"
+
+
 def test_bid_ref_word_extracts_full_ref_from_register_link_text():
     # The guid map keys on the same reference form the row parser produces;
     # the word regex must take the full letter-prefixed token, not a digit tail.
@@ -313,6 +334,13 @@ def test_bid_ref_word_extracts_full_ref_from_register_link_text():
     assert m and m.group(0) == "RFPQ-3823-26"
     m = bt.BID_REF_WORD.search("Register for this Bid - 2026-104P - Flow Meters")
     assert m and m.group(0) == "2026-104P"
+    # Held-buyer ref formats must resolve the full token, not a partial tail.
+    m = bt.BID_REF_WORD.search("Register for this Bid - 135-T-26 - Floodlights")
+    assert m and m.group(0) == "135-T-26", repr(m and m.group(0))
+    m = bt.BID_REF_WORD.search("Register for this Bid - 2026-T-103 - Wooden Stairs")
+    assert m and m.group(0) == "2026-T-103", repr(m and m.group(0))
+    m = bt.BID_REF_WORD.search("Register for this Bid - PRC005534 - Hoist Replacement")
+    assert m and m.group(0) == "PRC005534", repr(m and m.group(0))
 
 
 def test_status_query_url_sort_override_for_awarded_paging():
