@@ -151,6 +151,36 @@
 .principle__num { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.14em; color: var(--red); }
 .principle h3 { font-family: var(--font-serif); font-size: 24px; line-height: 1.25; letter-spacing: -0.01em; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .principle p { margin: 0; font-size: 15px; }
+/* Match the two-sides glass tiles exactly (operator 2026-08-06): the same
+   almost-invisible frosted fill + hairline border, lifting to a red-accent
+   border on hover. Self-contained flex tiles (subgrid dropped), mirroring
+   .sn-site .point so the two sections read identically. */
+.sn-site .principle {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  grid-row: auto;
+  padding: 22px 22px 24px;
+  border: 1px solid rgba(13, 27, 46, 0.07);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.30);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  transition: transform 0.28s var(--ease), box-shadow 0.28s var(--ease),
+    background-color 0.28s var(--ease), border-color 0.28s var(--ease);
+}
+.sn-site .principle:hover {
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(196, 18, 48, 0.35);
+  box-shadow: 0 14px 34px rgba(13, 27, 46, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+.sn-site .principle h3 { white-space: normal; overflow: visible; text-overflow: clip; }
+@media (prefers-reduced-motion: reduce) {
+  .sn-site .principle { transition: none; }
+  .sn-site .principle:hover { transform: none; }
+}
 
 /* ---------- Pricing ---------- */
 .tier-table { border: 1px solid var(--line); background: #fff; overflow-x: auto; }
