@@ -1,0 +1,38 @@
+name: Retag defence_relevant (whole-word fix, one-off apply)
+
+# One-off data fix (operator 2026-07-28): clears defence_relevant on documents
+# that were tagged by the substring matcher before the whole-word fix. Dry-run
+# delivered 472 flips / 897 docs; operator GO received 2026-08-06.
+# Idempotent: already-cleared docs are not re-touched.
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Write the update (unchecked = dry-run report only)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: retag-defence
+  cancel-in-progress: false
+
+jobs:
+  retag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Retag defence_relevant
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          python -m src.retag_defence ${{ inputs.apply && '--apply' || '--dry-run' }}
