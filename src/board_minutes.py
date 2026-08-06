@@ -238,9 +238,13 @@ BOARDS = [
     {
         "name": "Niagara Regional Police Service Board",
         "enabled": False,
+        # eScribe adapter wired (2026-08-06); fleet_validate pending before
+        # enabling. Host is html-mode: 4 doc links visible in raw HTML on the
+        # 2026 year listing, same shape as Hamilton/Kitchener/Oakville.
         "parked_reason": (
-            "documents live on pub-niagarapolice.escribemeetings.com (eScribe "
-            "JS shell, 4 links in raw HTML). Revive via eScribe adapter."),
+            "eScribe adapter wired 2026-08-06; fleet_validate result pending "
+            "before enable (pub-niagarapolice.escribemeetings.com)."),
+        "escribe_host": "pub-niagarapolice.escribemeetings.com",
         "source_name_candidates": ["Niagara Regional Police Service Board"],
         "source_id_env": "NRPSB_SOURCE_ID",
         "listing_urls": ["https://pub-niagarapolice.escribemeetings.com/"],
@@ -290,11 +294,14 @@ BOARDS = [
     {
         "name": "Ottawa Police Services Board",
         "enabled": False,
+        # eScribe adapter wired (2026-08-06); fleet_validate pending before
+        # enabling. Per-year meeting pages on pub-ottawa.escribemeetings.com
+        # carry FileStream.ashx document links — same html-mode shape as
+        # Hamilton/Kitchener/Oakville.
         "parked_reason": (
-            "timeboxed check 2026-07-20: ottawapoliceboard.ca per-year "
-            "meetings pages (2011-2025) link every per-meeting agenda to "
-            "pub-ottawa.escribemeetings.com Meeting.aspx (eScribe). Parked "
-            "per the one-probe rule. Revive via eScribe adapter."),
+            "eScribe adapter wired 2026-08-06; fleet_validate result pending "
+            "before enable (pub-ottawa.escribemeetings.com)."),
+        "escribe_host": "pub-ottawa.escribemeetings.com",
         "source_name_candidates": ["Ottawa Police Services Board", "OPSB"],
         "source_id_env": "OPSB_SOURCE_ID",
         "listing_urls": ["https://www.ottawapoliceboard.ca/opsb-cspo/meetings.html"],
@@ -839,6 +846,141 @@ def collect_board(board: dict, source_id: str, fetcher: PoliteFetcher,
     return stats
 
 
+def collect_escribe_board(board: dict, source_id: str, fetcher: PoliteFetcher,
+                          keywords: Keywords, limit: int, dry_run: bool) -> dict:
+    """Collect one eScribe/CivicWeb board using the adapter's html-mode parsers.
+
+    Fetches the year listing for the current and previous year, parses meeting
+    URLs via the adapter, then collects documents from each meeting page. Uses
+    the same PDF/HTML extraction, date derivation, and insert path as
+    collect_board -- only the listing discovery is different.
+
+    The board config must carry `escribe_host` (the tenant hostname) and
+    optionally `escribe_year_path` (default "/?Year={year}").
+    """
+    from .escribe_adapter import (  # lazy: avoid importing playwright-weight at module level
+        Tenant, listing_url as esc_listing_url,
+        plan_from_listing, parse_document_links, LoudZeroMeetings,
+    )
+
+    host = board["escribe_host"]
+    tenant = Tenant(host, board["name"], "police_board",
+                    mode="html",
+                    year_path=board.get("escribe_year_path", "/?Year={year}"))
+
+    stats = {"listing_pages": 0, "candidates": 0, "inserted": 0,
+             "skipped_duplicate": 0, "skipped_robots": 0, "dead_links": 0,
+             "errors": 0}
+    val_docs = val_dated = val_body = 0
+    current_year = datetime.now(timezone.utc).year
+    seen_docs: set[str] = set()
+
+    for year in [current_year, current_year - 1]:
+        if stats["inserted"] >= limit:
+            break
+        url = esc_listing_url(tenant, year)
+        resp = fetcher.get(url)
+        if resp is None:
+            stats["skipped_robots"] += 1
+            continue
+        stats["listing_pages"] += 1
+        try:
+            plan = plan_from_listing(tenant, resp.text, year)
+        except LoudZeroMeetings as exc:
+            if year == current_year:
+                raise  # current-year zero is a loud failure -- propagate
+            log.warning("[%s] eScribe year %d returned 0 meetings: %s", board["name"], year, exc)
+            continue
+
+        for meeting_url in plan["meetings"]:
+            if stats["inserted"] >= limit:
+                break
+            resp2 = fetcher.get(meeting_url)
+            if resp2 is None:
+                stats["skipped_robots"] += 1
+                continue
+            stats["listing_pages"] += 1
+
+            for doc_url, link_text in parse_document_links(resp2.text, meeting_url):
+                if doc_url in seen_docs:
+                    continue
+                seen_docs.add(doc_url)
+                if stats["inserted"] >= limit:
+                    log.info("Per-run cap (%d) reached for %s", limit, board["name"])
+                    break
+                stats["candidates"] += 1
+                chash = content_hash(doc_url, "board_minutes")
+                if supabase_client.get_document_by_hash(chash):
+                    stats["skipped_duplicate"] += 1
+                    continue
+                try:
+                    doc_resp = fetcher.get(doc_url)
+                    if doc_resp is None:
+                        stats["skipped_robots"] += 1
+                        continue
+                    content_length = int(doc_resp.headers.get("Content-Length") or 0)
+                    if content_length > MAX_DOCUMENT_BYTES:
+                        log.warning("Skipping oversized document (%d bytes): %s",
+                                    content_length, doc_url)
+                        continue
+                    data = doc_resp.content
+                    if len(data) > MAX_DOCUMENT_BYTES:
+                        log.warning("Skipping oversized document (%d bytes): %s",
+                                    len(data), doc_url)
+                        continue
+                    content_type = (doc_resp.headers.get("Content-Type") or "").lower()
+                    if doc_url.lower().endswith(".pdf") or "pdf" in content_type:
+                        body = pdf_to_text(data)
+                    else:
+                        body = html_to_text(
+                            data.decode(doc_resp.encoding or "utf-8", errors="replace"))
+                    body = body.replace("\x00", "")
+                    title = link_text or urlparse(doc_url).path.rsplit("/", 1)[-1]
+                    title = f"{board['name']} — {title}"[:500]
+                    published_on, date_precision = derive_event_date(link_text, doc_url)
+                    if not published_on:
+                        published_on, date_precision = month_year_date(link_text, doc_url)
+                    result = evaluate(title, body[:20000], "", keywords)
+                    payload = {
+                        "source_id": source_id,
+                        "url": doc_url,
+                        "title": title,
+                        "doc_type": "board_minutes",
+                        "status": "captured",
+                        "published_on": published_on,
+                        "date_precision": date_precision or "day",
+                        "content_hash": chash,
+                        "content": body[:MAX_STORED_CHARS] or None,
+                        "defence_relevant": result.defence_relevant,
+                    }
+                    if dry_run:
+                        log.info("[dry-run] would insert: %s (%s, %d chars, published %s)",
+                                 title, doc_url, len(body), published_on)
+                    else:
+                        supabase_client.insert_document(payload)
+                    stats["inserted"] += 1
+                    val_docs += 1
+                    val_dated += 1 if published_on else 0
+                    val_body += 1 if body else 0
+                except requests.HTTPError as e:
+                    if e.response is not None and e.response.status_code == 404:
+                        stats["dead_links"] += 1
+                        log.warning("Dead link on eScribe meeting (404): %s", doc_url)
+                    else:
+                        log.exception("Error collecting %s", doc_url)
+                        stats["errors"] += 1
+                except Exception:
+                    log.exception("Error collecting %s", doc_url)
+                    stats["errors"] += 1
+
+    if val_docs:
+        log.info("VALIDATION [%s]: docs=%d date_parsed=%d (%d%%) nonzero_body=%d (%d%%)",
+                 board["name"], val_docs, val_dated,
+                 round(100 * val_dated / val_docs), val_body,
+                 round(100 * val_body / val_docs))
+    return stats
+
+
 def run(limit: int = MAX_DOCS_PER_BOARD, dry_run: bool = False) -> int:
     keywords = load_keywords()
     fetcher = PoliteFetcher()
@@ -860,7 +1002,10 @@ def run(limit: int = MAX_DOCS_PER_BOARD, dry_run: bool = False) -> int:
             failures.append(board["name"])
             continue
         try:
-            stats = collect_board(board, source_id, fetcher, keywords, limit, dry_run)
+            if board.get("escribe_host"):
+                stats = collect_escribe_board(board, source_id, fetcher, keywords, limit, dry_run)
+            else:
+                stats = collect_board(board, source_id, fetcher, keywords, limit, dry_run)
             log.info("Board %s: %s%s", board["name"], stats, " (DRY RUN)" if dry_run else "")
             if stats["errors"]:
                 failures.append(board["name"])
