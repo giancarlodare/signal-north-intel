@@ -10,6 +10,7 @@ function item(p: Partial<PortalItem>): PortalItem {
   return {
     itemId: p.itemId ?? "i",
     headline: p.headline ?? "h",
+    summary: p.summary ?? null,
     buyer: p.buyer ?? null,
     timingPath: p.timingPath ?? "recent",
     defenceRelevant: p.defenceRelevant ?? false,

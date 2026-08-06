@@ -24,6 +24,7 @@ export interface PublishedBriefRef {
 export interface PortalItem {
   itemId: string;
   headline: string;
+  summary: string | null;
   buyer: string | null;
   timingPath: "imminent" | "recent";
   defenceRelevant: boolean;
@@ -64,6 +65,7 @@ interface ItemRow {
   editor_note: string | null;
   signals: {
     title: string | null;
+    summary: string | null;
     amount_max_cad: number | null;
     public_safety: boolean | null;
     organizations: { canonical_name: string | null } | { canonical_name: string | null }[] | null;
@@ -90,7 +92,7 @@ export async function getBriefItems(
     .from("brief_items")
     .select(
       "id, rank, timing_path, headline_override, editor_note, included, " +
-      "signals:lead_signal_id(title, amount_max_cad, public_safety, " +
+      "signals:lead_signal_id(title, summary, amount_max_cad, public_safety, " +
       "organizations(canonical_name), " +
       "documents(url, published_on, date_precision, doc_type, defence_relevant, reference_number))",
     )
@@ -124,6 +126,7 @@ export async function getBriefItems(
     return {
       itemId: it.id,
       headline: it.headline_override || ((s?.title as string) ?? "(untitled item)"),
+      summary: (s?.summary as string) || null,
       buyer: (org?.canonical_name as string) ?? null,
       timingPath: it.timing_path === "imminent" ? "imminent" : "recent",
       defenceRelevant: Boolean(doc?.defence_relevant),

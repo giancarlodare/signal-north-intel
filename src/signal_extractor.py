@@ -21,6 +21,7 @@ Design decisions (vs. the PR #6 original this replaces):
 Run manually with `python -m src.signal_extractor`. It is intentionally NOT wired
 into any scheduled workflow — nothing runs autonomously pre-ethics-gate.
 """
+import html
 import json
 import logging
 import os
@@ -164,8 +165,8 @@ def build_signal_payload(raw: dict, document_id: str, stamp: str,
         "signal_type": signal_type,
         "evidence_grade": taxonomy.grade(signal_type, doc_type or ""),
         "evidence_grade_version": taxonomy.TAXONOMY_VERSION,
-        "title": (raw.get("title") or "Untitled signal")[:200],
-        "summary": raw.get("summary") or "",
+        "title": html.unescape(raw.get("title") or "Untitled signal")[:200],
+        "summary": html.unescape(raw.get("summary") or "")[:2000],
         "quote_or_line": raw.get("quote_or_line"),
         "amount_min_cad": raw.get("amount_min_cad"),
         "amount_max_cad": raw.get("amount_max_cad"),

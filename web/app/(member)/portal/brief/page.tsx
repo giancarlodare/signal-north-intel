@@ -77,6 +77,29 @@ function SaveButton({
   );
 }
 
+const DOC_TYPE_BADGE: Record<string, string> = {
+  tender_notice: "TENDER",
+  award_notice: "AWARD",
+  grant_award: "GRANT",
+  grant_program: "GRANT",
+  news_release: "NOTICE",
+  board_minutes: "NOTICE",
+  media_article: "NOTICE",
+  legislative_debate: "NOTICE",
+};
+
+function typeBadge(docType: string | null): string | null {
+  if (!docType) return null;
+  return DOC_TYPE_BADGE[docType] ?? null;
+}
+
+function truncateSummary(text: string | null, maxWords = 25): string | null {
+  if (!text) return null;
+  const words = text.trim().split(/\s+/);
+  if (words.length <= maxWords) return text.trim();
+  return words.slice(0, maxWords).join(" ") + "…";
+}
+
 function ItemMeta({ item }: { item: PortalItem }) {
   const window_ = actionWindow(
     item.docType,
@@ -214,7 +237,24 @@ export default async function BriefPage({
                 gap: "var(--sp-4)",
               }}
             >
-              <span className="flag-card__match">Lead item</span>
+              <div style={{ display: "flex", gap: "var(--sp-2)", alignItems: "baseline" }}>
+                <span className="flag-card__match">Lead item</span>
+                {typeBadge(lead.docType) ? (
+                  <span
+                    style={{
+                      fontFamily: "var(--font-mono, monospace)",
+                      fontSize: 10,
+                      fontWeight: 700,
+                      letterSpacing: "0.08em",
+                      textTransform: "uppercase",
+                      color: "var(--muted)",
+                    }}
+                    data-field="doc-type"
+                  >
+                    {typeBadge(lead.docType)}
+                  </span>
+                ) : null}
+              </div>
               <SaveButton id={lead.itemId} enabled={savingEnabled} saved={savedSet.has(lead.itemId)} />
             </div>
             {/* .t-heading is the design-system panel heading (serif,
@@ -222,6 +262,19 @@ export default async function BriefPage({
             <h3 className="t-heading" data-field="title">
               {lead.headline}
             </h3>
+            {truncateSummary(lead.summary) ? (
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "var(--fs-ui)",
+                  lineHeight: 1.6,
+                  color: "var(--ink)",
+                }}
+                data-field="summary"
+              >
+                {truncateSummary(lead.summary)}
+              </p>
+            ) : null}
             {lead.vendorSoWhat ? (
               <div className="editor-note">
                 {/* .t-label with a 10px override to match the handoff (the
@@ -251,6 +304,21 @@ export default async function BriefPage({
             style={{ display: "flex", flexDirection: "column", gap: "var(--sp-3)" }}
             data-testid="brief-item"
           >
+            {typeBadge(item.docType) ? (
+              <span
+                style={{
+                  fontFamily: "var(--font-mono, monospace)",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "var(--muted)",
+                }}
+                data-field="doc-type"
+              >
+                {typeBadge(item.docType)}
+              </span>
+            ) : null}
             <div
               style={{
                 display: "flex",
@@ -276,6 +344,19 @@ export default async function BriefPage({
               </h3>
               <SaveButton id={item.itemId} enabled={savingEnabled} saved={savedSet.has(item.itemId)} />
             </div>
+            {truncateSummary(item.summary) ? (
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "var(--fs-ui)",
+                  lineHeight: 1.6,
+                  color: "var(--ink)",
+                }}
+                data-field="summary"
+              >
+                {truncateSummary(item.summary)}
+              </p>
+            ) : null}
             {item.vendorSoWhat ? (
               <p
                 style={{
