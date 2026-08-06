@@ -14,6 +14,47 @@ at the bottom; a decision about how bugs get fixed belongs up here.
 
 ---
 
+## 2026-08-06 — First-visit onboarding panel + Day-2 email (gated, operator approved)
+
+**Decided.** Build and ship:
+1. `OnboardingPanel` in the member portal: visible to paid members with account
+   age < 48h and no `user_metadata.onboarding_dismissed` flag. Shows access
+   summary, next Monday brief date, and watchlist prompt. Dismiss button sets
+   `onboarding_dismissed: true` via `dismissOnboarding()` server action.
+   No schema migration: dismissal persists in `user_metadata`.
+2. `07-member-day2.html/.txt` email template: same visual design as
+   `03-member-welcome`. Variables: `{{next_brief_date}}`, `{{portal_url}}`,
+   `{{watching_url}}`.
+3. `web/scripts/ci/send-day2-emails.mjs`: queries paid members created 24-48h
+   ago without `day2_sent` flag, sends via Resend, marks `day2_sent: true`
+   in `user_metadata`. Loud failure: any error sets exitCode=1.
+4. `.github/workflows/day2-email.yml`: daily cron at 9am ET (dual UTC +
+   Eastern hour guard), workflow_dispatch for manual runs.
+
+**Why.** New member experience gap: a member who joins sees an empty portal
+with no orientation. The panel removes ambiguity (what do I have, when does it
+start) on first login. The Day-2 email catches members who have not returned.
+
+**Gated class.** Member-facing and marketing-site changes per CLAUDE.md.
+Operator approved both features on 2026-08-06.
+
+**Not shipped yet.** `03-member-welcome` wiring in the Stripe webhook is still
+unwired (no email send on purchase). That is a separate decision.
+
+---
+
+## 2026-08-06 — Da-Ré Advisory firm name corrected
+
+**Decided.** "Da-Ré Advisory" applied exactly: capital D, lowercase a, capital
+R, lowercase e with accent (e-acute), capital A in Advisory. Applied to
+SiteFooter, about/page.tsx, and all design-handoff prototype HTML files.
+The copyright line also corrected to match.
+
+**Why.** The firm name is a legal identity. An incorrect rendering is an error
+on a public-facing surface.
+
+---
+
 ## 2026-08-06 — Safe-class: relevance scorer + calibration batch (2026-08-06)
 
 **Changed.** `src/relevance_scorer.py` (new): scores `signals.relevance` 1..5

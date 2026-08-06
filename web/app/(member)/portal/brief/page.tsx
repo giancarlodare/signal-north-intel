@@ -22,6 +22,7 @@ import { provenanceKind, provenanceLabel } from "@/lib/portal/provenance";
 import { listSaved, savedIds } from "@/lib/portal/watch-data";
 import { saveItem, unsaveItem } from "../actions";
 import RequirePaid from "@/components/portal/RequirePaid";
+import OnboardingPanel from "../_components/OnboardingPanel";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -133,11 +134,17 @@ export default async function BriefPage({
     "[portal-data] render session:",
     renderUser ? `${renderUser.email} (${renderUser.id.slice(0, 8)})` : "ANON",
   );
+  const showOnboarding = (() => {
+    if (!renderUser) return false;
+    if (renderUser.user_metadata?.onboarding_dismissed) return false;
+    return Date.now() - new Date(renderUser.created_at).getTime() < 48 * 3600e3;
+  })();
   const briefs = await listPublishedBriefs(supabase);
 
   if (briefs.length === 0) {
     return (
       <main className="fade-rise">
+        {showOnboarding && <OnboardingPanel />}
         <div
           className="dash-main dash-main--narrow"
           style={{ paddingTop: 64 }}
@@ -197,6 +204,7 @@ export default async function BriefPage({
           </h1>
         </div>
       </section>
+      {showOnboarding && <OnboardingPanel />}
       <div
         className="dash-main dash-main--narrow"
         style={{ display: "flex", flexDirection: "column", gap: "var(--sp-7)" }}

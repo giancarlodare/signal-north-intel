@@ -77,7 +77,7 @@ export default function SiteFooter() {
           </nav>
         </div>
         <div className="site-footer__legal">
-          <span>© 2026 SIGNAL NORTH · TORONTO, ONTARIO</span>
+          <span>© 2026 Da-Ré Advisory · Toronto, Ontario</span>
           <span>BUILT ONLY FROM PUBLIC RECORDS</span>
         </div>
       </div>
