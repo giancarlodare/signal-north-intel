@@ -3,11 +3,8 @@
    design-system tokens; pages sit inside a .sn-site wrapper. */
 .dash-header { position: fixed; inset: 0 0 auto 0; z-index: 40; background: rgba(13,27,46,0.82); backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4); border-bottom: 1px solid rgba(255,255,255,0.08); box-shadow: 0 1px 24px rgba(7,16,28,0.35); }
 .dash-header__inner { max-width: var(--content-max); margin: 0 auto; padding: 0 32px; height: var(--header-h); display: flex; align-items: center; gap: 22px; }
-/* Mark centered on the top line ("Signal North"), matching the marketing header,
-   rather than across both lines. The negative margin lifts the leaf so its
-   optical centre sits on that line's centre. */
-.brand { display: flex; align-items: flex-start; gap: 12px; white-space: nowrap; }
-.brand > svg { margin-top: -5px; }
+/* Mark centred against the whole two-line lockup, matching the marketing header. */
+.brand { display: flex; align-items: center; gap: 12px; white-space: nowrap; }
 .brand__text { display: flex; flex-direction: column; gap: 2px; }
 .brand__name { font-family: var(--font-serif); font-size: 20px; line-height: 1; letter-spacing: -0.01em; color: #fff; }
 .brand__sub { font-size: 7.5px; font-weight: 600; letter-spacing: 0.32em; text-transform: uppercase; color: var(--blue-soft); }
