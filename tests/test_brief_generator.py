@@ -13,11 +13,12 @@ TODAY = date(2026, 7, 15)  # a Wednesday
 
 def _sig(sid, published_on, doc_type="award_notice", materiality=3, grade=3,
          org=None, amount=None, title="t", defence=False, doc_id=None,
-         org_type=None):
+         org_type=None, relevance=None):
     return {"id": sid, "signal_type": "contract_award", "confidence": "confirmed",
             "materiality": materiality, "evidence_grade": grade,
             "amount_max_cad": amount, "expected_timing": None,
             "organization_id": org, "title": title, "document_id": doc_id,
+            "relevance": relevance,
             "organizations": {"canonical_name": org and f"Org {org}",
                               "org_type": org_type},
             "documents": {"doc_type": doc_type, "published_on": published_on,
@@ -148,20 +149,24 @@ def test_clustering_prefers_procurement_then_org_then_standalone():
     assert org_cluster["members"] == 1
 
 
-def test_imminent_clusters_rank_before_recent_and_by_soonest():
-    # grants are standalone action items now, so their cluster_ref is the
-    # signal id; the recent award still org-clusters. Ranking is unchanged:
-    # imminent first, by soonest deadline, then the recent story.
+def test_weighted_score_ranks_by_actionable_window_not_soonest_deadline():
+    # Weighted scoring (lens-redesign-design.md, approved 2026-08-06): timing
+    # paths are no longer an absolute partition. actionable_window peaks at
+    # 21-35 days, so a deadline 36 days out scores higher than one at 17 days.
+    # TODAY = 2026-07-15; "soon"=2026-08-20 is 36 days out (peak ≈0.97),
+    # "sooner"=2026-08-01 is 17 days out (ramp ≈0.78), both score above the
+    # recent cluster (win=0.5). With all other factors equal (no relevance,
+    # no org_type, single-member arcs), actionable_window decides the order.
     included = [
         (_sig("recent", "2026-07-14", org="o1"), "recent"),
         (_sig("soon", "2026-08-20", doc_type="grant_program", org="o2"), "imminent"),
         (_sig("sooner", "2026-08-01", doc_type="grant_program", org="o3"), "imminent"),
     ]
-    clusters = bg.cluster(included, proc_by_signal={})
+    clusters = bg.cluster(included, proc_by_signal={}, today=date(2026, 7, 15))
     ranks = {c["cluster_ref"]: c["rank"] for c in clusters}
-    assert ranks["sooner"] == 1   # nearest deadline first
-    assert ranks["soon"] == 2     # then the later imminent
-    assert ranks["o1"] == 3       # recent story last
+    assert ranks["soon"] == 1     # 36-day deadline: peak of the window curve
+    assert ranks["sooner"] == 2   # 17-day deadline: rising ramp, lower than peak
+    assert ranks["o1"] == 3       # recent (past-event, win=0.5): lowest here
 
 
 # --- regen_decision: the force / published-brief safety invariant -------------
@@ -220,44 +225,43 @@ def test_cluster_lead_is_strongest_member():
 
 
 # --- relevance lens: draft-only starting selection ----------------------------
-def test_lens_requires_public_safety_not_just_materiality():
-    # The leak fix (operator 2026-07-27): materiality alone no longer admits a
-    # non-defence cluster. A big GENERAL-municipal item (no public-safety org,
-    # no public-safety text) is held even at the lens bar; a public-safety item
-    # at the same bar keeps. Defence-tagged keeps at any materiality.
+def test_lens_uses_relevance_floor_not_materiality():
+    # Lens ruling 2026-08-06: admission gates on relevance >= 3, not
+    # materiality or public_safety. Defence-tagged always keeps.
+    # A high-materiality watermain (relevance=1) is held; a police item
+    # at relevance=3 keeps; an unscored (relevance=None) item is held.
     included = [
         (_sig("d1", "2026-07-14", materiality=3, defence=True), "recent"),
-        (_sig("police_big", "2026-07-14", materiality=4,
-              org_type="police_service"), "recent"),
-        (_sig("watermain_big", "2026-07-14", materiality=4,
+        (_sig("police_rel3", "2026-07-14", materiality=2, relevance=3,
+              org_type="police_board"), "recent"),
+        (_sig("watermain", "2026-07-14", materiality=5, relevance=1,
               org_type="municipality", title="watermain replacement"), "recent"),
-        (_sig("small", "2026-07-14", materiality=3), "recent"),
+        (_sig("unscored", "2026-07-14", materiality=4), "recent"),
     ]
     clusters = bg.cluster(included, proc_by_signal={})
     held = bg.apply_lens(clusters)
     by_id = {c["lead_signal_id"]: c for c in clusters}
-    assert by_id["d1"]["included"] is True             # defence tag, any materiality
-    assert by_id["police_big"]["included"] is True     # public-safety at the bar
-    assert by_id["watermain_big"]["included"] is False  # LEAK FIX: big alone is held
-    assert by_id["small"]["included"] is False         # held, recoverable in editor
+    assert by_id["d1"]["included"] is True             # defence tag always keeps
+    assert by_id["police_rel3"]["included"] is True    # relevance >= floor
+    assert by_id["watermain"]["included"] is False     # high materiality, low relevance: held
+    assert by_id["unscored"]["included"] is False      # unscored treated as 0: held
     assert held == 2
     # Held clusters keep their rank: the lens sets the starting selection only.
-    assert by_id["watermain_big"]["rank"] > 0
-    assert by_id["small"]["rank"] > 0
+    assert by_id["watermain"]["rank"] > 0
+    assert by_id["unscored"]["rank"] > 0
 
 
-def test_lens_uses_strongest_member_materiality_not_the_lead():
+def test_lens_uses_strongest_member_relevance_not_the_lead():
     # The lead is picked grade-first, so a non-lead member can carry the
-    # cluster's highest materiality; the lens must see it. Public-safety org so
-    # the test isolates the max-materiality mechanic from the relevance gate.
+    # cluster's highest relevance. The lens reads max_relevance across ALL
+    # members, so a cluster is admitted if ANY member clears the floor.
     included = [
-        (_sig("lead", "2026-07-14", org="o1", grade=5, materiality=3,
-              org_type="police_service"), "recent"),
-        (_sig("member", "2026-07-14", org="o1", grade=3, materiality=4,
-              org_type="police_service"), "recent"),
+        (_sig("lead", "2026-07-14", org="o1", grade=5, relevance=2), "recent"),
+        (_sig("member", "2026-07-14", org="o1", grade=3, relevance=4), "recent"),
     ]
     clusters = bg.cluster(included, proc_by_signal={})
     assert len(clusters) == 1
+    assert clusters[0]["max_relevance"] == 4  # member's score, not the lead's
     assert bg.apply_lens(clusters) == 0
     assert clusters[0]["included"] is True
 

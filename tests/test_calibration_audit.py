@@ -97,23 +97,26 @@ def test_compare_exact_agreement():
 
 
 def test_boundary_crossing_flags_the_flips_that_change_the_brief():
-    # 4 -> 3 crosses the lens bar (draft changes); 3 -> 2 crosses the brief
-    # bar; 5 -> 4 crosses nothing a reader sees. All are within-one.
+    # The lens now gates on relevance, not materiality (lens-redesign 2026-08-06).
+    # The only materiality decision boundary is the Path A bar (3): a flip that
+    # crosses 3 changes Path A admission; a flip above 3 is now inconsequential
+    # to the brief (the lens ignores it). 3 -> 2 crosses the Path A bar;
+    # 4 -> 3 and 5 -> 4 do not (both sides remain >= 3 or both drop below).
     def flip(orig, new):
         rec = ca.compare(_sig("x", materiality=orig),
                          {"materiality": new, "signal_type": "procurement_intent",
                           "confidence": "probable"}, "tender_notice")
         return rec["materiality"]
-    m = flip(4, 3)
+    m = flip(4, 3)   # above the Path A bar on both sides: no crossing
     assert not m["exact"] and m["within_one"]
-    assert m["boundary_crossings"] == [ca.LENS_MIN_MATERIALITY]
-    m = flip(3, 2)
-    assert m["boundary_crossings"] == [ca.RECENT_MIN_MATERIALITY]
-    m = flip(5, 4)
     assert m["boundary_crossings"] == []
-    m = flip(5, 2)   # category error: crosses both bars, not within one
+    m = flip(3, 2)   # crosses the Path A bar: signal drops out of Path A
+    assert m["boundary_crossings"] == [ca.RECENT_MIN_MATERIALITY]
+    m = flip(5, 4)   # well above the bar on both sides
+    assert m["boundary_crossings"] == []
+    m = flip(5, 2)   # crosses the bar, not within one
     assert not m["within_one"]
-    assert m["boundary_crossings"] == [ca.RECENT_MIN_MATERIALITY, ca.LENS_MIN_MATERIALITY]
+    assert m["boundary_crossings"] == [ca.RECENT_MIN_MATERIALITY]
 
 
 def test_signal_type_flip_reports_derived_grade_consequence():
@@ -148,7 +151,8 @@ def test_report_lists_every_disagreement_with_both_scores():
     report = ca.render_report([agree, flip, gone], _meta())
     assert "Disagreements to adjudicate (2)" in report
     assert "4 vs re-scored 3" in report            # both scores shown
-    assert "CROSSES boundary 4" in report          # lens-bar flip flagged
+    # 4->3 no longer crosses any brief-changing boundary (lens now uses relevance)
+    assert "CROSSES boundary" not in report        # flip is above the Path A bar on both sides
     assert "NOT REPRODUCED" in report              # first-class category
     assert "short by 4" in report                  # thin stratum stated
     assert "excluded: source document" in report   # unfetchable counted

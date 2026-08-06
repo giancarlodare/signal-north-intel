@@ -14,6 +14,26 @@ at the bottom; a decision about how bugs get fixed belongs up here.
 
 ---
 
+## 2026-08-06 — Phase 2: relevance lens + weighted ranking live (safe class, operator approved)
+
+**Decided.** Ship the full lens redesign to `brief_generator.py`:
+
+1. `apply_lens()` now gates on `max_relevance >= 3` (floor ruled from the 200-signal calibration batch: bimodal distribution, floor 3 adds 45 items vs floor 4, the 11 items between them are worth a human eye in shadow cycles). Replaces `materiality >= 4` gate. Defence-relevant always keeps.
+
+2. `rank_key()` replaced with a 6-factor weighted score: category_relevance (0.25, proxy via max_relevance/5), buyer_type (0.15, from org_type), arc_connection (0.30, proxy via cluster member count), actionable_window (0.15, curve peaking 21-35 days), materiality_norm (0.10), grade_norm (0.05). Timing paths are no longer an absolute partition; they feed the actionable_window curve.
+
+3. `relevance` added to the PostgREST SELECT in `run()`. `max_relevance` and `org_type` added to cluster dict.
+
+4. New workflow `relevance-backfill.yml`: dispatch-only, no limit, 90-minute timeout. Ready to fire.
+
+5. `calibration_audit.py` BOUNDARIES updated: the lens no longer uses materiality, so the only materiality decision boundary is the Path A bar (RECENT_MIN_MATERIALITY=3).
+
+**Reasoning.** The calibration batch measured a bimodal distribution and the scorer is doing real work. Both floors are additive — nothing currently passing drops. The actionable_window curve fixes the fundamental problem: soonest-first was actively wrong for subscribers who need time to respond.
+
+**Next.** Dispatch the backfill workflow (approved spend, ~12,000 signals at Haiku-class pricing). Shadow brief cycle follows.
+
+---
+
 ## 2026-08-06 — First-visit onboarding panel + Day-2 email (gated, operator approved)
 
 **Decided.** Build and ship:

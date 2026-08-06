@@ -32,6 +32,7 @@ starting selection.
 """
 import argparse
 import logging
+import math
 from . import public_safety
 from .filters import load_keywords
 import sys
@@ -64,10 +65,10 @@ RECENT_MIN_MATERIALITY = 3
 RECENT_MIN_GRADE = 3
 IMMINENT_MIN_MATERIALITY = 2
 IMMINENT_MIN_GRADE = 2
-# Relevance lens: a non-defence cluster needs this materiality (on its
+# Relevance lens: a non-defence cluster needs this relevance score (on its
 # strongest member) to default into the draft. Defence-relevant always defaults
-# in. Draft-only; the editor can pull any held item back.
-LENS_MIN_MATERIALITY = 4
+# in. Floor ruled 2026-08-06 from the 200-signal calibration batch.
+LENS_MIN_RELEVANCE = 3
 
 _KEYWORDS = None
 
@@ -176,7 +177,7 @@ def select(signals, today: date, recent_back: int = RECENT_BACK_DAYS):
     return included, excluded, dict(breakdown)
 
 
-def cluster(included, proc_by_signal):
+def cluster(included, proc_by_signal, today: date | None = None):
     """Group included (signal, path) pairs into clusters:
       procurement (if the signal links an active non-rejected procurement),
       else organization, else standalone signal.
@@ -243,6 +244,11 @@ def cluster(included, proc_by_signal):
             # grade-first, so a non-lead member can carry the cluster's highest
             # materiality); defence_relevant is the document tag on any member.
             "max_materiality": max((s.get("materiality") or 0) for s in sigs),
+            # max_relevance: strongest relevance score across cluster members
+            # (floor-ruled 2026-08-06: threshold=3). None-safe: unscored
+            # signals contribute 0 so the cluster is not promoted on their
+            # behalf; backfill ensures coverage before the lens matters.
+            "max_relevance": max((s.get("relevance") or 0) for s in sigs),
             "defence_relevant": any(
                 bool((_one(s.get("documents")) or {}).get("defence_relevant"))
                 for s in sigs),
@@ -257,6 +263,7 @@ def cluster(included, proc_by_signal):
                  for s in sigs], _kw()),
             "amount": float(lead.get("amount_max_cad") or 0),
             "org": (_one(lead.get("organizations")) or {}).get("canonical_name"),
+            "org_type": (_one(lead.get("organizations")) or {}).get("org_type"),
             "doc_type": (_one(lead.get("documents")) or {}).get("doc_type"),
             # For a document cluster (grant program), the per-stream signal
             # titles: enumerated in the item note, since the streams share one
@@ -265,11 +272,62 @@ def cluster(included, proc_by_signal):
                              if kind == "document" and len(sigs) > 1 else None,
         })
 
-    # Rank: imminent clusters first, by soonest date; then by salience.
+    # Rank: weighted score (design doc: lens-redesign-design.md, approved
+    # 2026-08-06). Timing paths are now an input to actionable_window, not
+    # the outer sort partition. Determinism: ties break on (grade, soonest,
+    # signal_id) so ordering is stable run-to-run.
+    _ref = today or date.today()
+
+    _BUYER_SCORE = {
+        "police_board": 1.0, "federal_department": 1.0,
+        "federal_agency": 1.0, "border_agency": 1.0,
+        "municipality": 0.3,
+    }
+
+    def _weighted_score(c) -> float:
+        # category_relevance: proxy via max_relevance/5 until per-category
+        # coefficient table lands (design doc: uncategorized scores DEFAULT 0.5
+        # once the table exists; for now the LLM score IS the per-item estimate).
+        cat = (c.get("max_relevance") or 0) / 5.0
+        # buyer_type: typed org_type → scored buyer tier.
+        bt = _BUYER_SCORE.get(c.get("org_type") or "", 0.0)
+        # arc_connection: proxy via cluster member count (multiple signals in
+        # the same cluster = precursor arc evidence). Default 0.5 for
+        # single-member org clusters where arc status is ambiguous.
+        m = c.get("members") or 1
+        arc = 0.0 if m == 1 else (0.6 if m == 2 else 1.0)
+        # actionable_window: curve peaking at 21-35 days out.
+        # Recent (past-event) clusters score 0.5 — actionable but no deadline.
+        if c["timing_path"] == "recent":
+            win = 0.5
+        else:
+            soonest = c.get("soonest_date")
+            if soonest is None:
+                win = 0.3
+            else:
+                days = (soonest - _ref).days
+                if days <= 3:
+                    win = 0.0
+                elif 21 <= days <= 35:
+                    win = 1.0
+                elif days < 21:
+                    win = (days - 3) / 18.0
+                else:
+                    # Exponential decay: 1.0 at 35 days, ~0.5 at 60, ~0.2 beyond
+                    k = math.log(2) / 25
+                    win = max(0.1, math.exp(-k * (days - 35)))
+        mat = (c.get("max_materiality") or 0) / 5.0
+        grade = (c.get("grade") or 0) / 5.0
+        return (0.25 * cat + 0.15 * bt + 0.30 * arc
+                + 0.15 * win + 0.10 * mat + 0.05 * grade)
+
     def rank_key(c):
-        imminent_first = 0 if c["timing_path"] == "imminent" else 1
-        soon = c["soonest_date"] or date.max
-        return (imminent_first, soon, -c["grade"], -c["materiality"], -c["amount"])
+        return (
+            -_weighted_score(c),
+            -c["grade"],
+            c["soonest_date"] or date.max,
+            c["lead_signal_id"],
+        )
 
     clusters.sort(key=rank_key)
     for i, c in enumerate(clusters, 1):
@@ -279,21 +337,16 @@ def cluster(included, proc_by_signal):
 
 def apply_lens(clusters) -> int:
     """The relevance lens over ranked clusters (draft-only; corpus keep-all).
-    A cluster defaults into the draft when any member is defence_relevant or its
-    strongest member's materiality >= LENS_MIN_MATERIALITY. Held clusters keep
-    their rank and are written with included=false so the editor can pull them
-    back with one toggle -- the lens sets the STARTING selection, nothing more.
+    A cluster defaults into the draft when any member is defence_relevant or
+    its highest relevance score >= LENS_MIN_RELEVANCE (floor=3, ruled
+    2026-08-06 from calibration batch). Held clusters keep their rank and are
+    written with included=false so the editor can pull them back with one
+    toggle -- the lens sets the STARTING selection, nothing more.
     Pure: sets c["included"] on every cluster and returns the held count."""
     held = 0
     for c in clusters:
-        # Member-facing lens (operator 2026-07-27): require public-safety
-        # relevance, not just materiality. defence_relevant is dual-use (a
-        # public-safety subset) and always keeps; a non-defence cluster keeps
-        # only when it is public-safety-relevant AND clears the materiality
-        # bar, so a big watermain from a regional buyer is held, not shipped.
         keep = bool(c.get("defence_relevant")) \
-            or (bool(c.get("public_safety"))
-                and (c.get("max_materiality") or 0) >= LENS_MIN_MATERIALITY)
+            or (c.get("max_relevance") or 0) >= LENS_MIN_RELEVANCE
         c["included"] = keep
         if not keep:
             held += 1
@@ -353,7 +406,8 @@ def run(dry_run: bool = True, today: date | None = None, force: bool = False) ->
     signals = supabase_client.fetch_all_rows_where(
         "signals",
         "id,signal_type,confidence,materiality,evidence_grade,amount_max_cad,"
-        "expected_timing,organization_id,title,organizations(canonical_name,org_type),"
+        "expected_timing,organization_id,title,relevance,"
+        "organizations(canonical_name,org_type),"
         "document_id,"
         "documents!inner(doc_type,published_on,date_precision,url,defence_relevant)",
         {"suppressed": "is.false"})
@@ -361,7 +415,7 @@ def run(dry_run: bool = True, today: date | None = None, force: bool = False) ->
     recent_back = recent_anchor_days(today)
     included, excluded, breakdown = select(signals, today, recent_back)
     proc_by_signal = _procurement_by_signal()
-    clusters = cluster(included, proc_by_signal)
+    clusters = cluster(included, proc_by_signal, today)
     lens_held = apply_lens(clusters)
     prior_sigs, prior_keys = _prior_featured_keys(week_start)
     carried = mark_previously_featured(clusters, prior_sigs, prior_keys)
@@ -400,9 +454,9 @@ def run(dry_run: bool = True, today: date | None = None, force: bool = False) ->
     kinds = Counter(c["cluster_kind"] for c in clusters)
     log.info("  clusters by kind: %s", dict(kinds))
     log.info("  relevance lens: %d of %d clusters default in; %d held "
-             "(non-defence, materiality < %d), written included=false for the "
+             "(non-defence, relevance < %d), written included=false for the "
              "editor to pull back", len(clusters) - lens_held, len(clusters),
-             lens_held, LENS_MIN_MATERIALITY)
+             lens_held, LENS_MIN_RELEVANCE)
     log.info("  previously featured: %d of %d clusters appeared in a prior "
              "published brief (marked 'carried' in the editor)",
              carried, len(clusters))

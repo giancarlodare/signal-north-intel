@@ -28,7 +28,7 @@ from datetime import date, timedelta
 from pathlib import Path
 
 from . import supabase_client, taxonomy
-from .brief_generator import LENS_MIN_MATERIALITY, RECENT_MIN_MATERIALITY
+from .brief_generator import RECENT_MIN_MATERIALITY
 from .signal_extractor import DEFAULT_MODEL, extract_signals
 
 log = logging.getLogger(__name__)
@@ -37,9 +37,11 @@ BACK_DAYS = 90            # audit the trailing window; older scores were audited
 PER_GRADE = 6             # 6 x 5 grades = the ~30 monthly sample
 GRADES = (1, 2, 3, 4, 5)
 MATCH_THRESHOLD = 0.5     # Jaccard floor for pairing an original with a re-score
-# The decision boundaries in force: a materiality flip that crosses one of
-# these changes the brief a reader sees; a flip that crosses none does not.
-BOUNDARIES = (RECENT_MIN_MATERIALITY, LENS_MIN_MATERIALITY)
+# The decision boundary in force for materiality: the Path A bar. The lens
+# now gates on relevance (not materiality), so materiality crosses only the
+# Path A bar (RECENT_MIN_MATERIALITY=3); a flip above that bar no longer
+# changes what the brief shows.
+BOUNDARIES = (RECENT_MIN_MATERIALITY,)
 
 REPORT_MD = "audit-report.md"
 REPORT_JSON = "audit-results.json"
