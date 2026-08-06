@@ -149,8 +149,13 @@ MONTHS = {m: i for i, m in enumerate(
 # at 4 chars and the token must carry two adjacent digits, so title words that
 # look reference-ish (COVID-19 is 5 letters, E-BIDDING has no digits) never
 # read as references. Never fabricate a reference.
-_REF_PAT = (r"(?:\d{4}-\d{2,5}[A-Za-z]{0,3}"
-            r"|(?=\S*\d\d)[A-Z]{1,4}\d{0,4}(?:-[A-Za-z0-9]{1,7}){1,3})")
+_REF_PAT = (
+    r"(?:\d{4}-\d{2,5}[A-Za-z]{0,3}(?:-[A-Za-z]{1,4})?"  # 2026-047, 2026-104P, 2026-047-PQ
+    r"|\d{4}-[A-Za-z]{1,4}-\d{1,5}"                       # 2026-T-103, 2026-RFP-114
+    r"|\d{3}-[A-Za-z]{1,4}-\d{1,3}"                       # 135-T-26, 113-Q-26
+    r"|[A-Z]{2,4}\d{4,8}"                                  # PRC005534
+    r"|(?=\S*\d\d)[A-Z]{1,4}\d{0,4}(?:-[A-Za-z0-9]{1,7}){1,3})"  # RFPQ-2026-0007
+)
 BID_REF = re.compile(rf"^{_REF_PAT}$")
 BID_REF_WORD = re.compile(rf"\b{_REF_PAT}\b")
 MAX_STORED_CHARS = 20000
