@@ -97,7 +97,7 @@ const GROUPS: { title: string; rows: { name: string; cells: TierCells }[] }[] = 
   },
 ];
 
-const FAQ: { q: string; a: string }[] = [
+const FAQ: { q: string; a: string | string[] }[] = [
   {
     q: "What is Signal North?",
     a: "The intelligence network for public safety and defence procurement in Canada. We continuously map the entire public record, tenders, awards, budgets, board and council decisions, legislative debate, and vendor activity, so anyone who buys or sells in this sector can see the whole market in one place, and can follow a single need from the first mention to the award.",
@@ -123,16 +123,19 @@ const FAQ: { q: string; a: string }[] = [
     a: "Everything traces to an official public record, a government portal, a board agenda, a published budget, a legislative transcript. Every signal links back to its original publisher source, so you can verify it yourself. We report on the public record; we never rely on rumour or unverifiable claims.",
   },
   {
+    q: "How is this different from a tender-notification service?",
+    a: [
+      "Tender-notification services start when a solicitation is posted. By that point, the opportunity is public and every competitor sees it at the same moment.",
+      "Signal North starts earlier. Every major purchase in Canadian public safety leaves a documented trail long before it becomes a tender — in a board decision, a capital budget line, a staff report, a lifecycle assessment. We read that record every day and report what's forming. By the time a solicitation appears, our subscribers have been watching the file for months.",
+    ],
+  },
+  {
     q: "Is Signal North neutral?",
     a: "Yes, and it is core to how we operate. We report on the market; we never participate in it. The same intelligence is available to every member on equal terms. We do not represent vendors, we do not broker deals, and no one can pay to influence what the network shows.",
   },
   {
     q: "Do you cover my region, agency or category?",
     a: "Our coverage of Canadian public safety and defence procurement is comprehensive and always expanding. Enterprise members can request custom coverage for specific agencies, regions or categories. If you are unsure whether we cover what you need, ask us, we will tell you honestly what is in the network today.",
-  },
-  {
-    q: "How is this different from a tender-notification service?",
-    a: "Tender alerts tell you an RFP has been posted, by which point the opportunity is often already shaped. Signal North maps the whole market continuously and surfaces activity as it forms. A budget line, a board decision, a staff report: these are public months before the solicitation, and we put them in front of you with the link to each one. It is the difference between reacting to the market and understanding it.",
   },
   {
     q: "Do I need a long-term commitment?",
@@ -287,7 +290,9 @@ export default function PricingPage() {
                 {FAQ.map((item) => (
                   <details key={item.q} name="faq-pricing">
                     <summary>{item.q}</summary>
-                    <p className="faq__a">{item.a}</p>
+                    {Array.isArray(item.a)
+                      ? item.a.map((para, i) => <p key={i} className="faq__a">{para}</p>)
+                      : <p className="faq__a">{item.a}</p>}
                   </details>
                 ))}
               </div>
