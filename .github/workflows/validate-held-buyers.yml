@@ -1,0 +1,35 @@
+name: Validate held buyers (bids&tenders diagnostic probe)
+
+# One-off diagnostic: runs scripts/probe_held_buyers.py against the four
+# held bids&tenders tenants (Markham, Niagara, Halton Hills, Mississauga)
+# with Playwright + REAL_UA. Dumps raw grid rows, _HAS_BID_ROW_JS wait
+# result, and read_grid parsed count so we can see exactly which parser
+# extension each tenant needs. Never writes to the database.
+
+on:
+  workflow_dispatch: {}
+
+concurrency:
+  group: validate-held-buyers
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Playwright + Chromium
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Probe held buyers
+        run: python scripts/probe_held_buyers.py
