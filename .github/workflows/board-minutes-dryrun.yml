@@ -1,0 +1,33 @@
+name: Board minutes dry-run (dispatch-only)
+
+# Validation dry-run for the board minutes collector: fetches, parses, and
+# logs what would be inserted -- writes nothing to the database. Run this
+# against the branch that enables a new board before merging, to confirm the
+# listing config and doc-URL patterns work and validation bars are met
+# (>=90% date-parse, nonzero bodies).
+
+on:
+  workflow_dispatch: {}
+
+concurrency:
+  group: board-minutes-dryrun
+  cancel-in-progress: false
+
+jobs:
+  dryrun:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Dry-run board minutes collector (all enabled boards, no DB writes)
+        run: python -m src.board_minutes --dry-run
