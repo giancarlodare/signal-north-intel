@@ -267,7 +267,7 @@ BOARDS = [
         # British data.
         "source_name_candidates": ["London Police Service Board"],
         "source_id_env": "LPSB_SOURCE_ID",
-        "listing_urls": ["https://londonpoliceserviceboard.com/"],
+        "listing_urls": ["https://londonpoliceserviceboard.com/board-meetings/"],
         "doc_url_patterns": [r"/wp-content/uploads/.+\.pdf$"],
     },
     {

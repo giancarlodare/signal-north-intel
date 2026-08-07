@@ -442,12 +442,13 @@ def test_big12_boards_config_rows():
         "Halton Police Board",
         "Waterloo Regional Police Services Board",
         "Greater Sudbury Police Services Board",
+        "London Police Service Board",
     ]
     parked = {b["name"]: b for b in bm.BOARDS if not b.get("enabled", True)}
     assert set(parked) == {
         "Toronto Police Service Board",
         "Hamilton Police Service Board", "Niagara Regional Police Service Board",
-        "London Police Service Board", "Windsor Police Service Board",
+        "Windsor Police Service Board",
         "Ottawa Police Services Board"}
     for b in parked.values():
         assert b.get("parked_reason"), f"{b['name']} parked without a verdict"
