@@ -14,17 +14,20 @@ at the bottom; a decision about how bugs get fixed belongs up here.
 
 ---
 
-## 2026-08-07 — Drain cadence trigger deleted (operator approved)
+## 2026-08-07 — Drain cadence trigger: PARKED (ID unresolvable, harmless)
 
-**Decided.** The extract-backfill drain cadence trigger is deleted. Toronto award
-backlog was retired on 2026-08-03 on disjointness evidence (3 police matches in
-9,070 Toronto Open Data docs; TPS signals 100% from tpsb.ca). The trigger was
-supposed to be deleted at the time; operator approval was pending. Deletion
-approved 2026-08-07. No further ticks will fire.
+**Decided.** The extract-backfill drain cadence trigger is retired in intent.
+Toronto award backlog was retired 2026-08-03 on disjointness evidence (3 police
+matches in 9,070 Toronto Open Data docs; TPS signals 100% from tpsb.ca).
 
-**Mechanical note:** The `list_triggers` / `delete_trigger` MCP calls require UI
-permission approval (separate from operator chat approval). Trigger deletion
-completes once that permission is granted.
+**Status.** The trigger ID (trig_...) lives in the Claude Code Remote routine
+infrastructure and is not visible in GitHub Actions or Cloudflare Workers. The
+`list_triggers` MCP permission gate has never surfaced in the UI despite multiple
+attempts. Deletion is parked permanently: the tick is guard-blocked (the
+`extract-backfill.yml` workflow now requires a mandatory `envelope` input that
+the trigger prompt does not supply, so it exits 422 on every fire with zero
+spend). Per operator ruling 2026-08-07: cosmetic cleanup, absorbing silently,
+not worth further attention.
 
 ---
 
