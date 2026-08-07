@@ -14,6 +14,28 @@ at the bottom; a decision about how bugs get fixed belongs up here.
 
 ---
 
+## 2026-08-07 — London Police Service Board enabled; PR #182 merged
+
+**board-minutes-dryrun run 31189133084 (10:44 AM EDT) passed clean.**
+London LPSB: 2 docs, 100% date-parse, 100% nonzero body. All other enabled
+boards (Peel, York, Durham, Halton, Waterloo, Sudbury) clean; TPSB still
+WAF-parked (unchanged).
+
+**Sources row:** `6674eebb-770d-419c-a086-387e6c3bb3aa` (inserted by operator).
+**Secret:** `LPSB_SOURCE_ID` added to GitHub Actions.
+
+**PR #182 squash-merged** to main (`3c784fc`). London LPSB is now live in
+the daily board-minutes collector at `londonpoliceserviceboard.com`.
+
+**Follow-up (not blocking):** The current listing URL is the site root
+(`londonpoliceserviceboard.com/`), which surfaced 2 candidates -- the
+procedural bylaws PDF and the board-meetings listing page. The actual
+agendas/minutes corpus is likely at `londonpoliceserviceboard.com/board-meetings/`;
+updating the listing URL will be a follow-up safe-class fix once the first real
+run confirms whether deeper pagination exists there.
+
+---
+
 ## 2026-08-07 — Niagara/Ottawa eScribe tenants confirmed bucket C (JS-shell); board-minutes dry-run blocked on LPSB sources row
 
 **fleet_validate result (run 31186545711, 10:14 AM EDT).** Both
