@@ -1,0 +1,41 @@
+name: eScribe fleet validation (dispatch-only)
+
+# Read-only probe of eScribe/CivicWeb tenants in HTML mode: fetches the year
+# listing and one meeting page per host, reports meeting count and sample doc
+# URL, and flags any host where the adapter parse fails. No DB writes.
+#
+# Default run validates the Niagara and Ottawa police-board eScribe tenants
+# (both wired 2026-08-06, fleet_validate pending before enable). Pass extra
+# hosts as a space-separated string in the `extra_hosts` input.
+
+on:
+  workflow_dispatch:
+    inputs:
+      extra_hosts:
+        description: "Space-separated extra eScribe hostnames to validate (optional)"
+        type: string
+        default: ""
+
+concurrency:
+  group: fleet-validate
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Validate Niagara + Ottawa eScribe tenants
+        run: |
+          python scripts/fleet_validate.py \
+            pub-niagarapolice.escribemeetings.com \
+            pub-ottawa.escribemeetings.com \
+            ${{ inputs.extra_hosts }}
