@@ -14,6 +14,41 @@ at the bottom; a decision about how bugs get fixed belongs up here.
 
 ---
 
+## 2026-08-07 — Niagara/Ottawa eScribe tenants confirmed bucket C (JS-shell); board-minutes dry-run blocked on LPSB sources row
+
+**fleet_validate result (run 31186545711, 10:14 AM EDT).** Both
+`pub-niagarapolice.escribemeetings.com` and `pub-ottawa.escribemeetings.com`
+returned **zero meetings on all four URL paths** tried: `/?Year=2026`,
+`/MeetingsCalendarView.aspx?Year=2026`, `/?Year=2025`, and `/` (root).
+This is definitive: MEETING_RE finds nothing in the server-delivered HTML on
+any path. The 2026-08-06 comment "html-mode: 4 doc links visible in raw HTML"
+was wrong -- that was a browser-rendered view, not raw HTML. Both tenants are
+**bucket C (JS-shell)**. Html-mode collection cannot work for them.
+
+**Decision:** Both boards stay PARKED. `parked_reason` updated to reflect the
+bucket C finding. Unparking requires api-mode with a CLEAN eScribe endpoint per
+the eScribe terms ruling (still open). Ottawa has a fallback WordPress listing
+at `ottawapoliceboard.ca/opsb-cspo/meetings.html` that may be worth a direct
+WordPress-style probe; that investigation is queued.
+
+**board-minutes-dryrun result (run 31185730229, 10:07 AM EDT).** Dry-run of
+all enabled boards failed on one board only: **London Police Service Board**.
+Error: `No sources row found for London Police Service Board (tried names:
+['London Police Service Board']). Add the row or set LPSB_SOURCE_ID.` All
+other enabled boards (Peel, York, Durham, Halton, Waterloo, Sudbury) passed
+clean. London LPSB config is correct but has no row in the `sources` table and
+no `LPSB_SOURCE_ID` secret -- both are GATED (database write, secrets). **PR
+#182 is blocked until the operator creates the sources row and adds the
+secret.** London collection will fail loudly in any run until then; this is
+the correct behaviour.
+
+**Safe-class changes shipped today (PR #182 feature branch):**
+- `fleet_validate.py`: alternate-path fallback when primary year_path returns 0
+  (diagnostic; safe class, script only, no schema/member surface).
+- `board_minutes.py`: Niagara/Ottawa parked_reason corrected to reflect bucket C.
+
+---
+
 ## 2026-08-07 — Fix relevance_scorer._SELECT: drop non-existent columns (safe class)
 
 **Decided.** `_SELECT` in `src/relevance_scorer.py` included `defence_relevant`
