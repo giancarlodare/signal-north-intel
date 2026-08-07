@@ -1,0 +1,32 @@
+SIGNAL NORTH
+Canadian public safety procurement intelligence
+
+A note on your membership
+--------------------------
+
+Your first brief arrives {{next_brief_date}}.
+
+The member edition of the Weekly Signal lands in your inbox Monday morning
+at 6:00 am Eastern. It carries the complete tender and award tables for the
+week, plus the source document linked to every line so you can pull the
+underlying filing directly.
+
+The record is also searchable, back to January 2019. Buyer spending
+histories, contract dates, vendor appearances in past tenders: all of it is
+in the portal, linked to its source.
+
+Open the portal:
+{{portal_url}}
+
+One more thing: if you add buyers or keywords to your watchlist, we flag the
+relevant documents the day they appear, before the brief lands. That keeps
+you ahead of it rather than catching up on Monday.
+
+Set up my watchlist:
+{{watching_url}}
+
+---
+This is a service message about your Signal North account.
+It is not a marketing message and carries no unsubscribe link.
+
+Signal North  |  giancarlo@signalnorthintel.com  |  Toronto, Ontario

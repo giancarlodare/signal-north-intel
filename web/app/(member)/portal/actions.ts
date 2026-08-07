@@ -94,3 +94,10 @@ export async function unsaveItem(formData: FormData) {
     .eq("member_id", userId);
   refresh();
 }
+
+export async function dismissOnboarding() {
+  const supabase = createClient();
+  // Merges into user_metadata; does not clear existing fields.
+  await supabase.auth.updateUser({ data: { onboarding_dismissed: true } });
+  revalidatePath("/portal");
+}

@@ -1,0 +1,48 @@
+name: Relevance backfill
+
+# Score ALL unscored signals (no limit). Run after the operator approves the
+# calibration batch and rules the floor. Writes relevance to the signals table.
+#
+# Dispatch: manual only (operator-approved spend per CLAUDE.md cost gate).
+# Typical runtime: ~15-25 min for ~12,000 signals at Haiku-class pricing.
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Override model (leave blank for default Haiku)"
+        required: false
+        default: ""
+
+concurrency:
+  group: relevance-backfill
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run relevance backfill (all unscored signals)
+        run: |
+          MODEL="${{ github.event.inputs.model }}"
+          ARGS="--run"
+          if [ -n "${MODEL}" ]; then
+            ARGS="${ARGS} --model ${MODEL}"
+          fi
+          python -m src.relevance_scorer ${ARGS}

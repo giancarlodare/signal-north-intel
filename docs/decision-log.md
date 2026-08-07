@@ -14,6 +14,84 @@ at the bottom; a decision about how bugs get fixed belongs up here.
 
 ---
 
+## 2026-08-07 — Drain cadence trigger: PARKED (ID unresolvable, harmless)
+
+**Decided.** The extract-backfill drain cadence trigger is retired in intent.
+Toronto award backlog was retired 2026-08-03 on disjointness evidence (3 police
+matches in 9,070 Toronto Open Data docs; TPS signals 100% from tpsb.ca).
+
+**Status.** The trigger ID (trig_...) lives in the Claude Code Remote routine
+infrastructure and is not visible in GitHub Actions or Cloudflare Workers. The
+`list_triggers` MCP permission gate has never surfaced in the UI despite multiple
+attempts. Deletion is parked permanently: the tick is guard-blocked (the
+`extract-backfill.yml` workflow now requires a mandatory `envelope` input that
+the trigger prompt does not supply, so it exits 422 on every fire with zero
+spend). Per operator ruling 2026-08-07: cosmetic cleanup, absorbing silently,
+not worth further attention.
+
+---
+
+## 2026-08-06 — Phase 2: relevance lens + weighted ranking live (safe class, operator approved)
+
+**Decided.** Ship the full lens redesign to `brief_generator.py`:
+
+1. `apply_lens()` now gates on `max_relevance >= 3` (floor ruled from the 200-signal calibration batch: bimodal distribution, floor 3 adds 45 items vs floor 4, the 11 items between them are worth a human eye in shadow cycles). Replaces `materiality >= 4` gate. Defence-relevant always keeps.
+
+2. `rank_key()` replaced with a 6-factor weighted score: category_relevance (0.25, proxy via max_relevance/5), buyer_type (0.15, from org_type), arc_connection (0.30, proxy via cluster member count), actionable_window (0.15, curve peaking 21-35 days), materiality_norm (0.10), grade_norm (0.05). Timing paths are no longer an absolute partition; they feed the actionable_window curve.
+
+3. `relevance` added to the PostgREST SELECT in `run()`. `max_relevance` and `org_type` added to cluster dict.
+
+4. New workflow `relevance-backfill.yml`: dispatch-only, no limit, 90-minute timeout. Ready to fire.
+
+5. `calibration_audit.py` BOUNDARIES updated: the lens no longer uses materiality, so the only materiality decision boundary is the Path A bar (RECENT_MIN_MATERIALITY=3).
+
+**Reasoning.** The calibration batch measured a bimodal distribution and the scorer is doing real work. Both floors are additive — nothing currently passing drops. The actionable_window curve fixes the fundamental problem: soonest-first was actively wrong for subscribers who need time to respond.
+
+**Next.** Dispatch the backfill workflow (approved spend, ~12,000 signals at Haiku-class pricing). Shadow brief cycle follows.
+
+---
+
+## 2026-08-06 — First-visit onboarding panel + Day-2 email (gated, operator approved)
+
+**Decided.** Build and ship:
+1. `OnboardingPanel` in the member portal: visible to paid members with account
+   age < 48h and no `user_metadata.onboarding_dismissed` flag. Shows access
+   summary, next Monday brief date, and watchlist prompt. Dismiss button sets
+   `onboarding_dismissed: true` via `dismissOnboarding()` server action.
+   No schema migration: dismissal persists in `user_metadata`.
+2. `07-member-day2.html/.txt` email template: same visual design as
+   `03-member-welcome`. Variables: `{{next_brief_date}}`, `{{portal_url}}`,
+   `{{watching_url}}`.
+3. `web/scripts/ci/send-day2-emails.mjs`: queries paid members created 24-48h
+   ago without `day2_sent` flag, sends via Resend, marks `day2_sent: true`
+   in `user_metadata`. Loud failure: any error sets exitCode=1.
+4. `.github/workflows/day2-email.yml`: daily cron at 9am ET (dual UTC +
+   Eastern hour guard), workflow_dispatch for manual runs.
+
+**Why.** New member experience gap: a member who joins sees an empty portal
+with no orientation. The panel removes ambiguity (what do I have, when does it
+start) on first login. The Day-2 email catches members who have not returned.
+
+**Gated class.** Member-facing and marketing-site changes per CLAUDE.md.
+Operator approved both features on 2026-08-06.
+
+**Not shipped yet.** `03-member-welcome` wiring in the Stripe webhook is still
+unwired (no email send on purchase). That is a separate decision.
+
+---
+
+## 2026-08-06 — Da-Ré Advisory firm name corrected
+
+**Decided.** "Da-Ré Advisory" applied exactly: capital D, lowercase a, capital
+R, lowercase e with accent (e-acute), capital A in Advisory. Applied to
+SiteFooter, about/page.tsx, and all design-handoff prototype HTML files.
+The copyright line also corrected to match.
+
+**Why.** The firm name is a legal identity. An incorrect rendering is an error
+on a public-facing surface.
+
+---
+
 ## 2026-08-06 — Safe-class: relevance scorer + calibration batch (2026-08-06)
 
 **Changed.** `src/relevance_scorer.py` (new): scores `signals.relevance` 1..5
