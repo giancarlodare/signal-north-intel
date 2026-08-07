@@ -14,6 +14,18 @@ at the bottom; a decision about how bugs get fixed belongs up here.
 
 ---
 
+## 2026-08-07 — London LPSB listing URL corrected; PR #184 merged
+
+**Operator confirmed** the correct listing URL is `londonpoliceserviceboard.com/board-meetings/`
+(not the site root). PR #184 squash-merged to main (`d45941a`). Changes:
+- `board_minutes.py`: listing URL corrected to `/board-meetings/`
+- `tests/test_board_minutes.py`: London added to enabled board list, removed from parked set
+- `src/resolve_orgs.py`: LPSB entry added to ORG_SEED (required by `test_big12_enabled_boards_resolve_via_org_seed`)
+
+All CI green on `77295e0` before merge. London LPSB live collection now targets the correct URL.
+
+---
+
 ## 2026-08-07 — London Police Service Board enabled; PR #182 merged
 
 **board-minutes-dryrun run 31189133084 (10:44 AM EDT) passed clean.**
