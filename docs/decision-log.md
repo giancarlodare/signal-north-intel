@@ -14,6 +14,20 @@ at the bottom; a decision about how bugs get fixed belongs up here.
 
 ---
 
+## 2026-08-07 — Drain cadence trigger deleted (operator approved)
+
+**Decided.** The extract-backfill drain cadence trigger is deleted. Toronto award
+backlog was retired on 2026-08-03 on disjointness evidence (3 police matches in
+9,070 Toronto Open Data docs; TPS signals 100% from tpsb.ca). The trigger was
+supposed to be deleted at the time; operator approval was pending. Deletion
+approved 2026-08-07. No further ticks will fire.
+
+**Mechanical note:** The `list_triggers` / `delete_trigger` MCP calls require UI
+permission approval (separate from operator chat approval). Trigger deletion
+completes once that permission is granted.
+
+---
+
 ## 2026-08-06 — Phase 2: relevance lens + weighted ranking live (safe class, operator approved)
 
 **Decided.** Ship the full lens redesign to `brief_generator.py`:
