@@ -45,7 +45,7 @@ DEFAULT_MODEL = os.environ.get("RELEVANCE_MODEL", "claude-haiku-4-5-20251001")
 SCORER_VERSION = "relevance@v1"
 
 # PostgREST select for signals missing a relevance score.
-_SELECT = "id,title,summary,defence_relevant,materiality"
+_SELECT = "id,title,summary"
 
 _SYSTEM = (
     "You are a procurement-intelligence analyst specialising in Canadian "

@@ -14,6 +14,16 @@ at the bottom; a decision about how bugs get fixed belongs up here.
 
 ---
 
+## 2026-08-07 — Fix relevance_scorer._SELECT: drop non-existent columns (safe class)
+
+**Decided.** `_SELECT` in `src/relevance_scorer.py` included `defence_relevant`
+and `materiality` columns that do not exist on the `signals` table. The scorer
+uses only `id`, `title`, and `summary`; the extra fields were dead selects from
+an earlier design iteration. Dropped both. Safe-class fix: one-line change, no
+schema touch, no member-facing surface, CI green.
+
+---
+
 ## 2026-08-07 — Drain cadence trigger: PARKED (ID unresolvable, harmless)
 
 **Decided.** The extract-backfill drain cadence trigger is retired in intent.
