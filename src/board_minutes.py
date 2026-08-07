@@ -238,12 +238,17 @@ BOARDS = [
     {
         "name": "Niagara Regional Police Service Board",
         "enabled": False,
-        # eScribe adapter wired (2026-08-06); fleet_validate pending before
-        # enabling. Host is html-mode: 4 doc links visible in raw HTML on the
-        # 2026 year listing, same shape as Hamilton/Kitchener/Oakville.
+        # fleet_validate 2026-08-07 (run 31186545711): 0 meetings on ALL tried
+        # paths (/?Year=2026, /MeetingsCalendarView.aspx?Year=2026, /?Year=2025,
+        # /). Consistent with bucket C (JS-shell): MEETING_RE finds nothing in
+        # the initial HTML. The 2026-08-06 "html-mode: 4 doc links" comment was
+        # wrong (browser-rendered view, not raw HTML). Needs api-mode with a
+        # CLEAN eScribe endpoint, pending the eScribe terms ruling.
         "parked_reason": (
-            "eScribe adapter wired 2026-08-06; fleet_validate result pending "
-            "before enable (pub-niagarapolice.escribemeetings.com)."),
+            "pub-niagarapolice.escribemeetings.com confirmed bucket C (JS-shell) "
+            "by fleet_validate 2026-08-07: 0 meetings on all URL paths including "
+            "root. Html-mode collection will not work. Needs api-mode + CLEAN "
+            "endpoint, pending eScribe terms ruling."),
         "escribe_host": "pub-niagarapolice.escribemeetings.com",
         "source_name_candidates": ["Niagara Regional Police Service Board"],
         "source_id_env": "NRPSB_SOURCE_ID",
@@ -251,30 +256,15 @@ BOARDS = [
     },
     {
         "name": "London Police Service Board",
-        "enabled": False,
-        # NOT A GAP (operator 2026-08-02): two server-side surfaces exist.
-        #  1. pub-london.escribemeetings.com -- an eScribe tenant (confirmed
-        #     via a filestream.ashx document URL): first wave of the eScribe
-        #     adapter alongside Ottawa and Niagara.
-        #  2. londonpoliceserviceboard.com -- dedicated WordPress board site
-        #     publishing full agenda-and-report packages as PDFs under
-        #     /wp-content/uploads/YYYY/MM/ (e.g. "LPSB-OPEN-Agenda-and-
-        #     Report-Package-February-19-2026-Full-Package.pdf"). 2026
-        #     meetings: Jan 15, Feb 19, Mar 19, Apr 16, May 21, Jun 18,
-        #     (no July), Aug 20, Sep 17 special budget, Oct 15, Nov 19,
-        #     Dec 17. Same shape as the TPSB config; enable after the
-        #     standard CI validation dry-run.
+        # Enabled 2026-08-07 after CI validation dry-run passed (board-minutes-
+        # dryrun.yml). WordPress surface only; eScribe tenant (pub-london) is
+        # the next wave alongside Niagara/Ottawa.
         # COLLISION WARNING (same class as OACP): the City of London, UK
         # publishes a Police Authority Board at democracy.cityoflondon.gov.uk.
         # Anything touching "London Police" must be domain-scoped
         # (londonpolice.ca / londonpoliceserviceboard.com /
         # pub-london.escribemeetings.com) or the corpus silently takes on
         # British data.
-        "parked_reason": (
-            "READY, pending validation dry-run: londonpoliceserviceboard.com "
-            "WordPress packages (server-rendered) + pub-london eScribe "
-            "tenant in the adapter first wave. Was mis-parked as no-surface; "
-            "operator located both 2026-08-02."),
         "source_name_candidates": ["London Police Service Board"],
         "source_id_env": "LPSB_SOURCE_ID",
         "listing_urls": ["https://londonpoliceserviceboard.com/"],
@@ -294,13 +284,19 @@ BOARDS = [
     {
         "name": "Ottawa Police Services Board",
         "enabled": False,
-        # eScribe adapter wired (2026-08-06); fleet_validate pending before
-        # enabling. Per-year meeting pages on pub-ottawa.escribemeetings.com
-        # carry FileStream.ashx document links — same html-mode shape as
-        # Hamilton/Kitchener/Oakville.
+        # fleet_validate 2026-08-07 (run 31186545711): 0 meetings on ALL tried
+        # paths (/?Year=2026, /MeetingsCalendarView.aspx?Year=2026, /?Year=2025,
+        # /). Same result as Niagara -- consistent with bucket C (JS-shell).
+        # The 2026-08-06 "FileStream.ashx doc links in html-mode" comment was
+        # wrong (browser-rendered, not raw HTML). Needs api-mode + CLEAN endpoint,
+        # pending the eScribe terms ruling. WordPress listing surface at
+        # ottawapoliceboard.ca is separate and could be a fallback.
         "parked_reason": (
-            "eScribe adapter wired 2026-08-06; fleet_validate result pending "
-            "before enable (pub-ottawa.escribemeetings.com)."),
+            "pub-ottawa.escribemeetings.com confirmed bucket C (JS-shell) by "
+            "fleet_validate 2026-08-07: 0 meetings on all URL paths including "
+            "root. Html-mode collection will not work. Needs api-mode + CLEAN "
+            "endpoint, pending eScribe terms ruling. Fallback: "
+            "ottawapoliceboard.ca/opsb-cspo/meetings.html (WordPress)."),
         "escribe_host": "pub-ottawa.escribemeetings.com",
         "source_name_candidates": ["Ottawa Police Services Board", "OPSB"],
         "source_id_env": "OPSB_SOURCE_ID",

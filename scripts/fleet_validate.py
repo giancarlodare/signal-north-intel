@@ -49,6 +49,15 @@ _session = requests.Session()
 _session.headers["User-Agent"] = UA
 
 
+# Alternate year-listing paths tried when the primary year_path returns 0.
+# Police-board eScribe tenants may use different URL conventions than councils.
+_ALT_PATHS = [
+    "/MeetingsCalendarView.aspx?Year=2026",
+    "/?Year=2025",
+    "/",
+]
+
+
 def validate(host: str, body: str, body_type: str, year_path: str) -> dict:
     t = ea.Tenant(host, body, body_type, mode="html", year_path=year_path)
     row = {"host": host, "meetings": 0, "docs_sample": 0, "parse": "?",
@@ -59,8 +68,27 @@ def validate(host: str, body: str, body_type: str, year_path: str) -> dict:
         meetings = ea.parse_meeting_links(r.text, r.url)
         row["meetings"] = len(meetings)
         if not meetings:
+            # Try alternate paths so we can diagnose the correct year_path
+            # for tenants where the default fails.
+            for alt in _ALT_PATHS:
+                time.sleep(DELAY)
+                try:
+                    alt_r = _session.get(f"https://{host}{alt}", timeout=TIMEOUT)
+                    alt_m = ea.parse_meeting_links(alt_r.text, alt_r.url)
+                    if alt_m:
+                        row["meetings"] = len(alt_m)
+                        row["parse"] = "flag"
+                        row["flag"] = (
+                            f"zero on '{year_path}'; "
+                            f"found {len(alt_m)} meetings at '{alt}' -- "
+                            f"set escribe_year_path to '{alt}' in config")
+                        return row
+                except Exception:  # noqa: BLE001
+                    pass
             row["parse"] = "flag"
-            row["flag"] = "zero meetings parsed (shape change or empty year)"
+            row["flag"] = (
+                f"zero meetings on '{year_path}' and all alt paths "
+                f"({', '.join(_ALT_PATHS)})")
             return row
         time.sleep(DELAY)
         mr = _session.get(meetings[0], timeout=TIMEOUT)
