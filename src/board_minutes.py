@@ -229,8 +229,10 @@ BOARDS = [
         "enabled": False,
         "parked_reason": (
             "hamiltonpsb.ca agendas-and-materials listing is JS-rendered "
-            "(Umbraco); zero server-side documents. Revive via the banked "
-            "render-capable collection evaluation (Wave 2-later)."),
+            "(Umbraco); zero server-side documents (park-with-verdict "
+            "2026-08-08, operator confirmed). Proxy coverage: "
+            "hamilton.bidsandtenders.ca. Revive 2026-08-11 to 2026-08-13 "
+            "once the render-capable adapter is built."),
         "source_name_candidates": ["Hamilton Police Service Board"],
         "source_id_env": "HPSB_SOURCE_ID",
         "listing_urls": ["https://www.hamiltonpsb.ca/meetings/agendas-and-materials/"],
@@ -240,15 +242,18 @@ BOARDS = [
         "enabled": False,
         # fleet_validate 2026-08-07 (run 31186545711): 0 meetings on ALL tried
         # paths (/?Year=2026, /MeetingsCalendarView.aspx?Year=2026, /?Year=2025,
-        # /). Consistent with bucket C (JS-shell): MEETING_RE finds nothing in
-        # the initial HTML. The 2026-08-06 "html-mode: 4 doc links" comment was
-        # wrong (browser-rendered view, not raw HTML). Needs api-mode with a
-        # CLEAN eScribe endpoint, pending the eScribe terms ruling.
+        # /). Confirmed bucket C (JS-shell). Api-mode endpoint path assessed
+        # 2026-08-08: shell_api_discovery.py finds the endpoint via ASP.NET
+        # handler literals in JS bundles (.aspx/.ashx/.svc) -- undocumented
+        # internal application endpoint. Parked per 2026-08-08 operator ruling
+        # (same boundary condition as FUS login).
         "parked_reason": (
             "pub-niagarapolice.escribemeetings.com confirmed bucket C (JS-shell) "
-            "by fleet_validate 2026-08-07: 0 meetings on all URL paths including "
-            "root. Html-mode collection will not work. Needs api-mode + CLEAN "
-            "endpoint, pending eScribe terms ruling."),
+            "2026-08-07; eScribe api-mode endpoint parked 2026-08-08: "
+            "shell_api_discovery.py found endpoint via ASP.NET handler literals "
+            "in JS bundles -- undocumented internal application endpoint, meets "
+            "the flag-as-boundary-case condition set 2026-08-02. No proxy source "
+            "established for Niagara PSB minutes."),
         "escribe_host": "pub-niagarapolice.escribemeetings.com",
         "source_name_candidates": ["Niagara Regional Police Service Board"],
         "source_id_env": "NRPSB_SOURCE_ID",
@@ -276,7 +281,10 @@ BOARDS = [
         "parked_reason": (
             "windsorpolice.ca/about/wps-board carries zero document links; "
             "minutes presumably with the city clerk (citywindsor.ca) but not "
-            "publisher-linked from the board page. Provenance not established."),
+            "publisher-linked from the board page. Provenance not established "
+            "(park-with-verdict 2026-08-08, operator confirmed). "
+            "Human-research-only. Proxy coverage: Windsor open-data feed and "
+            "MERX-Ottawa cover Windsor procurement context."),
         "source_name_candidates": ["Windsor Police Service Board"],
         "source_id_env": "WPSB_SOURCE_ID",
         "listing_urls": ["https://www.windsorpolice.ca/about/wps-board"],
@@ -284,20 +292,21 @@ BOARDS = [
     {
         "name": "Ottawa Police Services Board",
         "enabled": False,
-        # fleet_validate 2026-08-07 (run 31186545711): 0 meetings on ALL tried
-        # paths (/?Year=2026, /MeetingsCalendarView.aspx?Year=2026, /?Year=2025,
-        # /). Same result as Niagara -- consistent with bucket C (JS-shell).
-        # The 2026-08-06 "FileStream.ashx doc links in html-mode" comment was
-        # wrong (browser-rendered, not raw HTML). Needs api-mode + CLEAN endpoint,
-        # pending the eScribe terms ruling. WordPress listing surface at
-        # ottawapoliceboard.ca is separate and could be a fallback.
+        # pub-ottawa.escribemeetings.com confirmed bucket C (JS-shell) by
+        # fleet_validate 2026-08-07. eScribe api-mode endpoint assessed
+        # 2026-08-08: undocumented internal application endpoint (same
+        # boundary condition as Niagara). Both eScribe paths parked.
+        # WordPress listing at ottawapoliceboard.ca/opsb-cspo/meetings.html
+        # probed from CI 2026-08-08 (probe-ottawapsb.yml). Unpark pending
+        # probe result and operator approval.
         "parked_reason": (
-            "pub-ottawa.escribemeetings.com confirmed bucket C (JS-shell) by "
-            "fleet_validate 2026-08-07: 0 meetings on all URL paths including "
-            "root. Html-mode collection will not work. Needs api-mode + CLEAN "
-            "endpoint, pending eScribe terms ruling. Fallback: "
-            "ottawapoliceboard.ca/opsb-cspo/meetings.html (WordPress)."),
-        "escribe_host": "pub-ottawa.escribemeetings.com",
+            "pub-ottawa.escribemeetings.com eScribe path parked 2026-08-08: "
+            "bucket C (JS-shell) confirmed 2026-08-07, api-mode endpoint "
+            "assessed as undocumented internal application endpoint -- meets "
+            "the flag-as-boundary-case condition set 2026-08-02. WordPress "
+            "surface (ottawapoliceboard.ca/opsb-cspo/meetings.html) probed "
+            "from CI 2026-08-08 (probe-ottawapsb.yml); unpark pending probe "
+            "result and operator approval."),
         "source_name_candidates": ["Ottawa Police Services Board", "OPSB"],
         "source_id_env": "OPSB_SOURCE_ID",
         "listing_urls": ["https://www.ottawapoliceboard.ca/opsb-cspo/meetings.html"],

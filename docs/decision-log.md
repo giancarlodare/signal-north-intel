@@ -14,6 +14,37 @@ at the bottom; a decision about how bugs get fixed belongs up here.
 
 ---
 
+## 2026-08-08 — Ottawa PSB WordPress probe dispatched from CI; four boards carry park-with-verdict
+
+**Ottawa PSB eScribe API path parked.** `pub-ottawa.escribemeetings.com`
+confirmed bucket C (JS-shell) 2026-08-07. `shell_api_discovery.py` assessed the
+api-mode endpoint 2026-08-08: ASP.NET handler literals found via JS bundle
+scraping -- undocumented internal application endpoint, no published spec. Meets
+the flag-as-boundary-case condition set 2026-08-02 (same class as the FUS login
+boundary). eScribe path parked.
+
+**Ottawa PSB WordPress probe dispatched from CI (operator, 2026-08-08).**
+`ottawapoliceboard.ca/opsb-cspo/meetings.html` is the clean alternative. Probe
+dispatched via `probe-ottawapsb.yml`. `board_minutes.py` Ottawa entry updated:
+`escribe_host` removed (eScribe path parked), listing URL retained at WordPress
+URL. Unpark pending probe result and operator approval.
+
+**Niagara PSB eScribe API path parked (operator, 2026-08-08).** Same assessment
+as Ottawa: undocumented internal application endpoint found by `shell_api_discovery.py`.
+No proxy source established for Niagara PSB minutes.
+
+**Hamilton HPSB park-with-verdict confirmed (operator, 2026-08-08).** JS-rendered
+Umbraco listing, zero server-side documents. Proxy coverage: `hamilton.bidsandtenders.ca`.
+Revive 2026-08-11 to 2026-08-13 once the render-capable adapter is built.
+
+**Windsor PSB park-with-verdict confirmed (operator, 2026-08-08).** No
+publisher-linked document provenance from `windsorpolice.ca/about/wps-board`.
+Human-research-only. Proxy coverage: Windsor open-data feed and MERX-Ottawa.
+
+All four verdicts written to `board_minutes.py` `parked_reason` fields.
+
+---
+
 ## 2026-08-07 — London LPSB listing URL corrected; PR #184 merged
 
 **Operator confirmed** the correct listing URL is `londonpoliceserviceboard.com/board-meetings/`
