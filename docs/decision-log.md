@@ -14,6 +14,43 @@ at the bottom; a decision about how bugs get fixed belongs up here.
 
 ---
 
+## 2026-08-08 — Saturation batch 2 approved; Ottawa PSB revive aligned with Hamilton
+
+**Saturation batch 2 APPROVED (operator, 2026-08-08).** ~7,440 held tier-2 buyer
+docs (City of Hamilton, City of Brampton, City of Kitchener, City of Vaughan, Halton
+Region) released from the `--exclude-buyers` exclusion. Projected cost ~$166 at the
+envelope's measured rate ($0.02227/doc); envelope has $545.13 remaining of $600
+declared. Guard stays binding per-run (1,000-doc cap). First run dispatched
+2026-08-08. `extract-backfill.yml` updated: exclusion removed from unscoped drain,
+comment updated with approval.
+
+**Ottawa PSB revive aligned (operator, 2026-08-08).** Park-with-verdict confirmed:
+WordPress surface is eScribe navigation only (27 candidates, all `Meeting.aspx`),
+no direct PDFs. Revive window Aug 11-13, same wave as Hamilton HPSB. Same render
+adapter handles both. `board_minutes.py` parked_reason updated.
+
+---
+
+## 2026-08-08 — Ottawa PSB WordPress probe result: navigation-only, eScribe paths only
+
+**Probe result (probe-ottawapsb.yml, run 31259539329).** robots.txt: 404 =>
+allow-all (RFC 9309). Page: HTTP 200, 47,340 chars, 98 hrefs, 62 same-host links.
+Document candidates: **27** -- but every single one links to
+`pub-ottawa.escribemeetings.com/Meeting.aspx?Id=...&Agenda=Agenda`. Zero direct
+PDFs. Zero same-host document links.
+
+**Verdict.** The WordPress listing at `ottawapoliceboard.ca/opsb-cspo/meetings.html`
+is a navigation layer that routes to eScribe for all meeting materials. There is no
+independent PDF harvest path on the WordPress surface. Collecting Ottawa PSB minutes
+requires fetching and rendering the eScribe `Meeting.aspx` pages -- i.e., the
+render-capable adapter is the prerequisite, not an alternative. Ottawa PSB remains
+parked; revive path is the render adapter build (currently scheduled Aug 1-8 for
+eScribe boards).
+
+`board_minutes.py` parked_reason updated with probe result.
+
+---
+
 ## 2026-08-08 — Ottawa PSB WordPress probe dispatched from CI; four boards carry park-with-verdict
 
 **Ottawa PSB eScribe API path parked.** `pub-ottawa.escribemeetings.com`

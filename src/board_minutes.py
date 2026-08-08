@@ -296,17 +296,22 @@ BOARDS = [
         # fleet_validate 2026-08-07. eScribe api-mode endpoint assessed
         # 2026-08-08: undocumented internal application endpoint (same
         # boundary condition as Niagara). Both eScribe paths parked.
-        # WordPress listing at ottawapoliceboard.ca/opsb-cspo/meetings.html
-        # probed from CI 2026-08-08 (probe-ottawapsb.yml). Unpark pending
-        # probe result and operator approval.
+        # WordPress probe result 2026-08-08 (probe-ottawapsb.yml run
+        # 31259539329): 27 document candidates, all link to
+        # pub-ottawa.escribemeetings.com/Meeting.aspx -- eScribe JS-shell.
+        # WordPress is navigation-only; no direct PDFs. Render adapter
+        # required to collect Ottawa PSB minutes.
         "parked_reason": (
             "pub-ottawa.escribemeetings.com eScribe path parked 2026-08-08: "
             "bucket C (JS-shell) confirmed 2026-08-07, api-mode endpoint "
             "assessed as undocumented internal application endpoint -- meets "
             "the flag-as-boundary-case condition set 2026-08-02. WordPress "
-            "surface (ottawapoliceboard.ca/opsb-cspo/meetings.html) probed "
-            "from CI 2026-08-08 (probe-ottawapsb.yml); unpark pending probe "
-            "result and operator approval."),
+            "probe 2026-08-08 (probe-ottawapsb.yml): all 27 document "
+            "candidates link to pub-ottawa.escribemeetings.com/Meeting.aspx "
+            "(eScribe JS-shell); no direct PDFs. Render adapter is the "
+            "prerequisite. Park-with-verdict 2026-08-08 (operator confirmed): "
+            "revive Aug 11-13 with Hamilton HPSB in the eScribe render adapter "
+            "wave. Same adapter handles both."),
         "source_name_candidates": ["Ottawa Police Services Board", "OPSB"],
         "source_id_env": "OPSB_SOURCE_ID",
         "listing_urls": ["https://www.ottawapoliceboard.ca/opsb-cspo/meetings.html"],
