@@ -1,8 +1,10 @@
-name: Probe Hamilton PSB (search submission)
+name: Probe Hamilton PSB (agendas-and-minutes)
 
-# Expands the Hamilton HPSB search panel, submits the form, captures the
-# resulting XHR + DOM changes to identify the meeting-data endpoint and
-# confirm whether document links are visible in the rendered result.
+# Probes hamiltonpsb.ca/meetings/agendas-and-minutes/ to determine whether
+# agendas and minutes are hosted as direct PDFs (London pattern, no render
+# adapter needed) or link out to the eScribe JS-shell.
+# Reports: robots status, PDF link count, eScribe link count, HEAD check
+# results on up to 5 PDFs, and a plain-English verdict.
 # Never writes to the database.
 
 on:
@@ -15,7 +17,7 @@ concurrency:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -31,17 +33,15 @@ jobs:
           pip install playwright
           python -m playwright install --with-deps chromium
 
-      - name: Probe Hamilton PSB search
-        run: python scripts/probe_hamilton_search.py
+      - name: Probe Hamilton PSB agendas-and-minutes
+        run: python scripts/probe_hamilton_agendas_minutes.py
 
       - name: Upload findings
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: hamilton-search-findings
+          name: hamilton-agendas-minutes-findings
           path: |
-            hamilton_search_findings.json
-            hamilton_after_expand.png
-            hamilton_after_search.png
-            hamilton_meeting_detail.png
+            hamilton_agendas_minutes_findings.json
+            hamilton_agendas_minutes.png
           if-no-files-found: warn
