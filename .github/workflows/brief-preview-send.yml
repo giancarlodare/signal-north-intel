@@ -1,0 +1,60 @@
+name: Send Brief Preview
+
+# Zero-DB-write shadow brief send (operator 2026-08-08).
+# Step 1: run brief_generator.py --preview-json to produce brief_preview.json
+#         from the live corpus -- no database writes.
+# Step 2: run send-brief-preview.mjs to render and send the brief via Resend
+#         to the operator address only.
+#
+# The operator reviews it in a real email client before approving the
+# DB-write run (regenerate-brief.yml with dry_run=false).
+
+on:
+  workflow_dispatch:
+    inputs:
+      to:
+        description: "Recipient address"
+        required: false
+        default: "giancarlodare@gmail.com"
+
+concurrency:
+  group: brief-preview-send
+  cancel-in-progress: false
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate brief preview JSON (no DB writes)
+        env:
+          SUPABASE_URL:              ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python -m src.brief_generator --preview-json brief_preview.json
+
+      - name: Send shadow brief via Resend
+        env:
+          RESEND_API_KEY:    ${{ secrets.RESEND_API_KEY }}
+          BRIEF_PREVIEW_TO:  ${{ inputs.to }}
+        run: node web/scripts/send-brief-preview.mjs brief_preview.json
+
+      - name: Upload preview JSON artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: brief-preview-json
+          path: brief_preview.json
+          if-no-files-found: warn
