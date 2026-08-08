@@ -1,0 +1,62 @@
+name: Probe eScribe Render (Hamilton + Ottawa)
+
+# Read-only render probe answering three questions before the Aug 11-13 adapter
+# build window:
+#   Q1. After clicking into a meeting, are document links visible in the rendered
+#       DOM, or are docs behind a further navigation layer?
+#   Q2. Is there auth, CAPTCHA, or unusual click patterns blocking access?
+#   Q3. Are Hamilton and Ottawa the same shell shape, or do they differ in ways
+#       requiring different adapter logic?
+#
+# Ottawa PSB: robots.txt on pub-ottawa.escribemeetings.com disallows crawling
+# (confirmed 2026-08-08 ruling). The probe records that boundary and stops.
+# The Ottawa section probes the Meeting.aspx URL obtained from the static WP
+# listing; the robots check runs first and will BLOCKED the Ottawa section.
+#
+# Hamilton: hamiltonpsb.ca is robots-allowed. Playwright renders the Umbraco
+# JS-shell, navigates to a meeting detail page, and records DOM structure,
+# doc link count, API calls, auth signals, and screenshots.
+#
+# No DB access. No writes. Dispatch-only.
+
+on:
+  workflow_dispatch: {}
+
+concurrency:
+  group: probe-escribe-render
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install Playwright + Chromium
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Run eScribe render probe
+        run: python scripts/probe_escribe_render.py
+
+      - name: Upload findings + screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: escribe-render-probe-findings
+          path: |
+            escribe_probe_findings.json
+            hamilton_listing.png
+            hamilton_meeting.png
+            ottawa_meeting_aspx.png
+            ottawa_meeting_aspx_full.png
+          if-no-files-found: warn
