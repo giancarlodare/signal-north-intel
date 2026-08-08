@@ -1,10 +1,10 @@
-name: Probe Hamilton PSB (media URL pattern)
+name: Probe Hamilton PSB (agendas-and-minutes)
 
-# Fetches the publicly-accessible policies page to extract /media/... URL
-# structure, HEADs a sample to confirm public access, checks sitemap.xml for
-# agenda/minutes entries, and scans the meetings page source for embedded media
-# references. Determines whether meeting agenda PDFs are directly reachable
-# without navigating the auth-gated listing page.
+# Probes hamiltonpsb.ca/meetings/agendas-and-minutes/ to determine whether
+# agendas and minutes are hosted as direct PDFs (London pattern, no render
+# adapter needed) or link out to the eScribe JS-shell.
+# Reports: robots status, PDF link count, eScribe link count, HEAD check
+# results on up to 5 PDFs, and a plain-English verdict.
 # Never writes to the database.
 
 on:
@@ -17,7 +17,7 @@ concurrency:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
@@ -28,13 +28,20 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Probe Hamilton PSB media URLs
-        run: python scripts/probe_hamilton_media.py
+      - name: Install Playwright + Chromium
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Probe Hamilton PSB agendas-and-minutes
+        run: python scripts/probe_hamilton_agendas_minutes.py
 
       - name: Upload findings
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: hamilton-media-findings
-          path: hamilton_media_findings.json
+          name: hamilton-agendas-minutes-findings
+          path: |
+            hamilton_agendas_minutes_findings.json
+            hamilton_agendas_minutes.png
           if-no-files-found: warn
