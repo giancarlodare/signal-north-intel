@@ -1,0 +1,45 @@
+name: eScribe render probe
+
+# Read-only Playwright probe: Hamilton HPSB (Umbraco) + Ottawa PSB (eScribe).
+# Answers three pre-build questions for the Aug 11-13 adapter window:
+#   1. Document links visible in rendered DOM after clicking into a meeting?
+#   2. Auth, CAPTCHA, or unusual click patterns?
+#   3. Same shell shape (one adapter) or different (two adapters)?
+#
+# Manual dispatch only. No secrets needed. No DB writes.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install playwright requests
+          playwright install chromium
+
+      - name: Run render probe
+        run: python scripts/probe_escribe_render.py
+
+      - name: Upload findings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: escribe-probe-findings
+          path: |
+            escribe_probe_findings.json
+            hamilton_meeting.png
+            hamilton_listing.png
+            ottawa_escribe_listing.png
+            ottawa_meeting_detail.png
+          if-no-files-found: warn
