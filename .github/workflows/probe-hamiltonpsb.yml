@@ -1,10 +1,9 @@
-name: Probe Hamilton PSB (agendas-and-minutes)
+name: Probe Hamilton PSB (media-url-pattern)
 
-# Probes hamiltonpsb.ca/meetings/agendas-and-minutes/ to determine whether
-# agendas and minutes are hosted as direct PDFs (London pattern, no render
-# adapter needed) or link out to the eScribe JS-shell.
-# Reports: robots status, PDF link count, eScribe link count, HEAD check
-# results on up to 5 PDFs, and a plain-English verdict.
+# Probes hamiltonpsb.ca /media/... URL pattern to determine whether
+# agenda/minutes documents are publicly accessible without auth.
+# Reports: media URL pattern (ID type + range), HEAD results on sample URLs,
+# sitemap entries, meetings-page media refs, Umbraco API endpoints, verdict.
 # Never writes to the database.
 
 on:
@@ -28,20 +27,13 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Install Playwright + Chromium
-        run: |
-          pip install playwright
-          python -m playwright install --with-deps chromium
-
-      - name: Probe Hamilton PSB agendas-and-minutes
-        run: python scripts/probe_hamilton_agendas_minutes.py
+      - name: Probe Hamilton PSB media URL pattern
+        run: python scripts/probe_hamilton_media.py
 
       - name: Upload findings
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: hamilton-agendas-minutes-findings
-          path: |
-            hamilton_agendas_minutes_findings.json
-            hamilton_agendas_minutes.png
+          name: hamilton-media-findings
+          path: hamilton_media_findings.json
           if-no-files-found: warn
