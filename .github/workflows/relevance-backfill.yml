@@ -4,7 +4,8 @@ name: Relevance backfill
 # calibration batch and rules the floor. Writes relevance to the signals table.
 #
 # Dispatch: manual only (operator-approved spend per CLAUDE.md cost gate).
-# Typical runtime: ~15-25 min for ~12,000 signals at Haiku-class pricing.
+# Typical runtime: ~20 min for ~12,000 signals at 20 workers (Haiku-class).
+# Sequential (workers=1) is ~6.5 hours; always use workers >= 20 for backfill.
 
 on:
   workflow_dispatch:
@@ -13,6 +14,10 @@ on:
         description: "Override model (leave blank for default Haiku)"
         required: false
         default: ""
+      workers:
+        description: "Concurrent scoring threads (default 20 for backfill; 1 for calibration)"
+        required: false
+        default: "20"
 
 concurrency:
   group: relevance-backfill
@@ -41,7 +46,8 @@ jobs:
       - name: Run relevance backfill (all unscored signals)
         run: |
           MODEL="${{ github.event.inputs.model }}"
-          ARGS="--run"
+          WORKERS="${{ github.event.inputs.workers || '20' }}"
+          ARGS="--run --workers ${WORKERS}"
           if [ -n "${MODEL}" ]; then
             ARGS="${ARGS} --model ${MODEL}"
           fi

@@ -9,6 +9,21 @@ compressed to what a future reader needs in order to not re-litigate it.
 Entries are appended, never rewritten; a reversal is a new entry that names
 the one it supersedes.
 
+## 2026-08-08 — Relevance scorer parallelized (workers=20 default for backfill)
+
+The sequential scorer ran at ~1.9s/signal (network + Haiku inference); clearing
+~12,400 unscored signals sequentially requires 6.5 hours, exceeding the GitHub
+Actions 6-hour hard limit even at timeout-minutes: 360. Increasing the timeout
+alone cannot solve this.
+
+The fix: `--workers N` added to `relevance_scorer.py`. When workers > 1,
+`ThreadPoolExecutor` is used; both `anthropic.Anthropic()` (httpx) and
+`supabase_client` (stateless REST) are thread-safe. At 20 workers: ~10.5
+signals/sec throughput; 12,400 signals clears in ~20 minutes, well within the
+90-min timeout. `relevance-backfill.yml` updated with a `workers` input
+defaulting to 20; sequential path (workers=1) preserved for calibration batches.
+Safe-class: no schema change, no member-facing surface, 16 tests green.
+
 **Scope.** Decisions, not activity. A bug fix belongs in the safe-class log
 at the bottom; a decision about how bugs get fixed belongs up here.
 
