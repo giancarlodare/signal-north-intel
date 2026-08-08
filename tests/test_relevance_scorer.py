@@ -258,6 +258,59 @@ def test_run_respects_limit(monkeypatch):
 
 
 # ---------------------------------------------------------------------------
+# run(): workers > 1 produces same results as workers=1
+# ---------------------------------------------------------------------------
+
+def test_parallel_run_scores_all_signals(monkeypatch):
+    signals = [
+        {"id": f"sig-{i}", "title": f"Title {i}", "summary": f"Summary {i}"}
+        for i in range(10)
+    ]
+
+    import src.supabase_client as sc
+    monkeypatch.setattr(sc, "fetch_rows_where", lambda *a, **kw: signals[:])
+
+    writes = []
+    monkeypatch.setattr(sc, "update_row", lambda table, id_, payload: writes.append(id_))
+
+    class _Msg:
+        def create(self, **kw):
+            return types.SimpleNamespace(content=[types.SimpleNamespace(text='{"relevance": 4}')])
+
+    _patch_anthropic(monkeypatch, types.SimpleNamespace(messages=_Msg()))
+
+    stats = rs.run(dry_run=False, limit=10, model="test-model", workers=4)
+
+    assert stats["scored"] == 10
+    assert stats["errors"] == 0
+    assert sorted(writes) == sorted(f"sig-{i}" for i in range(10))
+
+
+def test_parallel_dry_run_does_not_write(monkeypatch):
+    signals = [
+        {"id": f"sig-{i}", "title": f"T{i}", "summary": f"S{i}"}
+        for i in range(5)
+    ]
+
+    import src.supabase_client as sc
+    monkeypatch.setattr(sc, "fetch_rows_where", lambda *a, **kw: signals[:])
+
+    writes = []
+    monkeypatch.setattr(sc, "update_row", lambda *a, **kw: writes.append(a))
+
+    class _Msg:
+        def create(self, **kw):
+            return types.SimpleNamespace(content=[types.SimpleNamespace(text='{"relevance": 2}')])
+
+    _patch_anthropic(monkeypatch, types.SimpleNamespace(messages=_Msg()))
+
+    stats = rs.run(dry_run=True, limit=5, model="test-model", workers=4)
+
+    assert writes == []
+    assert stats["scored"] == 5
+
+
+# ---------------------------------------------------------------------------
 # module integrity: no silent-write path exists
 # ---------------------------------------------------------------------------
 

@@ -120,13 +120,15 @@ def score_one(title: str, summary: str, model: str, client) -> int:
 
 
 def run(dry_run: bool = False, limit: Optional[int] = None,
-        model: str = DEFAULT_MODEL) -> dict:
+        model: str = DEFAULT_MODEL, workers: int = 1) -> dict:
     """Score unscored signals. Returns {scored, skipped_already_scored, errors}.
 
     dry_run=True fetches and calls the LLM but does NOT write to the DB,
     so you can check the distribution before committing the backfill.
     limit caps the number of signals processed (use 200 for the calibration
     batch; omit for the full backfill).
+    workers > 1 enables concurrent scoring via ThreadPoolExecutor; the
+    Anthropic client and supabase_client are both thread-safe.
     """
     import anthropic
     from . import supabase_client
@@ -134,7 +136,8 @@ def run(dry_run: bool = False, limit: Optional[int] = None,
     client = anthropic.Anthropic()
     stats = {"scored": 0, "skipped_already_scored": 0, "errors": 0, "model": model}
 
-    log.info("relevance_scorer: model=%s dry_run=%s limit=%s", model, dry_run, limit)
+    log.info("relevance_scorer: model=%s dry_run=%s limit=%s workers=%d",
+             model, dry_run, limit, workers)
 
     filters: dict = {"relevance": "is.null"}
     page_size = min(limit or 500, 500)
@@ -155,7 +158,7 @@ def run(dry_run: bool = False, limit: Optional[int] = None,
 
     log.info("relevance_scorer: fetched %d unscored signals", len(fetched))
 
-    for sig in fetched:
+    def _process_one(sig):
         sig_id = sig["id"]
         title = sig.get("title") or ""
         summary = sig.get("summary") or ""
@@ -165,13 +168,40 @@ def run(dry_run: bool = False, limit: Optional[int] = None,
                 log.info("[dry-run] %s -> relevance=%d | %.60s", sig_id, score, title)
             else:
                 supabase_client.update_row("signals", sig_id, {"relevance": score})
-            stats["scored"] += 1
+            return True
         except Exception as e:
             log.warning("relevance_scorer: error scoring %s: %s", sig_id, e)
+            return False
+
+    def _tally(ok: bool) -> None:
+        if ok:
+            stats["scored"] += 1
+        else:
             stats["errors"] += 1
-        # Polite rate-limit: Haiku has generous limits but a brief pause
-        # prevents burst spikes on large backfills.
-        time.sleep(0.05)
+
+    if workers > 1:
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        import threading
+        lock = threading.Lock()
+        done_count = 0
+        total = len(fetched)
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            futures = {executor.submit(_process_one, sig): sig["id"] for sig in fetched}
+            for future in as_completed(futures):
+                ok = future.result()
+                with lock:
+                    done_count += 1
+                    _tally(ok)
+                    if done_count % 500 == 0:
+                        log.info("relevance_scorer: progress %d/%d scored=%d errors=%d",
+                                 done_count, total, stats["scored"], stats["errors"])
+    else:
+        for sig in fetched:
+            ok = _process_one(sig)
+            _tally(ok)
+            # Polite rate-limit: Haiku has generous limits but a brief pause
+            # prevents burst spikes on large backfills.
+            time.sleep(0.05)
 
     log.info(
         "relevance_scorer: done — scored=%d errors=%d dry_run=%s",
@@ -195,8 +225,10 @@ def main(argv=None):
                    help="Cap signals processed (200 for calibration batch)")
     p.add_argument("--model", default=DEFAULT_MODEL,
                    help="Override model (default: %(default)s)")
+    p.add_argument("--workers", type=int, default=1,
+                   help="Concurrent scoring threads (default 1; use 20 for full backfill)")
     args = p.parse_args(argv)
-    stats = run(dry_run=args.dry_run, limit=args.limit, model=args.model)
+    stats = run(dry_run=args.dry_run, limit=args.limit, model=args.model, workers=args.workers)
     print(f"scored={stats['scored']} errors={stats['errors']} "
           f"model={stats['model']} dry_run={args.dry_run}")
 
