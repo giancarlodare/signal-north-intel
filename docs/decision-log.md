@@ -14,6 +14,49 @@ at the bottom; a decision about how bugs get fixed belongs up here.
 
 ---
 
+## 2026-08-08 — Ottawa PSB WordPress probe dispatched from CI; four boards carry park-with-verdict
+
+**Ottawa PSB eScribe API path parked.** `pub-ottawa.escribemeetings.com`
+confirmed bucket C (JS-shell) 2026-08-07. `shell_api_discovery.py` assessed the
+api-mode endpoint 2026-08-08: ASP.NET handler literals found via JS bundle
+scraping -- undocumented internal application endpoint, no published spec. Meets
+the flag-as-boundary-case condition set 2026-08-02 (same class as the FUS login
+boundary). eScribe path parked.
+
+**Ottawa PSB WordPress probe dispatched from CI (operator, 2026-08-08).**
+`ottawapoliceboard.ca/opsb-cspo/meetings.html` is the clean alternative. Probe
+dispatched via `probe-ottawapsb.yml`. `board_minutes.py` Ottawa entry updated:
+`escribe_host` removed (eScribe path parked), listing URL retained at WordPress
+URL. Unpark pending probe result and operator approval.
+
+**Niagara PSB eScribe API path parked (operator, 2026-08-08).** Same assessment
+as Ottawa: undocumented internal application endpoint found by `shell_api_discovery.py`.
+No proxy source established for Niagara PSB minutes.
+
+**Hamilton HPSB park-with-verdict confirmed (operator, 2026-08-08).** JS-rendered
+Umbraco listing, zero server-side documents. Proxy coverage: `hamilton.bidsandtenders.ca`.
+Revive 2026-08-11 to 2026-08-13 once the render-capable adapter is built.
+
+**Windsor PSB park-with-verdict confirmed (operator, 2026-08-08).** No
+publisher-linked document provenance from `windsorpolice.ca/about/wps-board`.
+Human-research-only. Proxy coverage: Windsor open-data feed and MERX-Ottawa.
+
+All four verdicts written to `board_minutes.py` `parked_reason` fields.
+
+---
+
+## 2026-08-07 — London LPSB listing URL corrected; PR #184 merged
+
+**Operator confirmed** the correct listing URL is `londonpoliceserviceboard.com/board-meetings/`
+(not the site root). PR #184 squash-merged to main (`d45941a`). Changes:
+- `board_minutes.py`: listing URL corrected to `/board-meetings/`
+- `tests/test_board_minutes.py`: London added to enabled board list, removed from parked set
+- `src/resolve_orgs.py`: LPSB entry added to ORG_SEED (required by `test_big12_enabled_boards_resolve_via_org_seed`)
+
+All CI green on `77295e0` before merge. London LPSB live collection now targets the correct URL.
+
+---
+
 ## 2026-08-07 — London Police Service Board enabled; PR #182 merged
 
 **board-minutes-dryrun run 31189133084 (10:44 AM EDT) passed clean.**
@@ -610,6 +653,40 @@ error wearing a green tick.
 | 2026-08-02 | ENVELOPE APPROVED: $600 standing for August, guard debits the total, surfaces to queue, unspent stays unspent. Window rulings: imminent +30 -> +35 (scorer peak alignment), grants +45 -> +90 (application-assembly horizon); recent window anchors to last published issue (floor 7 days, no cap, loud when stretched) so cadence slips never skip a day of record. Shell-endpoint work: terms/robots checked first, ambiguity reported not proceeded on; loud-failure shape guard built in from day one. Durham + Waterloo boards migrate to tenant path when adapter exists | operator approvals of record; brief_generator changes this PR, 474 tests green |
 | 2026-08-02 | Digest protocol effective now: two digests/day (shipped / decisions / blocked), DECISION vs FYI labelling, BLOCKING pulls forward, answer-from-the-repo-first. Standing $600 envelope pasted and verified by operator (three rows) | CLAUDE.md digest protocol section |
 | 2026-08-02 eve | Autonomous queue worked: eScribe/CivicWeb adapter (both shapes, api inert-by-default, loud-failure guard, 8 tests) + shell-endpoint probe (all 15 tenants AMBIGUOUS -> api path stopped pending eScribe terms ruling) + standing-programs census (120 programs, PSC-dominated) + roster ingest (dead-domain corrections found) + fleet-validation harness (Hamilton 10mtg/51doc, Kitchener, Oakville clean; 4/6). PRs #152 merged | evening digest of record |
+
+## 2026-08-08 — eScribe bucket C ruling extended; pre-build endpoint check required
+
+**Ruling (operator 2026-08-08):** The 2026-08-02 eScribe terms ruling extends to
+bucket C (JS-shell) tenants. Silence-is-not-prohibition logic applies; the statutory
+public record basis holds.
+
+**Pre-build condition (binding):** Before building the API-mode adapter, the endpoint
+must be classified:
+- If it is a documented public data API (e.g. a published JSON feed intended for
+  external consumption): proceed.
+- If it is an undocumented internal application endpoint (discovered by reverse-
+  engineering JS bundles, not designed for third-party access): flag as a boundary
+  case before proceeding -- same discipline as the FUS login boundary.
+
+**Ottawa WordPress fallback:** Probe `ottawapoliceboard.ca/opsb-cspo/meetings.html`
+in parallel. If server-rendered and clean, Ottawa can collect on the WordPress path
+without waiting for the eScribe API adapter.
+
+**Assessment (logged 2026-08-08):** The eScribe bucket C endpoint is an undocumented
+internal application endpoint. `shell_api_discovery.py` discovers it by scanning
+same-origin JS bundles for ASP.NET handler literals (`.aspx`, `.ashx`, `.svc`,
+`/api/`, `GetMeetings`, `FileStream`). There is no published eScribe API spec, no
+developer documentation, and no endpoint designed for external consumption. The ruling
+itself (below, 2026-08-02) characterizes the endpoint as "undocumented." This meets
+the operator's definition of a boundary case; flagged per the pre-build condition.
+Awaiting operator ruling on whether to proceed on this basis.
+
+**Ottawa WordPress note:** The 2026-07-20 timeboxed check found that
+`ottawapoliceboard.ca` per-year meeting pages link to `pub-ottawa.escribemeetings.com
+Meeting.aspx` rather than hosting documents directly. The WordPress path may yield
+only meeting listing links, not the document corpus. Probe from CI needed to confirm.
+
+---
 
 ## eScribe automated-access ruling (operator 2026-08-02)
 

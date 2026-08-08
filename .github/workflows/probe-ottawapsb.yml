@@ -1,0 +1,34 @@
+name: Probe Ottawa PSB WordPress surface
+
+# Read-only structure probe for the Ottawa Police Services Board WordPress
+# listing at ottawapoliceboard.ca/opsb-cspo/meetings.html.
+#
+# eScribe bucket C path for pub-ottawa.escribemeetings.com is parked per the
+# 2026-08-08 ruling (undocumented internal endpoint). This probe determines
+# whether the WordPress surface is a viable collection alternative:
+# robots posture, page reachability, and document link structure.
+#
+# No database access. No writes. Dispatch-only.
+
+on:
+  workflow_dispatch: {}
+
+concurrency:
+  group: probe-ottawapsb
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Probe Ottawa PSB WordPress listing
+        run: python scripts/probe_ottawapsb.py
