@@ -9,6 +9,44 @@ compressed to what a future reader needs in order to not re-litigate it.
 Entries are appended, never rewritten; a reversal is a new entry that names
 the one it supersedes.
 
+## 2026-08-08 — Render probe: Hamilton listing DOM empty; Ottawa eScribe robots-blocked
+
+**GHA run 31265522067, completed 15:53 UTC (11:53 EST).**
+
+**Hamilton HPSB (Umbraco).**
+robots.txt: allowed. Single XHR captured on load:
+`GET /umbraco/surface/GOVMemberSurface/GetMemberValue` -- a member authentication
+check, not a meeting-data fetch. After networkidle + 5s wait, `<main>` is 1,893
+chars (banner + heading only); zero meeting entries rendered. None of 13 content
+selectors (article, table, .meeting-list, .accordion, etc.) appeared. 45 total
+links, all nav. The 15 "meeting link candidates" were false positives (nav links
+matching the keyword filter). The Umbraco meeting list does not render passively;
+it requires an explicit user interaction (scroll trigger, year-tab click, or
+similar) to load. The `GetMemberValue` call resolves, but nothing downstream fires
+within the probe window.
+
+**Next step (safe class, before Aug 11):** Second probe simulating scroll and
+common interaction triggers to identify the load mechanism. Hamilton adapter is
+blocked on this finding until the trigger is understood.
+
+**Ottawa PSB (eScribe Meeting.aspx).**
+`pub-ottawa.escribemeetings.com/robots.txt -> can_fetch=False`.
+Probe halted per standing robots discipline. Ottawa eScribe document layer
+is NOT probed; document link structure is unknown.
+
+**Boundary triggered.** Per the 2026-08-02 eScribe ruling: "If a tenant's
+robots.txt changes, we STOP and report it as a boundary." This is that case.
+`pub-ottawa.escribemeetings.com` disallows crawlers; the Meeting.aspx adapter
+cannot proceed on this host under the current standing rules without an explicit
+operator ruling overriding the boundary.
+
+**Note.** The Ottawa listing layer (27 static Meeting.aspx URLs from the
+WordPress page) was collected without eScribe rendering and does not require
+`pub-ottawa.escribemeetings.com` to be crawlable. The open question is the
+document layer -- PDFs linked from those Meeting.aspx pages.
+
+---
+
 ## 2026-08-08 — Relevance scorer parallelized (workers=20 default for backfill)
 
 The sequential scorer ran at ~1.9s/signal (network + Haiku inference); clearing
@@ -207,7 +245,7 @@ not worth further attention.
 
 5. `calibration_audit.py` BOUNDARIES updated: the lens no longer uses materiality, so the only materiality decision boundary is the Path A bar (RECENT_MIN_MATERIALITY=3).
 
-**Reasoning.** The calibration batch measured a bimodal distribution and the scorer is doing real work. Both floors are additive — nothing currently passing drops. The actionable_window curve fixes the fundamental problem: soonest-first was actively wrong for subscribers who need time to respond.
+**Reasoning.** The calibration batch measured a bimodal distribution and the scorer is doing real work. Both floors are additive -- nothing currently passing drops. The actionable_window curve fixes the fundamental problem: soonest-first was actively wrong for subscribers who need time to respond.
 
 **Next.** Dispatch the backfill workflow (approved spend, ~12,000 signals at Haiku-class pricing). Shadow brief cycle follows.
 
@@ -293,8 +331,8 @@ text; the 'irrelevant' quarantine precedent). Storage delta immaterial on the
 forward pass; awarded-history drains would be the material case and remain
 envelope-gated.
 
-**Also binding.** (a) The design-award → construction-tender chain per buyer
-and asset class stays queryable — the design-side terms are in the pack so
+**Also binding.** (a) The design-award -> construction-tender chain per buyer
+and asset class stays queryable -- the design-side terms are in the pack so
 both ends are captured; unit-price extraction is later and envelope-gated.
 (b) Construction is the fourth domain DIMENSION (police/fire/EMS/defence/
 construction), never a fork. Full scope: docs/corridor-collection.md.
@@ -304,7 +342,7 @@ construction), never a fork. Full scope: docs/corridor-collection.md.
 ## 2026-08-05 — Contract chains stay queryable as chains (capital-reader option)
 
 **Decided (operator addendum, NATO 2026 Summit outputs).** Where a defence
-contract's full history is held (award → options exercised → extensions →
+contract's full history is held (award -> options exercised -> extensions ->
 value changes), the linkage is preserved as a first-class chain. The current
 federal ingest already satisfies this, and the behavior is now BINDING:
 `contracts_federal.py` keys re-disclosures on reference + value, so an
@@ -316,10 +354,10 @@ never collapsed into updates; reference_number remains the chain key.
 **Why.** The trajectory is the credit signal a future capital-markets reader
 would pay for, and it is derivable from what we already collect ONLY if the
 linkage survives. Costs nothing today; losing it silently would cost the
-option. The full addendum — three NATO/BDC candidate sources (Aggregated
+option. The full addendum -- three NATO/BDC candidate sources (Aggregated
 Demand Signal as a revision-tracked document class, Innovation Scale-Up
 Package, BDC investment announcements) and the two-reader lens on
-ITB/DIP/Estimates/ACAN — is docs/adjacent-collection-design.md §8.
+ITB/DIP/Estimates/ACAN -- is docs/adjacent-collection-design.md §8.
 Collect-only, fortnight queue, nothing jumps.
 
 ---
@@ -327,18 +365,18 @@ Collect-only, fortnight queue, nothing jumps.
 ## 2026-08-04 — SHIP-GATE: tier gating on portal surfaces before launch
 
 **Built same day (operator go).** `lib/billing/tier-surfaces.ts` is the one
-pure surface→tier matrix (closing-soon, watching = Pro+; brief, saved =
-Weekly+; founding ≥ pro), read by BOTH the server-side `RequireTier` guard on
+pure surface->tier matrix (closing-soon, watching = Pro+; brief, saved =
+Weekly+; founding >= pro), read by BOTH the server-side `RequireTier` guard on
 the two Pro pages and the tier-filtered member nav, so they cannot disagree.
 A Weekly member reaching a Pro surface lands on `/portal/account?access=tier`,
 which renders the Pro early-access CAPTURE prefilled with their verified
-address — the operator's ruling: that member is the strongest upgrade signal
+address -- the operator's ruling: that member is the strongest upgrade signal
 we have, so it is treated as one, never shown a bare refusal.
 
 
 **Finding (operator, from the production dark-run).** The portal gates
 paid-vs-unpaid only. `grantsPortal()` treats every active tier
-(weekly/pro/founding) identically, and the member nav is static — so a Weekly
+(weekly/pro/founding) identically, and the member nav is static -- so a Weekly
 member reaches Closing-soon and Watching, which the pricing table sells as Pro.
 Nothing anywhere enforces tier.
 
@@ -346,7 +384,7 @@ Nothing anywhere enforces tier.
 does not enforce. Before launch, Pro-tier surfaces (closing-soon board,
 watchlists/alerts) are gated by tier, with the Weekly member redirected to an
 honest upgrade state, and the nav filtered to what the tier can reach. Build is
-gated class (member-facing): a small pure surface→tier matrix + per-page guard +
+gated class (member-facing): a small pure surface->tier matrix + per-page guard +
 nav filter, proposed and approved before it lands.
 
 ---
@@ -356,7 +394,7 @@ nav filter, proposed and approved before it lands.
 **Rule.** A branch whose work is finished and green does not wait for a human.
 Main moves several merges a day, and every day a branch waits makes the eventual
 merge worse. If a change is safe class (per the 2026-08-01 autonomy grant) and
-CI is green, merge it — resolve mechanical conflicts by rebasing on current
+CI is green, merge it -- resolve mechanical conflicts by rebasing on current
 main; only a substantive conflict (a real disagreement about behaviour, not a
 combined option list) goes to the operator.
 
@@ -403,8 +441,8 @@ verification that catches it is reading the source sentence, not the summary.
 /portal is NOT deleted and was not superseded by change A. It is a MONITORING
 surface, and monitoring is Pro. It is logged here as Pro material alongside the
 closing-soon board, watchlists and alerts. Weekly members land on the brief,
-because the brief is what they bought, so /portal stays a pure redirect (paid →
-/portal/brief, unpaid → /portal/account).
+because the brief is what they bought, so /portal stays a pure redirect (paid ->
+/portal/brief, unpaid -> /portal/account).
 
 **Why.** Change A's redirect made the dashboard look discarded; the operator's
 correction is that it was misplaced, not obsolete. Putting a monitoring view in
@@ -444,7 +482,7 @@ verified before checkout.
 
 **How identity resolves now.** The webhook was "matching NEVER uses email"
 (2026-08-01). It is now stamp-first, then email. (1) An `sn_member_id` stamp on
-the subscription/session/customer still wins — that is the signed-in path (a
+the subscription/session/customer still wins -- that is the signed-in path (a
 member subscribing from /portal/account) and dashboard actions, unchanged. (2)
 On `checkout.session.completed` only, with no stamp, the Stripe-verified email
 is the anchor: `admin.generateLink(magiclink)` finds the account or creates one,
@@ -459,7 +497,7 @@ the anchor email, so a Free upgrader is on the paid list only, never both.
 **Reconciliation alarm (the one out-of-window interrupt).** A PAID checkout that
 cannot be provisioned (no email, unmapped price, failed admin call) is recorded
 in the new `provisioning_failures` table and the operator is emailed directly
-with an unmistakable subject (`[SIGNAL NORTH — ACTION] Paid, not provisioned:
+with an unmistakable subject (`[SIGNAL NORTH -- ACTION] Paid, not provisioned:
 <email>`). The table makes the alarm fire ONCE per stranded subscription, not
 once per Stripe retry, and is the operator's open worklist. Manual fix:
 `node web/scripts/provision-member.mjs <sub_id|email>` (idempotent). The alarm
@@ -474,8 +512,8 @@ are approved, before the first live sale. The welcome (template 03) is embedded
 byte-identical to `web/emails/03-member-welcome.{html,txt}`, guarded by a test,
 so the thing sent is the thing approved.
 
-**/portal is now a redirect, regardless of PORTAL_ENABLED.** It sends paid →
-/portal/brief, unpaid → /portal/account, and never 404s (fixing the magic-link
+**/portal is now a redirect, regardless of PORTAL_ENABLED.** It sends paid ->
+/portal/brief, unpaid -> /portal/account, and never 404s (fixing the magic-link
 landing bug). The gate also changed: a SIGNED-IN member reaches the member
 surface regardless of the flag, so a purchase works before the marketing-site
 flip. The public is still bounced to /login while dark; the paywall still
@@ -524,7 +562,7 @@ as applied to the safe class. It still governs the gated class entirely.
 
 ## 2026-08-01 — Ceremony matches blast radius
 
-**Decided.** Probe → design doc → approval → build remains mandatory for the
+**Decided.** Probe -> design doc -> approval -> build remains mandatory for the
 gated class and is not required for safe-class work. Default to the heavier
 process when blast radius is unclear.
 
@@ -670,7 +708,7 @@ rather than `"./thing.ts"`. Under Node's ESM loader an extensionless relative
 specifier does not resolve, so those files failed to LOAD and reported zero
 failures. Silent. The four were `portal-routes.test.ts`,
 `subscription-state.test.ts`, `inquiry.test.ts` and the new
-`signup.test.ts` — that is, the paywall's own tests and the pricing page's
+`signup.test.ts` -- that is, the paywall's own tests and the pricing page's
 capture rules had never executed once. Local count went from 63 passing to 99
 on fixing the imports; 34 tests had been invisible.
 
@@ -815,7 +853,7 @@ defects fixed in `app/(site)/site.css`, all scoped under `.sn-site`:
    note) intact.
 
 Checked and found ALREADY CORRECT (no change): About section-head motif,
-section-04 (no label), FAQ heading/layout, mission two-column — all match the
+section-04 (no label), FAQ heading/layout, mission two-column -- all match the
 handoff. Flagged to operator as content/judgment calls, not changed: 6-vs-7
 stats count; the single-capability section 02 (real-data-or-nothing leaves an
 empty selector rail); the Canadian-owned callout (in screenshots, absent from
@@ -987,7 +1025,7 @@ change A there is NO Supabase confirm-signup template; 04/05/06 are Supabase
 block dropped (Stripe sends its own receipt). Brand: "public safety" unhyphenated;
 the brief is the "intelligence brief".
 
-## CASL address SOLVED — correction (operator 2026-08-03)
+## CASL address SOLVED -- correction (operator 2026-08-03)
 
 Correction to the prior entry: the mailing address is confirmed (Richmond Hill
 coworking location). The only remaining step is a ~$60 online Ontario
@@ -1051,13 +1089,13 @@ build the Free partial to the same system.
    The partial must be a PARAMETER on the one renderer (render.ts), never a
    second renderer.
 
-## Marketing-site copy pass: About Team removed, FAQ hover, Da-Ré rebrand (operator 2026-08-05)
+## Marketing-site copy pass: About Team removed, FAQ hover, Da-Re rebrand (operator 2026-08-05)
 
 Safe class (marketing-site copy/CSS, no schema, no member surface, full
 suite green, no new silent-failure path). Shipped in PR #158 (squash
 0181c08).
 
-1. ABOUT — TEAM SECTION REMOVED. Operator: "remove the founder about page...
+1. ABOUT -- TEAM SECTION REMOVED. Operator: "remove the founder about page...
    keep the rest of the about page just not the team section." Dropped the
    portrait placeholder + the whole Team band from about/page.tsx. Rails
    renumbered 01 The mission / 02 What we stand on / 03 The Principle (was a
@@ -1070,7 +1108,7 @@ suite green, no new silent-failure path). Shipped in PR #158 (squash
    transitions. Same treatment on [open] so hover reads as a preview of the
    click.
 
-3. SYNAPSE ADVISORY -> DA-RÉ ADVISORY (operator: "rebranded... fix it
+3. SYNAPSE ADVISORY -> DA-RE ADVISORY (operator: "rebranded... fix it
    everywhere"). 44 references across SiteFooter.tsx, about/page.tsx,
    design-handoff HTML snapshots, docs (ROADMAP, wave3-portal-design,
    legal-seam-investor, client-facing-gate path refs, analyze_solgen_grants
@@ -1339,3 +1377,15 @@ migration mechanism). Corrected the false "unconstrained text, no migration"
 comment in src/filters.py. No permanent data loss: daily-collect is
 content-hash idempotent, so the held-off docs are re-collected on the next run
 after the paste.
+
+---
+
+## Safe-class: eScribe render probe infrastructure shipped (2026-08-08)
+
+`scripts/probe_escribe_render.py` + `.github/workflows/escribe-render-probe.yml`
+pushed to main (commit 63adde5). Read-only Playwright probe: Hamilton HPSB
+(Umbraco listing + meeting detail) and Ottawa PSB (eScribe Meeting.aspx
+document layer). workflow_dispatch only, no secrets, no DB writes. Findings
+logged above (2026-08-08 render probe entry). Safe class: probe script +
+workflow config only, no schema change, no member-facing surface, no LLM spend.
+GHA run 31265522067 green.
