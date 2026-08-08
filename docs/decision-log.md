@@ -623,6 +623,40 @@ error wearing a green tick.
 | 2026-08-02 | Digest protocol effective now: two digests/day (shipped / decisions / blocked), DECISION vs FYI labelling, BLOCKING pulls forward, answer-from-the-repo-first. Standing $600 envelope pasted and verified by operator (three rows) | CLAUDE.md digest protocol section |
 | 2026-08-02 eve | Autonomous queue worked: eScribe/CivicWeb adapter (both shapes, api inert-by-default, loud-failure guard, 8 tests) + shell-endpoint probe (all 15 tenants AMBIGUOUS -> api path stopped pending eScribe terms ruling) + standing-programs census (120 programs, PSC-dominated) + roster ingest (dead-domain corrections found) + fleet-validation harness (Hamilton 10mtg/51doc, Kitchener, Oakville clean; 4/6). PRs #152 merged | evening digest of record |
 
+## 2026-08-08 — eScribe bucket C ruling extended; pre-build endpoint check required
+
+**Ruling (operator 2026-08-08):** The 2026-08-02 eScribe terms ruling extends to
+bucket C (JS-shell) tenants. Silence-is-not-prohibition logic applies; the statutory
+public record basis holds.
+
+**Pre-build condition (binding):** Before building the API-mode adapter, the endpoint
+must be classified:
+- If it is a documented public data API (e.g. a published JSON feed intended for
+  external consumption): proceed.
+- If it is an undocumented internal application endpoint (discovered by reverse-
+  engineering JS bundles, not designed for third-party access): flag as a boundary
+  case before proceeding -- same discipline as the FUS login boundary.
+
+**Ottawa WordPress fallback:** Probe `ottawapoliceboard.ca/opsb-cspo/meetings.html`
+in parallel. If server-rendered and clean, Ottawa can collect on the WordPress path
+without waiting for the eScribe API adapter.
+
+**Assessment (logged 2026-08-08):** The eScribe bucket C endpoint is an undocumented
+internal application endpoint. `shell_api_discovery.py` discovers it by scanning
+same-origin JS bundles for ASP.NET handler literals (`.aspx`, `.ashx`, `.svc`,
+`/api/`, `GetMeetings`, `FileStream`). There is no published eScribe API spec, no
+developer documentation, and no endpoint designed for external consumption. The ruling
+itself (below, 2026-08-02) characterizes the endpoint as "undocumented." This meets
+the operator's definition of a boundary case; flagged per the pre-build condition.
+Awaiting operator ruling on whether to proceed on this basis.
+
+**Ottawa WordPress note:** The 2026-07-20 timeboxed check found that
+`ottawapoliceboard.ca` per-year meeting pages link to `pub-ottawa.escribemeetings.com
+Meeting.aspx` rather than hosting documents directly. The WordPress path may yield
+only meeting listing links, not the document corpus. Probe from CI needed to confirm.
+
+---
+
 ## eScribe automated-access ruling (operator 2026-08-02)
 
 DECISION: proceed with automated collection of eScribe tenant meeting
