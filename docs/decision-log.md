@@ -9,6 +9,84 @@ compressed to what a future reader needs in order to not re-litigate it.
 Entries are appended, never rewritten; a reversal is a new entry that names
 the one it supersedes.
 
+## 2026-08-08 — Render probe: Hamilton listing DOM empty; Ottawa eScribe robots-blocked
+
+**GHA run 31265522067, completed 15:53 UTC (11:53 EST).**
+
+**Hamilton HPSB (Umbraco).**
+robots.txt: allowed. Single XHR captured on load:
+`GET /umbraco/surface/GOVMemberSurface/GetMemberValue` -- a member authentication
+check, not a meeting-data fetch. After networkidle + 5s wait, `<main>` is 1,893
+chars (banner + heading only); zero meeting entries rendered. None of 13 content
+selectors (article, table, .meeting-list, .accordion, etc.) appeared. 45 total
+links, all nav. The 15 "meeting link candidates" were false positives (nav links
+matching the keyword filter). The Umbraco meeting list does not render passively;
+it requires an explicit user interaction (scroll trigger, year-tab click, or
+similar) to load. The `GetMemberValue` call resolves, but nothing downstream fires
+within the probe window.
+
+**Next step (safe class, before Aug 11):** Second probe simulating scroll and
+common interaction triggers to identify the load mechanism. Hamilton adapter is
+blocked on this finding until the trigger is understood.
+
+**Ottawa PSB (eScribe Meeting.aspx).**
+`pub-ottawa.escribemeetings.com/robots.txt -> can_fetch=False`.
+Probe halted per standing robots discipline. Ottawa eScribe document layer
+is NOT probed; document link structure is unknown.
+
+**Boundary triggered.** Per the 2026-08-02 eScribe ruling: "If a tenant's
+robots.txt changes, we STOP and report it as a boundary." This is that case.
+`pub-ottawa.escribemeetings.com` disallows crawlers; the Meeting.aspx adapter
+cannot proceed on this host under the current standing rules without an explicit
+operator ruling overriding the boundary.
+
+**Note.** The Ottawa listing layer (27 static Meeting.aspx URLs from the
+WordPress page) was collected without eScribe rendering and does not require
+`pub-ottawa.escribemeetings.com` to be crawlable. The open question is the
+document layer -- PDFs linked from those Meeting.aspx pages.
+
+---
+
+## 2026-08-08 — Hamilton HPSB: meeting listing is auth-gated; adapter build blocked (DECISION)
+
+**DECISION required before Aug 11 build window.**
+
+Two follow-up probes (runs 31266580621, 31266781498) investigated the empty listing
+found in the render probe.
+
+**Interaction probe (run 31266580621).** All common Umbraco load triggers tested:
+scroll to bottom, 23 candidate selectors (year tabs, filters, accordions, collapse
+toggles), `<select>` elements. `main_html` held at 1,893 chars through every stage;
+zero meeting nodes. One control matched: `[data-toggle='collapse']` (Bootstrap 3,
+text 'Expand Search'). XHR: only `GOVMemberSurface/GetMemberValue` -- member-auth
+check returning 0 bytes for anonymous visitors.
+
+**Search probe (run 31266781498).** The collapse toggle opens a SITE-WIDE search bar
+(`<form action="/search/" method="get">`) -- not a meeting filter. Submitting
+navigated to `hamiltonpsb.ca/search/`; zero search-related XHR; `main_html=1,108
+chars` afterward; 29 "deep links" were all site-navigation pages, no meeting entries.
+
+**Incidental finding.** `/reports-plans-policies/policies-and-by-laws/` returns 45 PDFs
+at `hamiltonpsb.ca/media/...` URLs. Umbraco media files are publicly accessible to
+anonymous visitors. Whether meeting agenda PDFs follow the same URL pattern is unknown;
+the listing page exposes no pointer.
+
+**Conclusion.** No anonymous path into the meeting listing exists. The page serves only
+a banner + heading (1,893 chars) to unauthenticated visitors; scroll, click, and search
+flows leave this unchanged. The listing is authentication-gated.
+
+**Hamilton adapter build on Aug 11 is blocked.** Two options:
+
+- **(a) Park the listing source.** Accept that `/meetings/agendas-and-materials/` is
+  auth-gated; proxy coverage (`hamilton.bidsandtenders.ca`) continues. Revisit if
+  authentication or a published API becomes available.
+- **(b) Probe the media URL pattern.** If meeting agenda PDFs are served from the same
+  `/media/...` namespace as policy documents, a direct-URL harvester may be possible
+  without the listing page -- but the URL structure is not publicly exposed and would
+  require further reverse-engineering.
+
+---
+
 ## 2026-08-08 — Relevance scorer parallelized (workers=20 default for backfill)
 
 The sequential scorer ran at ~1.9s/signal (network + Haiku inference); clearing
@@ -705,6 +783,7 @@ error wearing a green tick.
 | 2026-08-02 | ENVELOPE APPROVED: $600 standing for August, guard debits the total, surfaces to queue, unspent stays unspent. Window rulings: imminent +30 -> +35 (scorer peak alignment), grants +45 -> +90 (application-assembly horizon); recent window anchors to last published issue (floor 7 days, no cap, loud when stretched) so cadence slips never skip a day of record. Shell-endpoint work: terms/robots checked first, ambiguity reported not proceeded on; loud-failure shape guard built in from day one. Durham + Waterloo boards migrate to tenant path when adapter exists | operator approvals of record; brief_generator changes this PR, 474 tests green |
 | 2026-08-02 | Digest protocol effective now: two digests/day (shipped / decisions / blocked), DECISION vs FYI labelling, BLOCKING pulls forward, answer-from-the-repo-first. Standing $600 envelope pasted and verified by operator (three rows) | CLAUDE.md digest protocol section |
 | 2026-08-02 eve | Autonomous queue worked: eScribe/CivicWeb adapter (both shapes, api inert-by-default, loud-failure guard, 8 tests) + shell-endpoint probe (all 15 tenants AMBIGUOUS -> api path stopped pending eScribe terms ruling) + standing-programs census (120 programs, PSC-dominated) + roster ingest (dead-domain corrections found) + fleet-validation harness (Hamilton 10mtg/51doc, Kitchener, Oakville clean; 4/6). PRs #152 merged | evening digest of record |
+| 2026-08-08 | `scripts/probe_hamilton_interactions.py` + `scripts/probe_hamilton_search.py` + `.github/workflows/probe-hamiltonpsb.yml` (updated twice): Hamilton HPSB interaction and search probes (read-only, no DB writes, no LLM spend). Finding: meeting listing is auth-gated; no anonymous path into meeting entries. Decision entry logged above. | runs 31266580621, 31266781498 |
 
 ## 2026-08-08 — eScribe bucket C ruling extended; pre-build endpoint check required
 
@@ -1339,3 +1418,15 @@ migration mechanism). Corrected the false "unconstrained text, no migration"
 comment in src/filters.py. No permanent data loss: daily-collect is
 content-hash idempotent, so the held-off docs are re-collected on the next run
 after the paste.
+
+---
+
+## Safe-class: eScribe render probe infrastructure shipped (2026-08-08)
+
+`scripts/probe_escribe_render.py` + `.github/workflows/escribe-render-probe.yml`
+pushed to main (commit 63adde5). Read-only Playwright probe: Hamilton HPSB
+(Umbraco listing + meeting detail) and Ottawa PSB (eScribe Meeting.aspx
+document layer). workflow_dispatch only, no secrets, no DB writes. Findings
+logged above (2026-08-08 render probe entry). Safe class: probe script +
+workflow config only, no schema change, no member-facing surface, no LLM spend.
+GHA run 31265522067 green.

@@ -1,7 +1,8 @@
-name: Probe Hamilton PSB (structure discovery)
+name: Probe Hamilton PSB (search submission)
 
-# Renders hamiltonpsb.ca/meetings/agendas-and-materials/ with Playwright and
-# dumps links, selectors, and DOM structure so we can write the adapter.
+# Expands the Hamilton HPSB search panel, submits the form, captures the
+# resulting XHR + DOM changes to identify the meeting-data endpoint and
+# confirm whether document links are visible in the rendered result.
 # Never writes to the database.
 
 on:
@@ -14,6 +15,7 @@ concurrency:
 jobs:
   probe:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -29,5 +31,17 @@ jobs:
           pip install playwright
           python -m playwright install --with-deps chromium
 
-      - name: Probe Hamilton PSB
-        run: python scripts/probe_hamiltonpsb.py
+      - name: Probe Hamilton PSB search
+        run: python scripts/probe_hamilton_search.py
+
+      - name: Upload findings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hamilton-search-findings
+          path: |
+            hamilton_search_findings.json
+            hamilton_after_expand.png
+            hamilton_after_search.png
+            hamilton_meeting_detail.png
+          if-no-files-found: warn

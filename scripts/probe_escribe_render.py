@@ -7,6 +7,15 @@ Answers three specific questions for the Aug 11-13 adapter build window:
   Q3. Are Hamilton and Ottawa the same shell shape, or do they differ in ways
       requiring different adapter logic?
 
+Context from earlier probes:
+  - Ottawa: 27 Meeting.aspx URLs found in static WordPress HTML (no JS needed
+    for the listing layer). Pattern: Meeting.aspx?Id=<UUID>&Agenda=Agenda&lang=English
+    This probe renders one of those directly to see the document layer.
+  - Hamilton: Listing page is Umbraco JS-rendered; existing probe found 45
+    nav-only links and empty <main> after networkidle+3s. This probe tries
+    harder: explicit wait-for-selector, raw HTML dump if still empty, network
+    request intercept to find the data fetch URL.
+
 Read-only: no logins, no POSTs, no form submissions. Robots/terms discipline
 enforced -- checks robots.txt before fetching each host and aborts if disallowed.
 
@@ -19,7 +28,7 @@ import sys
 import time
 import urllib.robotparser
 from datetime import datetime
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urlparse
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger(__name__)
@@ -33,14 +42,15 @@ USER_AGENT = (
 )
 
 HAMILTON_LISTING = "https://www.hamiltonpsb.ca/meetings/agendas-and-materials/"
-OTTAWA_WP = "https://www.ottawapoliceboard.ca/opsb-cspo/meetings.html"
+
+# First Meeting.aspx URL from the Ottawa WordPress probe (Aug 8 run).
+# All 27 use the same pattern: ?Id=<UUID>&Agenda=Agenda&lang=English
+OTTAWA_MEETING_SAMPLE = (
+    "https://pub-ottawa.escribemeetings.com/Meeting.aspx"
+    "?Id=c6988bdf-ee5d-42cf-832a-2579bc4b19c1&Agenda=Agenda&lang=English"
+)
 OTTAWA_ESCRIBE_HOST = "pub-ottawa.escribemeetings.com"
-OTTAWA_ESCRIBE = f"https://{OTTAWA_ESCRIBE_HOST}/Meeting.aspx"
 
-
-# ---------------------------------------------------------------------------
-# Robots check
-# ---------------------------------------------------------------------------
 
 def _robots_allowed(url: str) -> tuple[bool, str]:
     parsed = urlparse(url)
@@ -68,12 +78,27 @@ def probe_hamilton(page) -> dict:
     result["robots_allowed"] = allowed
     if not allowed:
         result["status"] = "BLOCKED by robots.txt"
-        log.warning("[Hamilton] robots.txt disallows fetch -- aborting")
         return result
+
+    # Capture all XHR/fetch calls to understand where meeting data comes from
+    api_calls = []
+
+    def on_request(request):
+        if request.resource_type in ("xhr", "fetch"):
+            api_calls.append({"url": request.url[:200], "method": request.method})
+
+    page.on("request", on_request)
 
     log.info("[Hamilton] Loading listing: %s", HAMILTON_LISTING)
     page.goto(HAMILTON_LISTING, wait_until="networkidle", timeout=60000)
-    page.wait_for_timeout(3000)
+
+    # Extra wait -- Umbraco sometimes fires a second async call after networkidle
+    page.wait_for_timeout(5000)
+
+    result["api_calls_captured"] = api_calls[:20]
+    log.info("[Hamilton] API calls captured: %d", len(api_calls))
+    for call in api_calls[:10]:
+        log.info("  %s %s", call["method"], call["url"])
 
     result["listing_page_title"] = page.title()
     result["listing_url_after_load"] = page.url
@@ -81,7 +106,7 @@ def probe_hamilton(page) -> dict:
     result["listing_html_length"] = len(html)
     log.info("[Hamilton] Listing loaded: %d chars, title=%r", len(html), result["listing_page_title"])
 
-    # Detect JS framework markers
+    # JS framework hints
     fw = []
     if "umbraco" in html.lower():
         fw.append("Umbraco")
@@ -93,376 +118,283 @@ def probe_hamilton(page) -> dict:
         fw.append("React")
     result["js_framework_hints"] = fw
 
-    # Collect all links on the listing page
+    # Dump the raw <main> HTML to understand its structure
+    main_html = page.evaluate("""() => {
+        const main = document.querySelector('main') || document.querySelector('#main') || document.querySelector('.main-content');
+        return main ? main.innerHTML.slice(0, 6000) : null;
+    }""")
+    result["main_html_snippet"] = main_html[:3000] if main_html else None
+    log.info("[Hamilton] main HTML: %s chars (truncated to 3000)",
+             len(main_html) if main_html else 0)
+    if main_html:
+        log.info("[Hamilton] main HTML preview: %r", main_html[:500])
+
+    # Try explicit wait for any meeting-content element to appear
+    meeting_wait_selectors = [
+        "article", ".meeting-item", ".meeting-list", ".meetings",
+        "table.meetings", "table", "ul.listing", ".content-list",
+        "li.meeting", "[data-meeting]", ".accordion", ".panel",
+        ".list-group", "section.content",
+    ]
+    content_found_sel = None
+    for sel in meeting_wait_selectors:
+        try:
+            page.wait_for_selector(sel, timeout=3000)
+            content_found_sel = sel
+            log.info("[Hamilton] Waited for and found: '%s'", sel)
+            break
+        except Exception:
+            pass
+
+    result["content_selector_found"] = content_found_sel
+
+    # Re-query all links after the extra wait
     all_links = page.eval_on_selector_all(
         "a[href]",
         "els => els.map(a => ({href: a.href, text: (a.innerText||'').trim().slice(0,80)}))"
     )
     result["listing_link_count"] = len(all_links)
     result["listing_links_sample"] = all_links[:30]
-    log.info("[Hamilton] Listing links: %d total", len(all_links))
 
-    # SELECT dropdowns (year filter?)
-    selects = page.eval_on_selector_all(
-        "select",
-        "els => els.map(s => ({name: s.name||s.id, options: [...s.options].map(o => o.value)}))"
-    )
-    result["select_elements"] = selects
-
-    # Attempt to find and click a meeting entry
-    # Hamilton Umbraco typically renders: list of meeting titles -> click -> detail page with PDFs
-    meeting_click_candidates = [
-        ("a[href*='meeting']", "meeting in href"),
-        ("a[href*='agenda']", "agenda in href"),
-        ("a[href*='minutes']", "minutes in href"),
-        (".meetings-list a", "meetings-list class"),
-        (".agendas-list a", "agendas-list class"),
-        ("ul.listing li a", "ul.listing li a"),
-        ("article a", "article a"),
-        (".content-list a", "content-list a"),
-        (".document-list a", "document-list a"),
-        ("table a", "table a"),
-        (".accordion .panel a", "accordion panel a"),
-        (".list-group-item a", "list-group-item a"),
+    # Find meeting-entry-style links
+    meeting_links = [
+        lk for lk in all_links
+        if any(kw in lk["href"].lower() for kw in ["meeting", "agenda", "minute", "2024", "2025", "2026"])
+        and "hamiltonpsb.ca" in lk["href"]
     ]
+    result["meeting_link_candidates"] = meeting_links[:10]
+    log.info("[Hamilton] Meeting-candidate links: %d / %d total", len(meeting_links), len(all_links))
+    for lk in meeting_links[:5]:
+        log.info("  MEETING CANDIDATE: %r -> %r", lk["text"][:60], lk["href"][:100])
 
-    meeting_href = None
-    meeting_text = None
-    used_selector = None
-
-    for sel, desc in meeting_click_candidates:
-        try:
-            el = page.query_selector(sel)
-            if el:
-                href = el.get_attribute("href") or ""
-                text = (el.inner_text() or "").strip()
-                # Skip navigation/header/footer links
-                if href and not any(skip in href for skip in ["#", "javascript:", "mailto:"]):
-                    meeting_href = href
-                    meeting_text = text
-                    used_selector = sel
-                    log.info("[Hamilton] First meeting link via '%s': %r -> %r", sel, text[:60], href[:80])
-                    break
-        except Exception:
-            pass
-
-    if not meeting_href:
-        # Fall back: any deep link on the same host that looks like a content page
-        for link in all_links:
-            href = link["href"]
-            text = link["text"]
-            if "hamiltonpsb.ca" in href and href != HAMILTON_LISTING:
-                if any(kw in href.lower() for kw in ["2024", "2025", "2026", "meet", "agenda", "board"]):
-                    meeting_href = href
-                    meeting_text = text
-                    used_selector = "fallback-keyword-match"
-                    log.info("[Hamilton] Fallback meeting link: %r -> %r", text[:60], href[:80])
-                    break
-
-    result["found_meeting_link"] = meeting_href is not None
-    result["first_meeting_href"] = meeting_href
-    result["first_meeting_text"] = meeting_text
-    result["first_meeting_selector"] = used_selector
-
-    if not meeting_href:
-        log.warning("[Hamilton] No meeting link found on listing page")
-        # Take screenshot of listing for manual inspection
-        page.screenshot(path="hamilton_listing.png")
-        result["listing_screenshot"] = "hamilton_listing.png"
-        return result
-
-    # Navigate to the meeting detail page
-    log.info("[Hamilton] Navigating to meeting detail: %s", meeting_href)
-    page.goto(meeting_href, wait_until="networkidle", timeout=60000)
-    page.wait_for_timeout(2000)
-
-    result["meeting_page_url"] = page.url
-    result["meeting_page_title"] = page.title()
-    meeting_html = page.content()
-    result["meeting_html_length"] = len(meeting_html)
-    log.info("[Hamilton] Meeting detail: %d chars, title=%r", len(meeting_html), result["meeting_page_title"])
-
-    # Screenshot
-    page.screenshot(path="hamilton_meeting.png", full_page=True)
-    result["meeting_screenshot"] = "hamilton_meeting.png"
-
-    # Collect doc links (PDFs, Word docs, direct downloads)
-    meeting_links = page.eval_on_selector_all(
-        "a[href]",
-        "els => els.map(a => ({href: a.href, text: (a.innerText||'').trim().slice(0,80)}))"
-    )
-    doc_links = [
-        lk for lk in meeting_links
-        if any(ext in lk["href"].lower() for ext in [".pdf", ".doc", ".docx", ".xls", ".xlsx"])
-        or any(kw in lk["href"].lower() for kw in ["document", "attachment", "download", "file"])
-    ]
-    result["doc_link_count"] = len(doc_links)
-    result["doc_links"] = doc_links[:20]
-    log.info("[Hamilton] Document links on meeting page: %d", len(doc_links))
-    for lk in doc_links[:8]:
-        log.info("  DOC: %r -> %r", lk["text"][:50], lk["href"][:100])
-
-    # Iframes (embedded viewers)
-    iframes = page.eval_on_selector_all(
-        "iframe",
-        "els => els.map(f => f.src || f.getAttribute('data-src') || '')"
-    )
-    result["iframes"] = iframes
-
-    # Auth signals
-    auth = []
-    if page.query_selector("input[type='password']"):
-        auth.append("password_field")
-    if page.query_selector("[class*='login'],[class*='auth'],[id*='login']"):
-        auth.append("login_ui_element")
-    if "sign in" in meeting_html.lower() or "log in" in meeting_html.lower():
-        auth.append("sign_in_text_in_html")
-    if page.query_selector("[class*='captcha'],[id*='captcha']"):
-        auth.append("captcha_element")
-    result["auth_signals"] = auth
-
-    # Further navigation: tabs or accordions that might reveal more docs
-    tabs = page.eval_on_selector_all(
-        "[role='tab'], .nav-tab, [data-toggle='tab'], [data-bs-toggle='tab']",
-        "els => els.map(e => (e.innerText||'').trim().slice(0,50))"
-    )
-    result["nav_tabs"] = tabs
-
-    # DOM structure around doc links (to understand adapter selector)
-    doc_container = page.evaluate("""() => {
+    # Full DOM structure snapshot (tag + class + text for all elements with links)
+    dom_structure = page.evaluate("""() => {
         const out = [];
-        document.querySelectorAll('a[href]').forEach(a => {
-            const href = a.href || '';
-            if (href.match(/\\.pdf|\\.doc|attachment|download/i)) {
-                const parent = a.parentElement;
-                out.push({
-                    tag: a.tagName,
-                    href: href.slice(0, 120),
-                    text: (a.innerText||'').trim().slice(0,60),
-                    parent_tag: parent ? parent.tagName : '',
-                    parent_class: parent ? parent.className : ''
-                });
+        document.querySelectorAll('*').forEach(el => {
+            if (el.querySelectorAll('a').length > 0) {
+                const text = (el.innerText || '').trim().slice(0, 60);
+                if (text && !['HTML','BODY','HEAD'].includes(el.tagName)) {
+                    out.push({tag: el.tagName, cls: (el.className||'').slice(0,60), text});
+                }
             }
         });
-        return out.slice(0, 15);
+        return out.slice(0, 40);
     }""")
-    result["doc_dom_structure"] = doc_container
+    result["dom_structure_with_links"] = dom_structure[:20]
+    log.info("[Hamilton] DOM elements with links: %d", len(dom_structure))
+    for el in dom_structure[:10]:
+        log.info("  <%s class=%r>: %r", el["tag"], el["cls"], el["text"])
 
-    log.info("[Hamilton] Probe complete. doc_links=%d auth=%s iframes=%s",
-             len(doc_links), auth, iframes[:3] if iframes else [])
-    return result
+    # Screenshot
+    page.screenshot(path="hamilton_listing.png", full_page=False)
+    result["screenshot"] = "hamilton_listing.png"
 
+    # If we found meeting links, navigate to the first one
+    meeting_href = meeting_links[0]["href"] if meeting_links else None
+    result["found_meeting_link"] = meeting_href is not None
 
-# ---------------------------------------------------------------------------
-# Ottawa PSB probe
-# ---------------------------------------------------------------------------
-
-def probe_ottawa(page) -> dict:
-    result = {"site": "Ottawa PSB", "wp_url": OTTAWA_WP, "escribe_url": OTTAWA_ESCRIBE}
-
-    # Check robots on both hosts
-    wp_allowed, _ = _robots_allowed(OTTAWA_WP)
-    escribe_allowed, _ = _robots_allowed(OTTAWA_ESCRIBE)
-    result["robots_wp_allowed"] = wp_allowed
-    result["robots_escribe_allowed"] = escribe_allowed
-
-    if not wp_allowed and not escribe_allowed:
-        result["status"] = "BLOCKED by robots.txt on both hosts"
-        return result
-
-    # Navigate WordPress nav page to find eScribe deep links
-    escribe_entry_url = None
-    if wp_allowed:
-        log.info("[Ottawa] Loading WordPress nav: %s", OTTAWA_WP)
-        page.goto(OTTAWA_WP, wait_until="networkidle", timeout=60000)
+    if meeting_href:
+        log.info("[Hamilton] Navigating to meeting detail: %s", meeting_href)
+        page.goto(meeting_href, wait_until="networkidle", timeout=60000)
         page.wait_for_timeout(2000)
-        result["wp_title"] = page.title()
-
-        escribe_links = page.eval_on_selector_all(
-            "a[href]",
-            "els => els.map(a => ({href: a.href, text: (a.innerText||'').trim().slice(0,80)}))"
-        )
-        escribe_links = [lk for lk in escribe_links if OTTAWA_ESCRIBE_HOST in lk["href"]]
-        result["escribe_links_on_wp"] = escribe_links[:10]
-        log.info("[Ottawa] eScribe links on WP page: %d", len(escribe_links))
-
-        if escribe_links:
-            escribe_entry_url = escribe_links[0]["href"]
-            log.info("[Ottawa] Using eScribe entry URL from WP: %s", escribe_entry_url[:100])
-
-    # Fall back to the base eScribe URL if WP had none or was blocked
-    if not escribe_entry_url and escribe_allowed:
-        escribe_entry_url = OTTAWA_ESCRIBE
-        log.info("[Ottawa] Using base eScribe URL: %s", escribe_entry_url)
-
-    if not escribe_entry_url:
-        result["status"] = "No eScribe URL available and both hosts blocked"
-        return result
-
-    # Navigate to eScribe
-    log.info("[Ottawa] Navigating to eScribe: %s", escribe_entry_url)
-    page.goto(escribe_entry_url, wait_until="networkidle", timeout=60000)
-    page.wait_for_timeout(4000)
-
-    result["escribe_landed_url"] = page.url
-    result["escribe_page_title"] = page.title()
-    escribe_html = page.content()
-    result["escribe_html_length"] = len(escribe_html)
-    log.info("[Ottawa] eScribe page: %d chars, title=%r, url=%s",
-             len(escribe_html), result["escribe_page_title"], page.url)
-
-    # Screenshot of listing
-    page.screenshot(path="ottawa_escribe_listing.png")
-    result["listing_screenshot"] = "ottawa_escribe_listing.png"
-
-    # JS framework
-    fw = []
-    if "__VIEWSTATE" in escribe_html or "WebForms" in escribe_html:
-        fw.append("ASP.NET WebForms")
-    if "angular" in escribe_html.lower():
-        fw.append("Angular")
-    if "jquery" in escribe_html.lower():
-        fw.append("jQuery")
-    if "escribe" in escribe_html.lower():
-        fw.append("eScribe-branded")
-    result["js_framework_hints"] = fw
-
-    # Auth signals before trying to navigate
-    auth = []
-    if page.query_selector("input[type='password']"):
-        auth.append("password_field")
-    if page.query_selector("[class*='login'],[id*='login']"):
-        auth.append("login_ui_element")
-    if "sign in" in escribe_html.lower() or "log in" in escribe_html.lower():
-        auth.append("sign_in_text")
-    if page.query_selector("[class*='captcha'],[id*='captcha']"):
-        auth.append("captcha_element")
-    result["auth_signals_on_listing"] = auth
-
-    # Collect all links on the listing page
-    listing_links = page.eval_on_selector_all(
-        "a[href]",
-        "els => els.map(a => ({href: a.href, text: (a.innerText||'').trim().slice(0,80)}))"
-    )
-    result["listing_link_count"] = len(listing_links)
-    result["listing_links_sample"] = listing_links[:30]
-
-    # Find meeting entry links
-    meeting_link_candidates = [
-        lk for lk in listing_links
-        if any(kw in lk["href"].lower() for kw in [
-            "agendaid", "meetingid", "meeting.aspx", "agenda", "minutes"
-        ])
-    ]
-    result["meeting_link_candidates_count"] = len(meeting_link_candidates)
-    result["meeting_link_candidates"] = meeting_link_candidates[:10]
-    log.info("[Ottawa] Meeting link candidates: %d", len(meeting_link_candidates))
-
-    # Try clicking the first meeting
-    click_selectors = [
-        "a[href*='AgendaID']",
-        "a[href*='MeetingID']",
-        "a[href*='Meeting.aspx?']",
-        "table a",
-        "tbody tr:first-child a",
-        "tbody tr td a",
-    ]
-
-    clicked_url = None
-    for sel in click_selectors:
-        try:
-            el = page.query_selector(sel)
-            if el:
-                href = el.get_attribute("href") or ""
-                text = (el.inner_text() or "").strip()
-                if href and "#" not in href[:5]:
-                    log.info("[Ottawa] Clicking meeting via '%s': %r -> %r", sel, text[:50], href[:80])
-                    page.click(sel)
-                    page.wait_for_load_state("networkidle", timeout=30000)
-                    page.wait_for_timeout(3000)
-                    clicked_url = page.url
-                    result["meeting_click_selector"] = sel
-                    result["meeting_click_href"] = href
-                    result["meeting_click_text"] = text[:80]
-                    break
-        except Exception as e:
-            log.debug("[Ottawa] Selector '%s' failed: %s", sel, e)
-
-    result["clicked_meeting"] = clicked_url is not None
-    if clicked_url:
-        result["meeting_page_url"] = clicked_url
+        result["meeting_page_url"] = page.url
         result["meeting_page_title"] = page.title()
         meeting_html = page.content()
         result["meeting_html_length"] = len(meeting_html)
-        log.info("[Ottawa] Meeting detail: url=%s title=%r len=%d",
-                 clicked_url, result["meeting_page_title"], len(meeting_html))
 
-        page.screenshot(path="ottawa_meeting_detail.png", full_page=True)
-        result["meeting_screenshot"] = "ottawa_meeting_detail.png"
+        page.screenshot(path="hamilton_meeting.png", full_page=True)
+        result["meeting_screenshot"] = "hamilton_meeting.png"
 
-        # Doc links
-        meeting_links = page.eval_on_selector_all(
+        meeting_all_links = page.eval_on_selector_all(
             "a[href]",
             "els => els.map(a => ({href: a.href, text: (a.innerText||'').trim().slice(0,80)}))"
         )
         doc_links = [
-            lk for lk in meeting_links
+            lk for lk in meeting_all_links
             if any(ext in lk["href"].lower() for ext in [".pdf", ".doc", ".docx"])
-            or any(kw in lk["href"].lower() for kw in ["document", "attachment", "download", "file"])
+            or any(kw in lk["href"].lower() for kw in ["document", "attachment", "download"])
         ]
         result["doc_link_count"] = len(doc_links)
         result["doc_links"] = doc_links[:20]
-        log.info("[Ottawa] Doc links on meeting detail: %d", len(doc_links))
-        for lk in doc_links[:8]:
+        log.info("[Hamilton] Doc links on meeting page: %d", len(doc_links))
+        for lk in doc_links[:5]:
             log.info("  DOC: %r -> %r", lk["text"][:50], lk["href"][:100])
 
-        # Auth re-check on meeting page
-        auth2 = []
+        auth = []
         if page.query_selector("input[type='password']"):
-            auth2.append("password_field")
+            auth.append("password_field")
         if "sign in" in meeting_html.lower() or "log in" in meeting_html.lower():
-            auth2.append("sign_in_text")
-        if page.query_selector("[class*='captcha']"):
-            auth2.append("captcha_element")
-        result["auth_signals_on_meeting"] = auth2
+            auth.append("sign_in_text")
+        result["auth_signals"] = auth
 
-        # Iframes
         iframes = page.eval_on_selector_all(
-            "iframe",
-            "els => els.map(f => f.src || f.getAttribute('data-src') || '')"
+            "iframe", "els => els.map(f => f.src || '')"
         )
         result["iframes"] = iframes
 
-        # Navigation tabs / accordion
-        tabs = page.eval_on_selector_all(
-            "[role='tab'], .nav-tab, [data-toggle='tab'], [data-bs-toggle='tab']",
-            "els => els.map(e => (e.innerText||'').trim().slice(0,50))"
-        )
-        result["nav_tabs"] = tabs
+    log.info("[Hamilton] Probe complete.")
+    return result
 
-        # DOM structure for doc links
-        doc_dom = page.evaluate("""() => {
-            const out = [];
-            document.querySelectorAll('a[href]').forEach(a => {
-                const href = a.href || '';
-                if (href.match(/\\.pdf|\\.doc|attachment|download/i)) {
-                    const parent = a.parentElement;
-                    out.push({
-                        href: href.slice(0, 120),
-                        text: (a.innerText||'').trim().slice(0,60),
-                        parent_tag: parent ? parent.tagName : '',
-                        parent_class: parent ? parent.className : ''
-                    });
+
+# ---------------------------------------------------------------------------
+# Ottawa PSB probe -- renders Meeting.aspx directly
+# ---------------------------------------------------------------------------
+
+def probe_ottawa(page) -> dict:
+    result = {
+        "site": "Ottawa PSB",
+        "note": "Listing layer already solved: 27 Meeting.aspx URLs in static WP HTML. "
+                "This probe renders one Meeting.aspx page to answer Q1-Q3.",
+        "meeting_url_probed": OTTAWA_MEETING_SAMPLE,
+    }
+
+    allowed, _ = _robots_allowed(OTTAWA_MEETING_SAMPLE)
+    result["robots_escribe_allowed"] = allowed
+    if not allowed:
+        result["status"] = "BLOCKED by robots.txt"
+        return result
+
+    # Capture XHR/fetch to understand eScribe's data loading
+    api_calls = []
+
+    def on_request(request):
+        if request.resource_type in ("xhr", "fetch"):
+            api_calls.append({"url": request.url[:200], "method": request.method})
+
+    page.on("request", on_request)
+
+    log.info("[Ottawa] Navigating to Meeting.aspx: %s", OTTAWA_MEETING_SAMPLE[:100])
+    page.goto(OTTAWA_MEETING_SAMPLE, wait_until="networkidle", timeout=60000)
+    page.wait_for_timeout(4000)
+
+    result["api_calls_captured"] = api_calls[:20]
+    log.info("[Ottawa] API calls: %d", len(api_calls))
+    for call in api_calls[:10]:
+        log.info("  %s %s", call["method"], call["url"])
+
+    result["escribe_page_title"] = page.title()
+    result["escribe_url_after_load"] = page.url
+    html = page.content()
+    result["escribe_html_length"] = len(html)
+    log.info("[Ottawa] Meeting.aspx: %d chars, title=%r", len(html), result["escribe_page_title"])
+
+    # Screenshot of landing
+    page.screenshot(path="ottawa_meeting_aspx.png", full_page=False)
+    result["landing_screenshot"] = "ottawa_meeting_aspx.png"
+
+    # JS framework hints
+    fw = []
+    if "__VIEWSTATE" in html or "WebForms" in html:
+        fw.append("ASP.NET WebForms")
+    if "angular" in html.lower():
+        fw.append("Angular")
+    if "jquery" in html.lower():
+        fw.append("jQuery")
+    if "escribe" in html.lower():
+        fw.append("eScribe-branded")
+    result["js_framework_hints"] = fw
+
+    # Auth check before anything else
+    auth_initial = []
+    if page.query_selector("input[type='password']"):
+        auth_initial.append("password_field")
+    if page.query_selector("[class*='login'],[id*='login']"):
+        auth_initial.append("login_ui_element")
+    if "sign in" in html.lower() or "log in" in html.lower():
+        auth_initial.append("sign_in_text")
+    if page.query_selector("[class*='captcha'],[id*='captcha']"):
+        auth_initial.append("captcha_element")
+    result["auth_signals_on_landing"] = auth_initial
+
+    # Collect all links on the Meeting.aspx page
+    all_links = page.eval_on_selector_all(
+        "a[href]",
+        "els => els.map(a => ({href: a.href, text: (a.innerText||'').trim().slice(0,80)}))"
+    )
+    result["link_count"] = len(all_links)
+    result["links_sample"] = all_links[:30]
+    log.info("[Ottawa] Links on Meeting.aspx: %d", len(all_links))
+
+    # Direct document links (PDFs, Word docs)
+    doc_links = [
+        lk for lk in all_links
+        if any(ext in lk["href"].lower() for ext in [".pdf", ".doc", ".docx"])
+        or any(kw in lk["href"].lower() for kw in ["document", "attachment", "download", "file"])
+    ]
+    result["doc_link_count_direct"] = len(doc_links)
+    result["doc_links_direct"] = doc_links[:20]
+    log.info("[Ottawa] Direct doc links: %d", len(doc_links))
+    for lk in doc_links[:8]:
+        log.info("  DOC: %r -> %r", lk["text"][:50], lk["href"][:100])
+
+    # eScribe renders agenda items as clickable rows in a table -- look for them
+    agenda_item_selectors = [
+        "table#tblAgendaItems tr", "table.agendaItems tr", "#AgendaItems tr",
+        "[class*='AgendaItem']", "[class*='agendaItem']",
+        "tr[class*='item']", "#ctl00_ContentPlaceHolder1",
+        "table tr", "tbody tr",
+    ]
+    agenda_entries = []
+    used_agenda_sel = None
+    for sel in agenda_item_selectors:
+        try:
+            els = page.query_selector_all(sel)
+            if len(els) > 2:
+                for el in els[:5]:
+                    text = (el.inner_text() or "").strip()
+                    if text and len(text) > 3:
+                        agenda_entries.append(text[:100])
+                if agenda_entries:
+                    used_agenda_sel = sel
+                    log.info("[Ottawa] Agenda items via '%s': %d entries", sel, len(els))
+                    break
+        except Exception:
+            pass
+    result["agenda_item_selector"] = used_agenda_sel
+    result["agenda_item_samples"] = agenda_entries[:5]
+
+    # Raw main content HTML snippet
+    main_html = page.evaluate("""() => {
+        const main = document.querySelector('#ctl00_ContentPlaceHolder1')
+            || document.querySelector('main')
+            || document.querySelector('.content')
+            || document.querySelector('#content');
+        return main ? main.innerHTML.slice(0, 6000) : document.body.innerHTML.slice(0, 4000);
+    }""")
+    result["main_html_snippet"] = main_html[:3000] if main_html else None
+    log.info("[Ottawa] main HTML snippet: %d chars", len(main_html) if main_html else 0)
+    if main_html:
+        log.info("[Ottawa] main HTML preview: %r", main_html[:500])
+
+    # DOM structure
+    dom_structure = page.evaluate("""() => {
+        const out = [];
+        document.querySelectorAll('*').forEach(el => {
+            if (el.querySelectorAll('a').length > 0) {
+                const text = (el.innerText || '').trim().slice(0, 60);
+                if (text && !['HTML','BODY','HEAD'].includes(el.tagName)) {
+                    out.push({tag: el.tagName, cls: (el.className||'').slice(0,60), text});
                 }
-            });
-            return out.slice(0, 15);
-        }""")
-        result["doc_dom_structure"] = doc_dom
+            }
+        });
+        return out.slice(0, 40);
+    }""")
+    result["dom_structure_with_links"] = dom_structure[:20]
 
-    else:
-        log.warning("[Ottawa] Could not click into a meeting entry")
+    # Check iframes
+    iframes = page.eval_on_selector_all(
+        "iframe", "els => els.map(f => f.src || f.getAttribute('data-src') || '')"
+    )
+    result["iframes"] = iframes
+    if iframes:
+        log.info("[Ottawa] Iframes: %s", iframes[:5])
 
-    log.info("[Ottawa] Probe complete.")
+    # Full page screenshot
+    page.screenshot(path="ottawa_meeting_aspx_full.png", full_page=True)
+    result["full_screenshot"] = "ottawa_meeting_aspx_full.png"
+
+    log.info("[Ottawa] Probe complete. doc_links=%d auth=%s iframes=%d",
+             len(doc_links), auth_initial, len(iframes))
     return result
 
 
@@ -503,37 +435,53 @@ def main():
     with open("escribe_probe_findings.json", "w") as f:
         json.dump(findings, f, indent=2)
 
-    # Print compact summary for the workflow log
+    # Compact summary
     print("\n" + "=" * 70)
     print("PROBE SUMMARY")
     print("=" * 70)
 
-    for site_key, res in [("hamilton", hamilton), ("ottawa", ottawa)]:
-        print(f"\n--- {res.get('site', site_key).upper()} ---")
-        if "status" in res:
-            print(f"  STATUS: {res['status']}")
-            continue
-        print(f"  Listing: {res.get('listing_url', res.get('wp_url', '?'))}")
-        print(f"  Listing HTML length: {res.get('listing_html_length', res.get('escribe_html_length', '?'))}")
-        print(f"  JS framework hints: {res.get('js_framework_hints', [])}")
-        print(f"  Found meeting link: {res.get('found_meeting_link', res.get('clicked_meeting', '?'))}")
-        print(f"  Meeting URL: {res.get('meeting_page_url', '(not clicked)')}")
-        print(f"  Doc links on meeting page: {res.get('doc_link_count', 0)}")
-        print(f"  Auth signals: {res.get('auth_signals', res.get('auth_signals_on_listing', []))}")
-        print(f"  Iframes: {res.get('iframes', [])}")
-        print(f"  Nav tabs: {res.get('nav_tabs', [])}")
-        if res.get("doc_links"):
-            print("  Doc link samples:")
-            for lk in res["doc_links"][:5]:
-                print(f"    {lk['text'][:40]:<40} {lk['href'][:80]}")
-        if res.get("doc_dom_structure"):
-            print("  Doc DOM structure (first 3):")
-            for d in res["doc_dom_structure"][:3]:
-                print(f"    <{d.get('parent_tag','')} class={d.get('parent_class','')[:30]!r}>"
-                      f" <a href={d.get('href','')[:60]!r}> {d.get('text','')[:40]!r}")
+    h = hamilton
+    print("\n--- HAMILTON HPSB ---")
+    print(f"  Listing HTML: {h.get('listing_html_length', '?')} chars")
+    print(f"  JS frameworks: {h.get('js_framework_hints', [])}")
+    print(f"  API calls on load: {len(h.get('api_calls_captured', []))}")
+    for c in h.get("api_calls_captured", [])[:5]:
+        print(f"    {c['method']} {c['url'][:80]}")
+    print(f"  Total links: {h.get('listing_link_count', '?')}")
+    print(f"  Meeting link candidates: {len(h.get('meeting_link_candidates', []))}")
+    if h.get("meeting_link_candidates"):
+        for lk in h["meeting_link_candidates"][:3]:
+            print(f"    {lk['text'][:40]} -> {lk['href'][:80]}")
+    print(f"  Content selector found: {h.get('content_selector_found', 'None')}")
+    print(f"  main HTML length: {len(h.get('main_html_snippet') or '')}")
+    if h.get("main_html_snippet"):
+        print(f"  main HTML: {h['main_html_snippet'][:300]!r}")
+    if h.get("doc_link_count") is not None:
+        print(f"  Doc links on meeting page: {h['doc_link_count']}")
+
+    o = ottawa
+    print("\n--- OTTAWA PSB (eScribe Meeting.aspx) ---")
+    print(f"  URL probed: {o.get('meeting_url_probed', '?')[:80]}")
+    print(f"  Page title: {o.get('escribe_page_title', '?')}")
+    print(f"  HTML: {o.get('escribe_html_length', '?')} chars")
+    print(f"  JS frameworks: {o.get('js_framework_hints', [])}")
+    print(f"  API calls on load: {len(o.get('api_calls_captured', []))}")
+    for c in o.get("api_calls_captured", [])[:5]:
+        print(f"    {c['method']} {c['url'][:80]}")
+    print(f"  Auth signals: {o.get('auth_signals_on_landing', [])}")
+    print(f"  Total links: {o.get('link_count', '?')}")
+    print(f"  Direct doc links: {o.get('doc_link_count_direct', '?')}")
+    if o.get("doc_links_direct"):
+        for lk in o["doc_links_direct"][:5]:
+            print(f"    {lk['text'][:40]:<40} {lk['href'][:80]}")
+    print(f"  Agenda item selector: {o.get('agenda_item_selector', 'None')}")
+    print(f"  Agenda samples: {o.get('agenda_item_samples', [])[:3]}")
+    print(f"  Iframes: {o.get('iframes', [])[:3]}")
+    if o.get("main_html_snippet"):
+        print(f"  Content HTML: {o['main_html_snippet'][:400]!r}")
 
     print("\n  Full findings: escribe_probe_findings.json")
-    print("  Screenshots: hamilton_meeting.png, ottawa_escribe_listing.png, ottawa_meeting_detail.png")
+    print("  Screenshots: hamilton_listing.png, hamilton_meeting.png, ottawa_meeting_aspx.png, ottawa_meeting_aspx_full.png")
     print("=" * 70)
 
     return findings
