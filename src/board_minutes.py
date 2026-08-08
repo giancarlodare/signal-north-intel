@@ -299,19 +299,21 @@ BOARDS = [
         # WordPress probe result 2026-08-08 (probe-ottawapsb.yml run
         # 31259539329): 27 document candidates, all link to
         # pub-ottawa.escribemeetings.com/Meeting.aspx -- eScribe JS-shell.
-        # WordPress is navigation-only; no direct PDFs. Render adapter
-        # required to collect Ottawa PSB minutes.
+        # WordPress is navigation-only; no direct PDFs.
+        # robots.txt ruling 2026-08-08 (operator): honour the
+        # pub-ottawa.escribemeetings.com robots.txt disallow. Document layer
+        # is robots-blocked. Ottawa PSB is a named gap at launch. No revive
+        # window; disclosed gap logged same as sarniapolice.com.
         "parked_reason": (
-            "pub-ottawa.escribemeetings.com eScribe path parked 2026-08-08: "
-            "bucket C (JS-shell) confirmed 2026-08-07, api-mode endpoint "
-            "assessed as undocumented internal application endpoint -- meets "
-            "the flag-as-boundary-case condition set 2026-08-02. WordPress "
-            "probe 2026-08-08 (probe-ottawapsb.yml): all 27 document "
-            "candidates link to pub-ottawa.escribemeetings.com/Meeting.aspx "
-            "(eScribe JS-shell); no direct PDFs. Render adapter is the "
-            "prerequisite. Park-with-verdict 2026-08-08 (operator confirmed): "
-            "revive Aug 11-13 with Hamilton HPSB in the eScribe render adapter "
-            "wave. Same adapter handles both."),
+            "pub-ottawa.escribemeetings.com robots.txt disallows crawlers "
+            "(can_fetch=False confirmed 2026-08-08). Operator ruling "
+            "2026-08-08: honour the boundary; Ottawa PSB is a named gap at "
+            "launch. eScribe bucket C (JS-shell) confirmed 2026-08-07; "
+            "api-mode endpoint assessed as undocumented internal application "
+            "endpoint. WordPress probe (probe-ottawapsb.yml): all 27 document "
+            "candidates link to pub-ottawa.escribemeetings.com/Meeting.aspx; "
+            "no direct PDFs. Document layer robots-blocked; no revive path "
+            "until pub-ottawa.escribemeetings.com robots.txt changes."),
         "source_name_candidates": ["Ottawa Police Services Board", "OPSB"],
         "source_id_env": "OPSB_SOURCE_ID",
         "listing_urls": ["https://www.ottawapoliceboard.ca/opsb-cspo/meetings.html"],

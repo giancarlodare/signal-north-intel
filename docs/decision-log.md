@@ -9,6 +9,37 @@ compressed to what a future reader needs in order to not re-litigate it.
 Entries are appended, never rewritten; a reversal is a new entry that names
 the one it supersedes.
 
+## 2026-08-08 — Ottawa PSB: robots.txt boundary honoured; named gap at launch
+
+**Operator ruling 2026-08-08.**
+
+`pub-ottawa.escribemeetings.com/robots.txt -> can_fetch=False`. Honour it. If the
+disallow applies to the document layer at the eScribe tenant, stop there. Ottawa PSB
+stays a named gap at launch. Disclosed gap logged the same way `sarniapolice.com` is --
+a disclosed gap is a credibility asset, not a failure.
+
+`board_minutes.py` Ottawa PSB `parked_reason` updated: robots boundary is final; the
+prior Aug 11-13 revive window is removed. No revive path until
+`pub-ottawa.escribemeetings.com/robots.txt` changes.
+
+---
+
+## 2026-08-08 — Hamilton HPSB: media URL pattern probe dispatched (operator ruling)
+
+**Operator ruling 2026-08-08.**
+
+Probe the `/media/...` URL pattern before parking. The auth-gated listing does not
+necessarily mean the documents are gated. One read-only probe to determine if meeting
+agenda PDFs are directly accessible via the `hamiltonpsb.ca/media/...` namespace used
+by policy documents (45 PDFs confirmed publicly accessible in the search probe).
+
+If documents are publicly reachable: collect without navigating the listing.
+If not: park with verdict immediately.
+
+Probe: `scripts/probe_hamilton_media.py`, dispatched via `probe-hamiltonpsb.yml`.
+
+---
+
 ## 2026-08-08 — Render probe: Hamilton listing DOM empty; Ottawa eScribe robots-blocked
 
 **GHA run 31265522067, completed 15:53 UTC (11:53 EST).**
@@ -784,6 +815,7 @@ error wearing a green tick.
 | 2026-08-02 | Digest protocol effective now: two digests/day (shipped / decisions / blocked), DECISION vs FYI labelling, BLOCKING pulls forward, answer-from-the-repo-first. Standing $600 envelope pasted and verified by operator (three rows) | CLAUDE.md digest protocol section |
 | 2026-08-02 eve | Autonomous queue worked: eScribe/CivicWeb adapter (both shapes, api inert-by-default, loud-failure guard, 8 tests) + shell-endpoint probe (all 15 tenants AMBIGUOUS -> api path stopped pending eScribe terms ruling) + standing-programs census (120 programs, PSC-dominated) + roster ingest (dead-domain corrections found) + fleet-validation harness (Hamilton 10mtg/51doc, Kitchener, Oakville clean; 4/6). PRs #152 merged | evening digest of record |
 | 2026-08-08 | `scripts/probe_hamilton_interactions.py` + `scripts/probe_hamilton_search.py` + `.github/workflows/probe-hamiltonpsb.yml` (updated twice): Hamilton HPSB interaction and search probes (read-only, no DB writes, no LLM spend). Finding: meeting listing is auth-gated; no anonymous path into meeting entries. Decision entry logged above. | runs 31266580621, 31266781498 |
+| 2026-08-08 | `scripts/probe_hamilton_media.py` + `.github/workflows/probe-hamiltonpsb.yml` (updated): Hamilton HPSB media URL pattern probe (read-only, no DB writes, no LLM spend). Operator ruling: probe /media/... pattern before parking; documents may be publicly accessible even if listing is auth-gated. `src/board_minutes.py` Ottawa PSB parked_reason updated: robots boundary final, Aug 11-13 revive window removed. | operator rulings 2026-08-08 |
 
 ## 2026-08-08 — eScribe bucket C ruling extended; pre-build endpoint check required
 

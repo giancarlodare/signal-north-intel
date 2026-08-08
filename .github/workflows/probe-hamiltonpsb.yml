@@ -1,8 +1,10 @@
-name: Probe Hamilton PSB (search submission)
+name: Probe Hamilton PSB (media URL pattern)
 
-# Expands the Hamilton HPSB search panel, submits the form, captures the
-# resulting XHR + DOM changes to identify the meeting-data endpoint and
-# confirm whether document links are visible in the rendered result.
+# Fetches the publicly-accessible policies page to extract /media/... URL
+# structure, HEADs a sample to confirm public access, checks sitemap.xml for
+# agenda/minutes entries, and scans the meetings page source for embedded media
+# references. Determines whether meeting agenda PDFs are directly reachable
+# without navigating the auth-gated listing page.
 # Never writes to the database.
 
 on:
@@ -15,7 +17,7 @@ concurrency:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -26,22 +28,13 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Install Playwright + Chromium
-        run: |
-          pip install playwright
-          python -m playwright install --with-deps chromium
-
-      - name: Probe Hamilton PSB search
-        run: python scripts/probe_hamilton_search.py
+      - name: Probe Hamilton PSB media URLs
+        run: python scripts/probe_hamilton_media.py
 
       - name: Upload findings
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: hamilton-search-findings
-          path: |
-            hamilton_search_findings.json
-            hamilton_after_expand.png
-            hamilton_after_search.png
-            hamilton_meeting_detail.png
+          name: hamilton-media-findings
+          path: hamilton_media_findings.json
           if-no-files-found: warn
