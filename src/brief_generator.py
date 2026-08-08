@@ -399,7 +399,8 @@ def _procurement_by_signal():
     return out
 
 
-def run(dry_run: bool = True, today: date | None = None, force: bool = False) -> dict:
+def run(dry_run: bool = True, today: date | None = None, force: bool = False,
+        preview_json: str | None = None) -> dict:
     today = today or date.today()
     week_start = monday_of(today)
 
@@ -467,6 +468,9 @@ def run(dry_run: bool = True, today: date | None = None, force: bool = False) ->
                  c["materiality"], (c["lead_title"] or "")[:60],
                  c["org"] or "no-org", c["soonest_date"], c["members"])
 
+    if preview_json is not None:
+        _build_preview_json(preview_json, week_start, clusters, signals, excluded)
+
     written = {"brief": 0, "items": 0}
     if not dry_run:
         written = _apply(week_start, clusters, excluded, breakdown, force)
@@ -496,6 +500,48 @@ def regen_decision(existing_status, force: bool) -> str:
     if not force:
         return "skip"
     return "replace" if existing_status == "draft" else "refuse"
+
+
+def _build_preview_json(preview_json: str, week_start, clusters, signals, excluded: int) -> None:
+    """Write brief preview data to a file without any DB writes.
+    Consumed by web/scripts/send-brief-preview.mjs for the shadow-brief email."""
+    import json as _json
+    sig_by_id = {s["id"]: s for s in signals}
+    intro = brief_copy.draft_the_read(
+        [c for c in clusters if c.get("included", True)])
+    items = []
+    for c in clusters:
+        if not c.get("included", True):
+            continue
+        sig = sig_by_id.get(c["lead_signal_id"]) or {}
+        doc = _one(sig.get("documents")) or {}
+        org = (_one(sig.get("organizations")) or {}).get("canonical_name")
+        amount = float(c.get("amount") or 0)
+        note = brief_copy.draft_item_note(
+            doc_type=c.get("doc_type"), timing_path=c["timing_path"],
+            buyer=org or c.get("org"), title=c.get("lead_title"),
+            amount_cad=amount or None, streams=c.get("stream_titles"))
+        items.append({
+            "rank": c["rank"],
+            "headline": c.get("lead_title") or "(untitled)",
+            "timing_path": c["timing_path"],
+            "vendorSoWhat": note or None,
+            "buyer": org or c.get("org"),
+            "amountCad": amount if amount > 0 else None,
+            "doc_type": doc.get("doc_type") or c.get("doc_type"),
+            "url": doc.get("url"),
+            "published_on": doc.get("published_on"),
+            "date_precision": doc.get("date_precision"),
+        })
+    out = {
+        "week_start": str(week_start),
+        "theRead": intro,
+        "reviewedHeldCount": excluded,
+        "items": items,
+    }
+    with open(preview_json, "w") as fh:
+        _json.dump(out, fh, indent=2, default=str)
+    log.info("Preview JSON -> %s (%d items)", preview_json, len(items))
 
 
 def _apply(week_start, clusters, excluded, breakdown, force) -> dict:
@@ -578,12 +624,16 @@ if __name__ == "__main__":
                        help="select/cluster/report, write nothing")
     group.add_argument("--apply", action="store_true",
                        help="write the week's draft brief")
+    group.add_argument("--preview-json", metavar="FILE",
+                       help="write brief preview data to FILE without any DB writes; "
+                            "consumed by web/scripts/send-brief-preview.mjs")
     parser.add_argument("--force", action="store_true",
                         help="regenerate a DRAFT brief (delete + rebuild); "
                              "refuses if the week's brief is published")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    result = run(dry_run=not args.apply, force=args.force)
+    result = run(dry_run=not args.apply, force=args.force,
+                 preview_json=args.preview_json)
     # Exit non-zero when a force run refused a published brief, so a manual
     # regenerate run goes RED in Actions instead of quietly doing nothing.
     sys.exit(2 if result.get("refused_published") else 0)
