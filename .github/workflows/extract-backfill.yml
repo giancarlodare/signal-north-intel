@@ -80,24 +80,21 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           EXTRACTION_MODEL: claude-opus-4-8
-        # COST GATE (operator 2026-07-27): the tier-2 buyers' award history
-        # (~7,440 docs, ~$45) is HELD from the drain until the Toronto+Peel
-        # pilot delivers its cost-and-value read and the operator approves
-        # historical drains buyer batch by buyer batch. Forward collection
-        # is unaffected (the daily capped step handles it). Remove a buyer
-        # from this exclusion only with an operator-approved envelope.
+        # COST GATE (operator 2026-07-27): held tier-2 buyers were excluded
+        # pending cost-and-value read. APPROVED 2026-08-08 (operator ruling):
+        # saturation batch 2 approved at ~$166 projected against $545.13
+        # remaining in august-2026-standing. All 5 buyers released from the
+        # exclusion: City of Hamilton, City of Brampton, City of Kitchener,
+        # City of Vaughan, Halton Region. Guard stays binding per-run.
         # include-hosts and exclude-buyers are mutually exclusive at the DB
         # client (both compile to PostgREST `or`; run 30370140377 raised on
-        # the pair). A targeted drain's host scope subsumes the exclusion --
-        # the HELD tier-2 buyers live on hosts a scoped run never selects --
-        # so scoped runs pass ONLY the scope and unscoped runs keep the
-        # standing exclusion.
+        # the pair). Scoped runs pass ONLY the scope.
         run: >
           python -m src.signal_extractor
           --doc-types "${{ inputs.doc_types }}"
           --newest-first --limit ${{ inputs.limit }}
           --envelope "${{ inputs.envelope }}"
-          ${{ inputs.include_hosts != '' && format('--include-hosts "{0}"', inputs.include_hosts) || '--exclude-buyers "City of Hamilton,City of Brampton,City of Kitchener,City of Vaughan,Halton Region"' }}
+          ${{ inputs.include_hosts != '' && format('--include-hosts "{0}"', inputs.include_hosts) || '' }}
 
       # A skip must be visible, not silent. The guard already printed the
       # arithmetic; this puts it on the run summary so a skipped batch reads

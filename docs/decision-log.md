@@ -14,6 +14,23 @@ at the bottom; a decision about how bugs get fixed belongs up here.
 
 ---
 
+## 2026-08-08 — Saturation batch 2 approved; Ottawa PSB revive aligned with Hamilton
+
+**Saturation batch 2 APPROVED (operator, 2026-08-08).** ~7,440 held tier-2 buyer
+docs (City of Hamilton, City of Brampton, City of Kitchener, City of Vaughan, Halton
+Region) released from the `--exclude-buyers` exclusion. Projected cost ~$166 at the
+envelope's measured rate ($0.02227/doc); envelope has $545.13 remaining of $600
+declared. Guard stays binding per-run (1,000-doc cap). First run dispatched
+2026-08-08. `extract-backfill.yml` updated: exclusion removed from unscoped drain,
+comment updated with approval.
+
+**Ottawa PSB revive aligned (operator, 2026-08-08).** Park-with-verdict confirmed:
+WordPress surface is eScribe navigation only (27 candidates, all `Meeting.aspx`),
+no direct PDFs. Revive window Aug 11-13, same wave as Hamilton HPSB. Same render
+adapter handles both. `board_minutes.py` parked_reason updated.
+
+---
+
 ## 2026-08-08 — Ottawa PSB WordPress probe result: navigation-only, eScribe paths only
 
 **Probe result (probe-ottawapsb.yml, run 31259539329).** robots.txt: 404 =>

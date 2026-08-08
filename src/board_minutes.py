@@ -309,8 +309,9 @@ BOARDS = [
             "probe 2026-08-08 (probe-ottawapsb.yml): all 27 document "
             "candidates link to pub-ottawa.escribemeetings.com/Meeting.aspx "
             "(eScribe JS-shell); no direct PDFs. Render adapter is the "
-            "prerequisite. Parked pending render adapter build and operator "
-            "decision."),
+            "prerequisite. Park-with-verdict 2026-08-08 (operator confirmed): "
+            "revive Aug 11-13 with Hamilton HPSB in the eScribe render adapter "
+            "wave. Same adapter handles both."),
         "source_name_candidates": ["Ottawa Police Services Board", "OPSB"],
         "source_id_env": "OPSB_SOURCE_ID",
         "listing_urls": ["https://www.ottawapoliceboard.ca/opsb-cspo/meetings.html"],
