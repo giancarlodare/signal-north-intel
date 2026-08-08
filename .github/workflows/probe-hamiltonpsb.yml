@@ -1,8 +1,9 @@
-name: Probe Hamilton PSB (structure discovery)
+name: Probe Hamilton PSB (interaction discovery)
 
-# Renders hamiltonpsb.ca/meetings/agendas-and-materials/ with Playwright and
-# dumps links, selectors, and DOM structure so we can write the adapter.
-# Never writes to the database.
+# Renders hamiltonpsb.ca/meetings/agendas-and-materials/ with Playwright,
+# simulates scroll / click / select interactions, and dumps XHR requests,
+# DOM snapshots, and meeting-link candidates to identify what triggers the
+# Umbraco listing to load. Never writes to the database.
 
 on:
   workflow_dispatch: {}
@@ -14,6 +15,7 @@ concurrency:
 jobs:
   probe:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -29,5 +31,15 @@ jobs:
           pip install playwright
           python -m playwright install --with-deps chromium
 
-      - name: Probe Hamilton PSB
-        run: python scripts/probe_hamiltonpsb.py
+      - name: Probe Hamilton PSB interactions
+        run: python scripts/probe_hamilton_interactions.py
+
+      - name: Upload findings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hamilton-interaction-findings
+          path: |
+            hamilton_interaction_findings.json
+            hamilton_final_state.png
+          if-no-files-found: warn
